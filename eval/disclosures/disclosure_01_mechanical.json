@@ -1,0 +1,15 @@
+{
+  "id": "disc_01_mech",
+  "title": "High-Efficiency Variable-Pitch Drone Rotor with Magnetic Position Feedback",
+  "technical_domain": "mechanical",
+  "raw_text": "1. Rotor Hub with Dual Bearings: A multirotor central hub assembly having four blade grips pivotally seated on pre-loaded dual angular-contact ball bearings.\n2. Concentric Axial Pushrod Actuator: A hollow-shaft brushless motor driving an axial pushrod through the center of the motor shaft to adjust blade pitch dynamically.\n3. Magnetic Rotary Sensor Array: Contactless Hall-effect rotary encoders integrated directly into each blade root retention sleeve to measure angular deflection in real-time.",
+  "ground_truth_claim_elements": [
+    "Rotor Hub with Dual Bearings",
+    "Concentric Axial Pushrod Actuator",
+    "Magnetic Rotary Sensor Array"
+  ],
+  "known_prior_art": [
+    "US-10457388-B2",
+    "US-9878783-B2"
+  ]
+}

@@ -1,0 +1,11 @@
+.env
+.env.local
+cloudflared.exe
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+.venv/
+venv/
+.DS_Store

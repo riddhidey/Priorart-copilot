@@ -1,0 +1,16 @@
+{
+  "id": "disc_02_elec",
+  "title": "Sub-Nanowatt Acoustic Trigger with Energy Harvesting Rectifier",
+  "technical_domain": "electronics",
+  "raw_text": "1. Piezoelectric Acoustic Harvester: A MEMS piezoelectric cantilever diaphragm tuned to ultrasonic frequencies to harvest acoustic wave energy.\n2. Sub-Threshold Comparator Wake-Up Circuit: A dynamic threshold differential comparator operating in weak inversion CMOS regime consuming under 1 nanowatt in standby.\n3. Power-Gating Switch: High-side PMOS switch isolating the main microcontroller until a validated threshold voltage burst triggers system power.",
+  "ground_truth_claim_elements": [
+    "Piezoelectric Acoustic Harvester",
+    "Sub-Threshold Comparator Wake-Up Circuit",
+    "Power-Gating Switch"
+  ],
+  "known_prior_art": [
+    "US-10892745-B1",
+    "US-11201584-B2",
+    "EP-3817208-A1"
+  ]
+}
