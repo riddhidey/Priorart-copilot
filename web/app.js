@@ -1,5 +1,49 @@
-document.addEventListener("DOMContentLoaded", () => {
-  // Elements
+/**
+ * PriorArt Copilot — Interactive Application Engine
+ * Autonomous 4-Agent Patentability & Claim-Element Screening
+ */
+
+function initApp() {
+  // Built-in Default Presets for Instant 0ms Local Availability
+  const DEFAULT_PRESETS = {
+    drone_rotor: {
+      id: "drone_rotor",
+      title: "Variable-Pitch Drone Rotor with Magnetic Position Feedback",
+      domain: "mechanical",
+      text: "1. Rotor Hub with Dual Bearings: A multirotor central hub assembly having four blade grips pivotally seated on pre-loaded dual angular-contact ball bearings.\n2. Concentric Axial Pushrod Actuator: A hollow-shaft brushless motor driving an axial pushrod through the center of the motor shaft to adjust blade pitch dynamically.\n3. Magnetic Rotary Sensor Array: Contactless Hall-effect rotary encoders integrated directly into each blade root retention sleeve to measure angular deflection in real-time."
+    },
+    acoustic_harvester: {
+      id: "acoustic_harvester",
+      title: "Sub-Nanowatt Acoustic Trigger with Energy Harvesting Rectifier",
+      domain: "electronics",
+      text: "1. Piezoelectric Acoustic Harvester: A MEMS piezoelectric cantilever diaphragm tuned to ultrasonic frequencies to harvest acoustic wave energy.\n2. Sub-Threshold Comparator Wake-Up Circuit: A dynamic threshold differential comparator operating in weak inversion CMOS regime consuming under 1 nanowatt in standby.\n3. Power-Gating Switch: High-side PMOS switch isolating the main microcontroller until a validated threshold voltage burst triggers system power."
+    },
+    stepper_actuator: {
+      id: "stepper_actuator",
+      title: "Direct-Drive Micro-Stepper Pitch Linkage for UAVs",
+      domain: "mechanical",
+      text: "1. Blade Root Micro-Steppers: Direct brushless torque actuators embedded inside each blade shank to eliminate mechanical swashplates.\n2. Dual Hall Rotary Feedback: High-resolution absolute angular encoders providing closed-loop control under 0.1 degree resolution."
+    }
+  };
+
+  // Safe Storage Utility to prevent SecurityError in sandboxes / private browsing
+  function safeGetStorage(key, fallback) {
+    try {
+      return localStorage.getItem(key) || fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  function safeSetStorage(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      // Ignore private storage restrictions
+    }
+  }
+
+  // Core Form Elements
   const form = document.getElementById("screening-form");
   const titleInput = document.getElementById("inv-title");
   const textInput = document.getElementById("inv-text");
@@ -17,52 +61,64 @@ document.addEventListener("DOMContentLoaded", () => {
   const reportActions = document.getElementById("report-actions");
   const loadingStatusText = document.getElementById("loading-status-text");
 
-  // Presets Data Cache
-  let presetsData = {};
+  // Presets Data Cache (initialized with defaults so buttons work immediately)
+  let presetsData = { ...DEFAULT_PRESETS };
 
-  // Fetch presets and bind buttons
+  // Asynchronously refresh presets from server if available
   async function loadPresets() {
     try {
       const res = await fetch("/api/presets");
       if (res.ok) {
         const presets = await res.json();
-        presets.forEach(p => {
-          presetsData[p.id] = p;
-        });
+        if (Array.isArray(presets)) {
+          presets.forEach(p => {
+            presetsData[p.id] = p;
+          });
+        }
       }
     } catch (e) {
-      console.warn("Could not load presets:", e);
+      console.warn("Using built-in presets fallback:", e);
     }
   }
   loadPresets();
 
+  // Preset Buttons Handling
   const presetButtons = document.querySelectorAll(".preset-pill");
   presetButtons.forEach(btn => {
     btn.addEventListener("click", () => {
       const presetId = btn.getAttribute("data-preset");
-      const preset = presetsData[presetId];
+      const preset = presetsData[presetId] || DEFAULT_PRESETS[presetId];
       if (preset) {
-        titleInput.value = preset.title;
-        textInput.value = preset.text;
-        charCounter.textContent = `${preset.text.length.toLocaleString()} chars`;
+        if (titleInput) titleInput.value = preset.title;
+        if (textInput) {
+          textInput.value = preset.text;
+          textInput.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        if (charCounter) {
+          charCounter.textContent = `${preset.text.length.toLocaleString()} chars`;
+        }
         const radio = document.querySelector(`input[name="domain"][value="${preset.domain}"]`);
         if (radio) radio.checked = true;
-        
-        // Highlight active preset button
-        presetButtons.forEach(b => b.style.borderColor = "");
+
+        // Visual feedback on active pill
+        presetButtons.forEach(b => {
+          b.style.borderColor = "";
+          b.classList.remove("active");
+        });
         btn.style.borderColor = "var(--accent)";
+        btn.classList.add("active");
       }
     });
   });
 
   // Theme Switching System
   const themeBtns = document.querySelectorAll(".theme-btn");
-  const savedTheme = localStorage.getItem("priorart_theme") || "green";
+  const savedTheme = safeGetStorage("priorart_theme", "green");
 
   function applyTheme(themeName) {
     document.documentElement.setAttribute("data-theme", themeName);
     document.body.setAttribute("data-theme", themeName);
-    localStorage.setItem("priorart_theme", themeName);
+    safeSetStorage("priorart_theme", themeName);
 
     themeBtns.forEach(b => {
       const isTarget = b.getAttribute("data-set-theme") === themeName;
@@ -75,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
   themeBtns.forEach(b => {
     b.addEventListener("click", () => {
       const theme = b.getAttribute("data-set-theme");
-      applyTheme(theme);
+      if (theme) applyTheme(theme);
     });
   });
 
@@ -94,10 +150,12 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       btn.classList.add("active");
       btn.setAttribute("aria-selected", "true");
-      
+
       const target = btn.getAttribute("data-tab");
       Object.keys(tabContents).forEach(k => {
-        if (tabContents[k]) tabContents[k].style.display = (k === target) ? "block" : "none";
+        if (tabContents[k]) {
+          tabContents[k].style.display = (k === target) ? "block" : "none";
+        }
       });
     });
   });
@@ -150,24 +208,31 @@ document.addEventListener("DOMContentLoaded", () => {
   let parsedDisclosureData = null;
 
   // Character counter
-  textInput.addEventListener("input", () => {
-    const len = textInput.value.length;
-    charCounter.textContent = `${len.toLocaleString()} chars`;
-  });
+  if (textInput && charCounter) {
+    textInput.addEventListener("input", () => {
+      const len = textInput.value.length;
+      charCounter.textContent = `${len.toLocaleString()} chars`;
+    });
+  }
 
   // Clear button
-  btnClear.addEventListener("click", () => {
-    titleInput.value = "";
-    textInput.value = "";
-    charCounter.textContent = "0 chars";
-    presetButtons.forEach(b => b.style.borderColor = "");
-    resetSteps();
-    stepReviewBox.style.display = "none";
-    resultsContent.style.display = "none";
-    reportActions.style.display = "none";
-    resultsEmpty.style.display = "flex";
-    titleInput.focus();
-  });
+  if (btnClear) {
+    btnClear.addEventListener("click", () => {
+      if (titleInput) titleInput.value = "";
+      if (textInput) textInput.value = "";
+      if (charCounter) charCounter.textContent = "0 chars";
+      presetButtons.forEach(b => {
+        b.style.borderColor = "";
+        b.classList.remove("active");
+      });
+      resetSteps();
+      if (stepReviewBox) stepReviewBox.style.display = "none";
+      if (resultsContent) resultsContent.style.display = "none";
+      if (reportActions) reportActions.style.display = "none";
+      if (resultsEmpty) resultsEmpty.style.display = "flex";
+      if (titleInput) titleInput.focus();
+    });
+  }
 
   function setStepStatus(stepIdx, status) {
     steps.forEach((s, i) => {
@@ -188,292 +253,345 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Handle Screening Submission
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    const title = titleInput.value.trim();
-    const raw_text = textInput.value.trim();
-    const technical_domain = document.querySelector('input[name="domain"]:checked').value;
-    const exec_mode = document.querySelector('input[name="exec-mode"]:checked').value;
+      const title = titleInput ? titleInput.value.trim() : "";
+      const raw_text = textInput ? textInput.value.trim() : "";
+      const domainRadio = document.querySelector('input[name="domain"]:checked');
+      const technical_domain = domainRadio ? domainRadio.value : "mechanical";
 
-    if (!raw_text) return;
+      const execRadio = document.querySelector('input[name="exec-mode"]:checked');
+      const exec_mode = execRadio ? execRadio.value : "auto";
 
-    btnScreen.disabled = true;
-    resultsEmpty.style.display = "none";
-    resultsContent.style.display = "none";
-    reportActions.style.display = "none";
-    stepReviewBox.style.display = "none";
-    resultsLoading.style.display = "flex";
+      if (!raw_text) {
+        if (textInput) {
+          textInput.focus();
+          if (textInput.reportValidity) textInput.reportValidity();
+        }
+        return;
+      }
 
-    resetSteps();
-    setStepStatus(0, "active");
+      if (btnScreen) btnScreen.disabled = true;
+      if (resultsEmpty) resultsEmpty.style.display = "none";
+      if (resultsContent) resultsContent.style.display = "none";
+      if (reportActions) reportActions.style.display = "none";
+      if (stepReviewBox) stepReviewBox.style.display = "none";
+      if (resultsLoading) resultsLoading.style.display = "flex";
 
-    if (exec_mode === "step") {
-      loadingStatusText.textContent = "Agent 1: Deconstructing claim elements for review...";
+      resetSteps();
+      setStepStatus(0, "active");
+
+      if (exec_mode === "step") {
+        if (loadingStatusText) loadingStatusText.textContent = "Agent 1: Deconstructing claim elements for review...";
+        try {
+          const response = await fetch("/api/parse-elements", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, raw_text, technical_domain })
+          });
+          if (!response.ok) throw new Error("Failed to parse disclosure elements.");
+          const data = await response.json();
+          parsedDisclosureData = data.parsed_disclosure;
+
+          setStepStatus(1, "completed");
+          if (resultsLoading) resultsLoading.style.display = "none";
+          renderClaimReviewEditor(parsedDisclosureData);
+        } catch (err) {
+          if (resultsLoading) resultsLoading.style.display = "none";
+          if (resultsEmpty) resultsEmpty.style.display = "flex";
+          alert("Parser Error: " + err.message);
+        } finally {
+          if (btnScreen) btnScreen.disabled = false;
+        }
+        return;
+      }
+
+      // Full Auto Mode: Execute Agent 1 -> 2 -> 3 -> 4
+      if (loadingStatusText) loadingStatusText.textContent = "Agent 1: Deconstructing claim elements...";
+
+      const stepInterval = setInterval(() => {
+        const activeIdx = steps.findIndex(s => s && s.classList.contains("active"));
+        if (activeIdx >= 0 && activeIdx < 3) {
+          const nextIdx = activeIdx + 1;
+          setStepStatus(nextIdx, "active");
+          if (loadingStatusText) {
+            if (nextIdx === 1) loadingStatusText.textContent = "Agent 2: Retrieving patent candidates with lexicon expansion...";
+            if (nextIdx === 2) loadingStatusText.textContent = "Agent 3: Clustering & assessing novelty risk...";
+            if (nextIdx === 3) loadingStatusText.textContent = "Agent 4: Synthesizing verified citations...";
+          }
+        }
+      }, 1800);
+
       try {
-        const response = await fetch("/api/parse-elements", {
+        const response = await fetch("/api/screen", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, raw_text, technical_domain })
         });
-        if (!response.ok) throw new Error("Failed to parse disclosure elements.");
+
+        clearInterval(stepInterval);
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.detail || `Server returned status ${response.status}`);
+        }
+
         const data = await response.json();
-        parsedDisclosureData = data.parsed_disclosure;
+        currentReportData = data.report;
 
-        setStepStatus(1, "completed");
-        resultsLoading.style.display = "none";
-        renderClaimReviewEditor(parsedDisclosureData);
+        setStepStatus(4, "completed");
+        renderReport(data.report, data.threat_matrix);
+
       } catch (err) {
-        resultsLoading.style.display = "none";
-        resultsEmpty.style.display = "flex";
-        alert("Parser Error: " + err.message);
+        clearInterval(stepInterval);
+        resetSteps();
+        if (resultsLoading) resultsLoading.style.display = "none";
+        if (resultsEmpty) resultsEmpty.style.display = "flex";
+        alert("Screening Error: " + err.message);
       } finally {
-        btnScreen.disabled = false;
+        if (btnScreen) btnScreen.disabled = false;
       }
-      return;
-    }
-
-    // Full Auto Mode: Execute Agent 1 -> 2 -> 3 -> 4
-    loadingStatusText.textContent = "Agent 1: Deconstructing claim elements...";
-
-    const stepInterval = setInterval(() => {
-      const activeIdx = steps.findIndex(s => s && s.classList.contains("active"));
-      if (activeIdx >= 0 && activeIdx < 3) {
-        const nextIdx = activeIdx + 1;
-        setStepStatus(nextIdx, "active");
-        if (nextIdx === 1) loadingStatusText.textContent = "Agent 2: Retrieving patent candidates with lexicon expansion...";
-        if (nextIdx === 2) loadingStatusText.textContent = "Agent 3: Clustering & assessing novelty risk...";
-        if (nextIdx === 3) loadingStatusText.textContent = "Agent 4: Synthesizing verified citations...";
-      }
-    }, 1800);
-
-    try {
-      const response = await fetch("/api/screen", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, raw_text, technical_domain })
-      });
-
-      clearInterval(stepInterval);
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.detail || "Pipeline execution failed.");
-      }
-
-      const data = await response.json();
-      currentReportData = data.report;
-
-      setStepStatus(4, "completed");
-      renderReport(data.report, data.threat_matrix);
-
-    } catch (err) {
-      clearInterval(stepInterval);
-      resetSteps();
-      resultsLoading.style.display = "none";
-      resultsEmpty.style.display = "flex";
-      alert("Screening Error: " + err.message);
-    } finally {
-      btnScreen.disabled = false;
-    }
-  });
-
-  // Render Claim Elements Review Editor
-  function renderClaimReviewEditor(parsedData) {
-    stepReviewBox.style.display = "block";
-    elementsEditorList.innerHTML = "";
-
-    parsedData.claim_elements.forEach((el, idx) => {
-      const div = document.createElement("div");
-      div.className = "element-edit-item";
-      div.innerHTML = `
-        <label style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">ELEMENT [${el.element_id}] TITLE</label>
-        <input type="text" class="edit-el-title" data-idx="${idx}" value="${escapeHtml(el.title)}">
-        <label style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-tertiary);">ELEMENT DESCRIPTION</label>
-        <textarea class="edit-el-desc" data-idx="${idx}" rows="2">${escapeHtml(el.description)}</textarea>
-      `;
-      elementsEditorList.appendChild(div);
     });
   }
 
+  // Render Claim Elements Review Editor
+  function renderClaimReviewEditor(parsedData) {
+    if (!stepReviewBox || !elementsEditorList) return;
+    stepReviewBox.style.display = "block";
+    elementsEditorList.innerHTML = "";
+
+    if (parsedData && parsedData.claim_elements) {
+      parsedData.claim_elements.forEach((el, idx) => {
+        const div = document.createElement("div");
+        div.className = "element-edit-item";
+        div.innerHTML = `
+          <label style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent);">ELEMENT [${el.element_id}] TITLE</label>
+          <input type="text" class="edit-el-title" data-idx="${idx}" value="${escapeHtml(el.title)}">
+          <label style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-tertiary);">ELEMENT DESCRIPTION</label>
+          <textarea class="edit-el-desc" data-idx="${idx}" rows="2">${escapeHtml(el.description)}</textarea>
+        `;
+        elementsEditorList.appendChild(div);
+      });
+    }
+  }
+
   // Handle Confirmation of Claim Elements
-  btnConfirmElements.addEventListener("click", async () => {
-    if (!parsedDisclosureData) return;
+  if (btnConfirmElements) {
+    btnConfirmElements.addEventListener("click", async () => {
+      if (!parsedDisclosureData) return;
 
-    const titleInputs = document.querySelectorAll(".edit-el-title");
-    const descInputs = document.querySelectorAll(".edit-el-desc");
+      const titleInputs = document.querySelectorAll(".edit-el-title");
+      const descInputs = document.querySelectorAll(".edit-el-desc");
 
-    titleInputs.forEach((inp, idx) => {
-      parsedDisclosureData.claim_elements[idx].title = inp.value.trim();
-      parsedDisclosureData.claim_elements[idx].description = descInputs[idx].value.trim();
-    });
-
-    stepReviewBox.style.display = "none";
-    resultsLoading.style.display = "flex";
-    setStepStatus(1, "active");
-    loadingStatusText.textContent = "Agent 2: Searching patents per reviewed element...";
-
-    try {
-      const response = await fetch("/api/screen-elements", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsedDisclosureData)
+      titleInputs.forEach((inp, idx) => {
+        if (parsedDisclosureData.claim_elements[idx]) {
+          parsedDisclosureData.claim_elements[idx].title = inp.value.trim();
+        }
+      });
+      descInputs.forEach((inp, idx) => {
+        if (parsedDisclosureData.claim_elements[idx]) {
+          parsedDisclosureData.claim_elements[idx].description = inp.value.trim();
+        }
       });
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.detail || "Pipeline failed.");
+      if (stepReviewBox) stepReviewBox.style.display = "none";
+      if (resultsLoading) resultsLoading.style.display = "flex";
+      setStepStatus(1, "active");
+      if (loadingStatusText) loadingStatusText.textContent = "Agent 2: Searching patents per reviewed element...";
+
+      try {
+        const response = await fetch("/api/screen-elements", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(parsedDisclosureData)
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.detail || "Pipeline failed.");
+        }
+
+        const data = await response.json();
+        currentReportData = data.report;
+
+        setStepStatus(4, "completed");
+        renderReport(data.report, data.threat_matrix);
+      } catch (err) {
+        resetSteps();
+        if (resultsLoading) resultsLoading.style.display = "none";
+        if (resultsEmpty) resultsEmpty.style.display = "flex";
+        alert("Screening Error: " + err.message);
       }
-
-      const data = await response.json();
-      currentReportData = data.report;
-
-      setStepStatus(4, "completed");
-      renderReport(data.report, data.threat_matrix);
-    } catch (err) {
-      resetSteps();
-      resultsLoading.style.display = "none";
-      resultsEmpty.style.display = "flex";
-      alert("Screening Error: " + err.message);
-    }
-  });
+    });
+  }
 
   // Render Full Report & Threat Matrix
   function renderReport(report, threatMatrix) {
-    resultsLoading.style.display = "none";
-    resultsContent.style.display = "flex";
-    reportActions.style.display = "flex";
+    if (resultsLoading) resultsLoading.style.display = "none";
+    if (resultsContent) resultsContent.style.display = "flex";
+    if (reportActions) reportActions.style.display = "flex";
 
     // Executive Summary Card
     const riskBadge = document.getElementById("risk-badge");
     const riskLevel = (report.overall_novelty_risk || "medium").toLowerCase();
-    riskBadge.textContent = `${riskLevel.toUpperCase()} RISK`;
-    riskBadge.className = `risk-badge ${riskLevel}`;
+    if (riskBadge) {
+      riskBadge.textContent = `${riskLevel.toUpperCase()} RISK`;
+      riskBadge.className = `risk-badge ${riskLevel}`;
+    }
 
-    document.getElementById("report-title").textContent = report.title;
-    document.getElementById("exec-summary-text").textContent = report.executive_summary;
+    const reportTitleEl = document.getElementById("report-title");
+    if (reportTitleEl) reportTitleEl.textContent = report.title;
+
+    const execSummaryEl = document.getElementById("exec-summary-text");
+    if (execSummaryEl) execSummaryEl.textContent = report.executive_summary;
 
     // 2D Visual Threat Matrix
     const matrixContainer = document.getElementById("matrix-container");
-    if (threatMatrix && threatMatrix.documents && threatMatrix.documents.length > 0) {
-      let tableHtml = `<table class="matrix-table"><thead><tr><th>Claim Element</th>`;
-      threatMatrix.documents.forEach(doc => {
-        tableHtml += `<th><span>${doc.doc_id}</span></th>`;
-      });
-      tableHtml += `</tr></thead><tbody>`;
-
-      threatMatrix.rows.forEach(r => {
-        tableHtml += `<tr><td><strong>[${r.element_id}]</strong> ${escapeHtml(r.element_title)}</td>`;
+    if (matrixContainer) {
+      if (threatMatrix && threatMatrix.documents && threatMatrix.documents.length > 0) {
+        let tableHtml = `<table class="matrix-table"><thead><tr><th>Claim Element</th>`;
         threatMatrix.documents.forEach(doc => {
-          const threat = r.threats[doc.doc_id] || "none";
-          if (threat === "high") {
-            tableHtml += `<td><span class="matrix-cell-badge high">HIGH</span></td>`;
-          } else if (threat === "moderate" || threat === "medium") {
-            tableHtml += `<td><span class="matrix-cell-badge moderate">MOD</span></td>`;
-          } else if (threat === "low") {
-            tableHtml += `<td><span class="matrix-cell-badge low">LOW</span></td>`;
-          } else {
-            tableHtml += `<td><span class="matrix-cell-badge safe">—</span></td>`;
-          }
+          tableHtml += `<th><span>${escapeHtml(doc.doc_id)}</span></th>`;
         });
-        tableHtml += `</tr>`;
-      });
-      tableHtml += `</tbody></table>`;
-      matrixContainer.innerHTML = tableHtml;
-    } else {
-      matrixContainer.innerHTML = `<p style="padding: 16px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 0.75rem;">No document overlap matrix available.</p>`;
+        tableHtml += `</tr></thead><tbody>`;
+
+        threatMatrix.rows.forEach(r => {
+          tableHtml += `<tr><td><strong>[${r.element_id}]</strong> ${escapeHtml(r.element_title)}</td>`;
+          threatMatrix.documents.forEach(doc => {
+            const threat = r.threats[doc.doc_id] || "none";
+            if (threat === "high") {
+              tableHtml += `<td><span class="matrix-cell-badge high">HIGH</span></td>`;
+            } else if (threat === "moderate" || threat === "medium") {
+              tableHtml += `<td><span class="matrix-cell-badge moderate">MOD</span></td>`;
+            } else if (threat === "low") {
+              tableHtml += `<td><span class="matrix-cell-badge low">LOW</span></td>`;
+            } else {
+              tableHtml += `<td><span class="matrix-cell-badge safe">—</span></td>`;
+            }
+          });
+          tableHtml += `</tr>`;
+        });
+        tableHtml += `</tbody></table>`;
+        matrixContainer.innerHTML = tableHtml;
+      } else {
+        matrixContainer.innerHTML = `<p style="padding: 16px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 0.75rem;">No document overlap matrix available.</p>`;
+      }
     }
 
     // Elements Breakdown
     const elementsContainer = document.getElementById("elements-container");
-    elementsContainer.innerHTML = "";
-    document.getElementById("elements-count-badge").textContent = `${report.element_sections.length} Elements Analyzed`;
+    if (elementsContainer) {
+      elementsContainer.innerHTML = "";
+      const countBadge = document.getElementById("elements-count-badge");
+      if (countBadge) countBadge.textContent = `${report.element_sections.length} Elements Analyzed`;
 
-    report.element_sections.forEach(sec => {
-      const card = document.createElement("div");
-      card.className = "element-card";
-      const riskClass = (sec.risk_level || "low").toLowerCase();
+      report.element_sections.forEach(sec => {
+        const card = document.createElement("div");
+        card.className = "element-card";
+        const riskClass = (sec.risk_level || "low").toLowerCase();
 
-      card.innerHTML = `
-        <div class="element-card-header">
-          <span class="element-title">[${sec.element_id}] ${escapeHtml(sec.element_title)}</span>
-          <span class="badge ${riskClass}">${riskClass.toUpperCase()} THREAT</span>
-        </div>
-        <p class="element-desc">${escapeHtml(sec.element_description)}</p>
-        <div class="element-findings">${escapeHtml(sec.findings_analysis)}</div>
-        <div class="element-gap"><strong>NOVELTY GAP:</strong> ${escapeHtml(sec.distinguishing_features)}</div>
-      `;
-      elementsContainer.appendChild(card);
-    });
+        card.innerHTML = `
+          <div class="element-card-header">
+            <span class="element-title">[${sec.element_id}] ${escapeHtml(sec.element_title)}</span>
+            <span class="badge ${riskClass}">${riskClass.toUpperCase()} THREAT</span>
+          </div>
+          <p class="element-desc">${escapeHtml(sec.element_description)}</p>
+          <div class="element-findings">${escapeHtml(sec.findings_analysis)}</div>
+          <div class="element-gap"><strong>NOVELTY GAP:</strong> ${escapeHtml(sec.distinguishing_features)}</div>
+        `;
+        elementsContainer.appendChild(card);
+      });
+    }
 
     // Citations
     const citationsContainer = document.getElementById("citations-container");
-    citationsContainer.innerHTML = "";
+    if (citationsContainer) {
+      citationsContainer.innerHTML = "";
 
-    if (report.all_citations && report.all_citations.length > 0) {
-      report.all_citations.forEach(cit => {
-        const item = document.createElement("div");
-        item.className = "citation-item";
-        item.innerHTML = `
-          <div class="citation-header">
-            <span class="citation-title"><strong>[${cit.citation_id}]</strong> ${escapeHtml(cit.title)}</span>
-            <span class="citation-doc-id">${cit.doc_id}</span>
-          </div>
-          <p class="citation-passage">"${escapeHtml(cit.cited_passage)}"</p>
-          <div style="margin-top: 4px; display: flex; justify-content: space-between; align-items: center;">
-            <span class="badge-mono" style="font-size: 0.68rem;">SOURCE: ${cit.source.toUpperCase()}</span>
-            ${cit.url ? `<a href="${cit.url}" target="_blank" rel="noopener noreferrer" class="citation-link">Original Record ↗</a>` : ""}
-          </div>
-        `;
-        citationsContainer.appendChild(item);
-      });
-    } else {
-      citationsContainer.innerHTML = `<p style="padding: 14px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 0.75rem;">No conflicting citations identified.</p>`;
+      if (report.all_citations && report.all_citations.length > 0) {
+        report.all_citations.forEach(cit => {
+          const item = document.createElement("div");
+          item.className = "citation-item";
+          item.innerHTML = `
+            <div class="citation-header">
+              <span class="citation-title"><strong>[${cit.citation_id}]</strong> ${escapeHtml(cit.title)}</span>
+              <span class="citation-doc-id">${escapeHtml(cit.doc_id)}</span>
+            </div>
+            <p class="citation-passage">"${escapeHtml(cit.cited_passage)}"</p>
+            <div style="margin-top: 4px; display: flex; justify-content: space-between; align-items: center;">
+              <span class="badge-mono" style="font-size: 0.68rem;">SOURCE: ${escapeHtml(cit.source.toUpperCase())}</span>
+              ${cit.url ? `<a href="${cit.url}" target="_blank" rel="noopener noreferrer" class="citation-link">Original Record ↗</a>` : ""}
+            </div>
+          `;
+          citationsContainer.appendChild(item);
+        });
+      } else {
+        citationsContainer.innerHTML = `<p style="padding: 14px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 0.75rem;">No conflicting citations identified.</p>`;
+      }
     }
 
     // Refinements
     const refinementsList = document.getElementById("refinements-list");
-    refinementsList.innerHTML = "";
-    report.recommended_refinements.forEach(ref => {
-      const li = document.createElement("li");
-      li.textContent = ref;
-      refinementsList.appendChild(li);
-    });
+    if (refinementsList) {
+      refinementsList.innerHTML = "";
+      if (report.recommended_refinements) {
+        report.recommended_refinements.forEach(ref => {
+          const li = document.createElement("li");
+          li.textContent = ref;
+          refinementsList.appendChild(li);
+        });
+      }
+    }
   }
 
   function escapeHtml(str) {
     if (!str) return "";
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
   }
 
   // Copy Markdown
   const btnCopy = document.getElementById("btn-copy-md");
-  btnCopy.addEventListener("click", () => {
-    if (!currentReportData) return;
-    let md = `# ${currentReportData.title}\n\n`;
-    md += `> **${currentReportData.disclaimer}**\n\n`;
-    md += `## Executive Summary\n${currentReportData.executive_summary}\n\n`;
-    md += `**Overall Novelty Risk**: ${currentReportData.overall_novelty_risk.toUpperCase()}\n\n`;
-    md += `## Claim-by-Claim Prior Art Analysis\n\n`;
-    currentReportData.element_sections.forEach(s => {
-      md += `### [${s.element_id}] ${s.element_title} (${s.risk_level.toUpperCase()})\n`;
-      md += `${s.findings_analysis}\n\n`;
-      md += `*Novelty Gap*: ${s.distinguishing_features}\n\n`;
-    });
+  if (btnCopy) {
+    btnCopy.addEventListener("click", () => {
+      if (!currentReportData) return;
+      let md = `# ${currentReportData.title}\n\n`;
+      md += `> **${currentReportData.disclaimer}**\n\n`;
+      md += `## Executive Summary\n${currentReportData.executive_summary}\n\n`;
+      md += `**Overall Novelty Risk**: ${currentReportData.overall_novelty_risk.toUpperCase()}\n\n`;
+      md += `## Claim-by-Claim Prior Art Analysis\n\n`;
+      currentReportData.element_sections.forEach(s => {
+        md += `### [${s.element_id}] ${s.element_title} (${s.risk_level.toUpperCase()})\n`;
+        md += `${s.findings_analysis}\n\n`;
+        md += `*Novelty Gap*: ${s.distinguishing_features}\n\n`;
+      });
 
-    navigator.clipboard.writeText(md).then(() => {
-      const originalText = btnCopy.innerHTML;
-      btnCopy.innerHTML = `<span style="color: var(--accent);">✓ Copied</span>`;
-      setTimeout(() => {
-        btnCopy.innerHTML = originalText;
-      }, 2000);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(md).then(() => {
+          const originalText = btnCopy.innerHTML;
+          btnCopy.innerHTML = `<span style="color: var(--accent);">✓ Copied</span>`;
+          setTimeout(() => {
+            btnCopy.innerHTML = originalText;
+          }, 2000);
+        }).catch(err => {
+          console.warn("Clipboard write failed:", err);
+        });
+      }
     });
-  });
+  }
 
   // Print / PDF
-  document.getElementById("btn-print").addEventListener("click", () => {
-    window.print();
-  });
+  const btnPrint = document.getElementById("btn-print");
+  if (btnPrint) {
+    btnPrint.addEventListener("click", () => {
+      window.print();
+    });
+  }
 
   // Benchmark Runner Action
   const btnRunBenchmark = document.getElementById("btn-run-benchmark");
@@ -484,32 +602,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         const resp = await fetch("/api/benchmark-run");
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
 
-        document.getElementById("bench-recall").textContent = `${data.summary.mean_element_recall.toFixed(1)}%`;
-        document.getElementById("bench-coverage").textContent = `${data.summary.mean_prior_art_coverage.toFixed(1)}%`;
-        document.getElementById("bench-citations").textContent = `${data.summary.mean_citation_accuracy.toFixed(1)}%`;
+        const recEl = document.getElementById("bench-recall");
+        const covEl = document.getElementById("bench-coverage");
+        const citEl = document.getElementById("bench-citations");
+
+        if (recEl && data.summary) recEl.textContent = `${data.summary.mean_element_recall.toFixed(1)}%`;
+        if (covEl && data.summary) covEl.textContent = `${data.summary.mean_prior_art_coverage.toFixed(1)}%`;
+        if (citEl && data.summary) citEl.textContent = `${data.summary.mean_citation_accuracy.toFixed(1)}%`;
 
         const casesContainer = document.getElementById("benchmark-cases-container");
-        casesContainer.innerHTML = "";
-
-        data.cases.forEach(c => {
-          const card = document.createElement("div");
-          card.className = "benchmark-case-card";
-          card.innerHTML = `
-            <div class="benchmark-case-info">
-              <h4>${escapeHtml(c.title)}</h4>
-              <p>CASE ID: <code>${c.id}</code> · CITATIONS: ${c.total_citations}</p>
-            </div>
-            <div class="benchmark-case-badges">
-              <span class="pill-tag verified-tag">Recall: ${c.element_recall.toFixed(0)}%</span>
-              <span class="pill-tag verified-tag">Coverage: ${c.prior_art_coverage.toFixed(0)}%</span>
-              <span class="pill-tag verified-tag">Authenticity: ${c.citation_accuracy.toFixed(0)}%</span>
-            </div>
-          `;
-          casesContainer.appendChild(card);
-        });
-
+        if (casesContainer && data.cases) {
+          casesContainer.innerHTML = "";
+          data.cases.forEach(c => {
+            const card = document.createElement("div");
+            card.className = "benchmark-case-card";
+            card.innerHTML = `
+              <div class="benchmark-case-info">
+                <h4>${escapeHtml(c.title)}</h4>
+                <p>CASE ID: <code>${escapeHtml(c.id)}</code> · CITATIONS: ${c.total_citations}</p>
+              </div>
+              <div class="benchmark-case-badges">
+                <span class="pill-tag verified-tag">Recall: ${c.element_recall.toFixed(0)}%</span>
+                <span class="pill-tag verified-tag">Coverage: ${c.prior_art_coverage.toFixed(0)}%</span>
+                <span class="pill-tag verified-tag">Authenticity: ${c.citation_accuracy.toFixed(0)}%</span>
+              </div>
+            `;
+            casesContainer.appendChild(card);
+          });
+        }
       } catch (err) {
         alert("Benchmark error: " + err.message);
       } finally {
@@ -619,4 +742,11 @@ document.addEventListener("DOMContentLoaded", () => {
       draw();
     }
   }
-});
+}
+
+// Ensure execution whether DOM is already interactive/complete or still loading
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
