@@ -2401,7 +2401,9 @@ body.broadcast-mode .compass-marker.east {
 }
 
 body.broadcast-mode .globe-drag-hint {
-  bottom: 18px;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 body.broadcast-mode .globe-telemetry-badge.bottom-left-badge {
@@ -3595,7 +3597,9 @@ body.broadcast-mode .globe-telemetry-badge.bottom-right-badge {
 /* Drag Hint */
 .globe-drag-hint {
   position: absolute;
-  bottom: 14px;
+  bottom: 44px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -3608,11 +3612,12 @@ body.broadcast-mode .globe-telemetry-badge.bottom-right-badge {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-theme);
-  padding: 4px 12px;
+  padding: 4px 14px;
   border-radius: 999px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   pointer-events: none;
   z-index: 20;
+  white-space: nowrap;
 }
 
 /* Three.js mount element */
