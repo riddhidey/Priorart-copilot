@@ -3458,4 +3458,117 @@ body.broadcast-mode .radar-globe-stage {
   font-weight: 700 !important;
 }
 
+/* ==========================================================================
+   Tactical Concentric Radar Range Rings & Corner Telemetry Badges
+   ========================================================================== */
+.radar-range-rings-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.radar-range-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px dashed var(--border-subtle);
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+.radar-range-ring.ring-1 {
+  width: 280px;
+  height: 280px;
+}
+
+.radar-range-ring.ring-2 {
+  width: 440px;
+  height: 440px;
+  border-style: solid;
+  opacity: 0.18;
+}
+
+.radar-range-ring.ring-3 {
+  width: 620px;
+  height: 620px;
+  border-style: dashed;
+  opacity: 0.14;
+}
+
+.radar-range-ring.ring-4 {
+  width: 820px;
+  height: 820px;
+  border-style: solid;
+  opacity: 0.10;
+}
+
+/* Tactical Corner Telemetry Badges */
+.globe-telemetry-badge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  background: var(--bg-surface-elevated);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-subtle);
+  padding: 3px 8px;
+  border-radius: 4px;
+  z-index: 3;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.globe-telemetry-badge.bottom-left-badge {
+  bottom: 14px;
+  left: 18px;
+}
+
+.globe-telemetry-badge.bottom-right-badge {
+  bottom: 14px;
+  right: 20px;
+}
+
+.telemetry-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  animation: radarPulse 1.4s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+/* Light Theme Overrides */
+[data-theme="light"] .radar-range-ring {
+  border-color: #94a3b8 !important;
+  opacity: 0.35 !important;
+}
+
+[data-theme="light"] .globe-telemetry-badge {
+  background: #ffffff !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1) !important;
+}
+
+[data-theme="light"] .globe-telemetry-badge .telemetry-txt,
+[data-theme="light"] .globe-telemetry-badge .telemetry-code {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .globe-telemetry-badge .telemetry-live-dot {
+  background: #0284c7 !important;
+  box-shadow: 0 0 6px rgba(2, 132, 199, 0.6) !important;
+}
+
 

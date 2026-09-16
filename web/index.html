@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/static/style.css?v=26.0">
+  <link rel="stylesheet" href="/static/style.css?v=27.0">
 </head>
 <body>
 
@@ -356,6 +356,23 @@
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
           </div>
 
+          <!-- Tactical Concentric Radar Range Rings -->
+          <div class="radar-range-rings-wrap" aria-hidden="true">
+            <div class="radar-range-ring ring-1"></div>
+            <div class="radar-range-ring ring-2"></div>
+            <div class="radar-range-ring ring-3"></div>
+            <div class="radar-range-ring ring-4"></div>
+          </div>
+
+          <!-- Real-time Tactical HUD Corner Badges -->
+          <div class="globe-telemetry-badge bottom-left-badge">
+            <span class="telemetry-live-dot"></span>
+            <span class="telemetry-txt">SWEEP: 360° ACTIVE [24 RPM]</span>
+          </div>
+          <div class="globe-telemetry-badge bottom-right-badge">
+            <span class="telemetry-code">ORBITAL RELAYS: 3/3 ONLINE · X-BAND 9.4GHz</span>
+          </div>
+
           <!-- Three.js Canvas mount -->
           <div id="three-globe-mount" class="three-globe-mount"></div>
         </div>
@@ -695,7 +712,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-  <script src="/static/world_land_data.js?v=26.0"></script>
-  <script src="/static/app.js?v=26.0"></script>
+  <script src="/static/world_land_data.js?v=27.0"></script>
+  <script src="/static/app.js?v=27.0"></script>
 </body>
 </html>

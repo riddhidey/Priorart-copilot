@@ -252,6 +252,13 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
    - **High-Contrast Landmask Rendering**: Resolved alpha sampler bug so continental landmasses (Americas, Eurasia, Africa, Australasia) contrast sharply against the dark ocean point matrix across all four color themes.
    - **Responsive Aspect-Ratio Fitting**: Dynamic camera FOV and distance fitting prevents horizontal clipping on narrow screens or split windows, automatically centering the 3D globe at the top on smaller viewports.
 
+7. **Rich Tactical Sphere Topology & Orbital Surveillance Elements**:
+   - **Tactical Latitude/Longitude Graticule Lattice**: Parallels every 20° and meridians every 45° wrap the entire sphere, eliminating visual voids across open oceans.
+   - **3D Polar Radar Surveillance Sweep Beam**: Rotating 360° leading sweep line with decaying triangular phosphor fan beam (`24 RPM`) simulating real-time radar interrogation.
+   - **Atmospheric Curvature Inner Core Sphere**: Translucent volumetric inner sphere giving solid physical depth and planetary presence behind the Fibonacci matrix lattice.
+   - **Orbital Surveillance Satellites**: 3 active satellite crafts (`SAT-USPTO`, `SAT-EPO`, `SAT-WIPO`) with solar panels and pulsing radio beacon waves orbiting on inclined tracks.
+   - **Concentric Radar Range Rings & Tactical Corner Badges**: Fixed range rings (`5,000`–`20,000 KM`) and live telemetry status indicators in the stage corners.
+
 ---
 
 ## 9. How to Run and Test

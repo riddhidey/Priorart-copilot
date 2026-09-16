@@ -174,27 +174,31 @@ function initApp() {
     const THEME_PALETTES = {
       green: {
         land: new THREE.Color("#86efac"),
-        ocean: new THREE.Color("#0a2213"),
+        ocean: new THREE.Color("#144326"),
         ring: new THREE.Color("#4ade80"),
-        pin: new THREE.Color("#86efac")
+        pin: new THREE.Color("#86efac"),
+        core: new THREE.Color("#031208")
       },
       dark: {
         land: new THREE.Color("#ffffff"),
-        ocean: new THREE.Color("#18202f"),
+        ocean: new THREE.Color("#2a374a"),
         ring: new THREE.Color("#38bdf8"),
-        pin: new THREE.Color("#ffffff")
+        pin: new THREE.Color("#ffffff"),
+        core: new THREE.Color("#0a0f18")
       },
       light: {
         land: new THREE.Color("#0369a1"),
-        ocean: new THREE.Color("#e2e8f0"),
+        ocean: new THREE.Color("#cbd5e1"),
         ring: new THREE.Color("#0284c7"),
-        pin: new THREE.Color("#0284c7")
+        pin: new THREE.Color("#0284c7"),
+        core: new THREE.Color("#f1f5f9")
       },
       amber: {
         land: new THREE.Color("#fbbf24"),
-        ocean: new THREE.Color("#2d1804"),
+        ocean: new THREE.Color("#4a2505"),
         ring: new THREE.Color("#f59e0b"),
-        pin: new THREE.Color("#fbbf24")
+        pin: new THREE.Color("#fbbf24"),
+        core: new THREE.Color("#140801")
       }
     };
 
@@ -328,6 +332,191 @@ function initApp() {
 
     const pointsMesh = new THREE.Points(geometry, material);
     globeGroup.add(pointsMesh);
+
+    // Atmosphere & Solid Curvature Inner Core Sphere (Prevents empty see-through void)
+    const coreGeo = new THREE.SphereGeometry(R * 0.985, 48, 48);
+    const coreMat = new THREE.MeshBasicMaterial({
+      color: palette.core,
+      transparent: true,
+      opacity: currentTheme === "light" ? 0.35 : 0.65
+    });
+    const coreSphere = new THREE.Mesh(coreGeo, coreMat);
+    globeGroup.add(coreSphere);
+
+    // High-Tech Tactical Graticule (Latitude Parallels & Longitude Meridians)
+    const graticuleGroup = new THREE.Group();
+    globeGroup.add(graticuleGroup);
+
+    const graticuleMat = new THREE.LineBasicMaterial({
+      color: palette.ring,
+      transparent: true,
+      opacity: currentTheme === "light" ? 0.20 : 0.16
+    });
+
+    // Latitude Parallels every 20°
+    [-60, -40, -20, 0, 20, 40, 60].forEach(latDeg => {
+      const latRad = latDeg * (Math.PI / 180);
+      const rAtLat = (R + 0.3) * Math.cos(latRad);
+      const yAtLat = (R + 0.3) * Math.sin(latRad);
+      const pts = [];
+      const segs = 64;
+      for (let s = 0; s <= segs; s++) {
+        const theta = (s / segs) * Math.PI * 2;
+        pts.push(new THREE.Vector3(Math.cos(theta) * rAtLat, yAtLat, Math.sin(theta) * rAtLat));
+      }
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+      graticuleGroup.add(new THREE.Line(lineGeo, graticuleMat));
+    });
+
+    // Longitude Meridians every 45°
+    for (let lonDeg = 0; lonDeg < 360; lonDeg += 45) {
+      const lonRad = lonDeg * (Math.PI / 180);
+      const pts = [];
+      const segs = 64;
+      for (let s = 0; s <= segs; s++) {
+        const latRad = ((s / segs) * Math.PI) - Math.PI / 2;
+        const rAtLat = (R + 0.3) * Math.cos(latRad);
+        const yAtLat = (R + 0.3) * Math.sin(latRad);
+        pts.push(new THREE.Vector3(
+          Math.sin(lonRad) * rAtLat,
+          yAtLat,
+          Math.cos(lonRad) * rAtLat
+        ));
+      }
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+      graticuleGroup.add(new THREE.Line(lineGeo, graticuleMat));
+    }
+
+    // 3D Polar-to-Equatorial Radar Surveillance Sweep Beam
+    const radarSweepGroup = new THREE.Group();
+    globeGroup.add(radarSweepGroup);
+
+    // Glowing Leading Sweep Line
+    const sweepLinePts = [];
+    for (let i = 0; i <= 36; i++) {
+      const lat = (i / 36) * Math.PI - Math.PI / 2;
+      sweepLinePts.push(new THREE.Vector3(
+        (R + 1.8) * Math.cos(lat),
+        (R + 1.8) * Math.sin(lat),
+        0
+      ));
+    }
+    const sweepLineGeo = new THREE.BufferGeometry().setFromPoints(sweepLinePts);
+    const sweepLineMat = new THREE.LineBasicMaterial({
+      color: palette.ring,
+      transparent: true,
+      opacity: 0.85
+    });
+    const sweepLine = new THREE.Line(sweepLineGeo, sweepLineMat);
+    radarSweepGroup.add(sweepLine);
+
+    // Trailing Phosphor Sweep Fan Mesh (Decaying triangular wedge)
+    const fanSteps = 12;
+    const fanSpan = 0.45;
+    const fanVerts = [];
+    const fanIndices = [];
+    const ptsPerStep = 18;
+
+    for (let f = 0; f <= fanSteps; f++) {
+      const angle = -(f / fanSteps) * fanSpan;
+      for (let i = 0; i < ptsPerStep; i++) {
+        const lat = (i / (ptsPerStep - 1)) * Math.PI - Math.PI / 2;
+        const rad = (R + 1.4) * Math.cos(lat);
+        const y = (R + 1.4) * Math.sin(lat);
+        fanVerts.push(Math.cos(angle) * rad, y, Math.sin(angle) * rad);
+      }
+    }
+    for (let f = 0; f < fanSteps; f++) {
+      for (let i = 0; i < ptsPerStep - 1; i++) {
+        const p1 = f * ptsPerStep + i;
+        const p2 = p1 + 1;
+        const p3 = (f + 1) * ptsPerStep + i;
+        const p4 = p3 + 1;
+        fanIndices.push(p1, p2, p3);
+        fanIndices.push(p2, p4, p3);
+      }
+    }
+    const sweepFanGeo = new THREE.BufferGeometry();
+    sweepFanGeo.setIndex(fanIndices);
+    sweepFanGeo.setAttribute('position', new THREE.Float32BufferAttribute(fanVerts, 3));
+    const sweepFanMat = new THREE.MeshBasicMaterial({
+      color: palette.ring,
+      transparent: true,
+      opacity: 0.14,
+      side: THREE.DoubleSide
+    });
+    const sweepFan = new THREE.Mesh(sweepFanGeo, sweepFanMat);
+    radarSweepGroup.add(sweepFan);
+
+    // Global Patent Surveillance Constellation (3 Orbital Satellites)
+    const satGroup = new THREE.Group();
+    scene.add(satGroup);
+
+    const satDefs = [
+      { id: "SAT-USPTO", radius: R * 1.26, inclX: 0.55, inclZ: 0.2, speed: 0.012, angle: 0.4, color: palette.ring },
+      { id: "SAT-EPO", radius: R * 1.36, inclX: -0.65, inclZ: -0.3, speed: 0.009, angle: 2.5, color: new THREE.Color("#38bdf8") },
+      { id: "SAT-WIPO", radius: R * 1.46, inclX: 0.25, inclZ: -0.7, speed: 0.007, angle: 4.6, color: new THREE.Color("#f59e0b") }
+    ];
+
+    const satellites = satDefs.map(def => {
+      const orbitPivot = new THREE.Group();
+      orbitPivot.rotation.x = def.inclX;
+      orbitPivot.rotation.z = def.inclZ;
+      satGroup.add(orbitPivot);
+
+      const trackPts = [];
+      for (let s = 0; s <= 64; s++) {
+        const theta = (s / 64) * Math.PI * 2;
+        trackPts.push(new THREE.Vector3(Math.cos(theta) * def.radius, 0, Math.sin(theta) * def.radius));
+      }
+      const trackGeo = new THREE.BufferGeometry().setFromPoints(trackPts);
+      const trackMat = new THREE.LineBasicMaterial({
+        color: def.color,
+        transparent: true,
+        opacity: currentTheme === "light" ? 0.22 : 0.15
+      });
+      const trackLine = new THREE.Line(trackGeo, trackMat);
+      orbitPivot.add(trackLine);
+
+      const satCraft = new THREE.Group();
+      const craftCoreMesh = new THREE.Mesh(
+        new THREE.OctahedronGeometry(1.6, 0),
+        new THREE.MeshBasicMaterial({ color: def.color })
+      );
+      satCraft.add(craftCoreMesh);
+
+      const panelGeo = new THREE.PlaneGeometry(3.6, 1.2);
+      const panelMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
+      const leftPanel = new THREE.Mesh(panelGeo, panelMat);
+      leftPanel.position.x = -2.8;
+      satCraft.add(leftPanel);
+      const rightPanel = new THREE.Mesh(panelGeo, panelMat);
+      rightPanel.position.x = 2.8;
+      satCraft.add(rightPanel);
+
+      const satWaveGeo = new THREE.RingGeometry(0.2, 1.2, 16);
+      const satWaveMat = new THREE.MeshBasicMaterial({
+        color: def.color,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.8
+      });
+      const satWave = new THREE.Mesh(satWaveGeo, satWaveMat);
+      satCraft.add(satWave);
+
+      orbitPivot.add(satCraft);
+
+      return {
+        ...def,
+        orbitPivot,
+        trackMat,
+        craftCoreMesh,
+        satCraft,
+        satWave,
+        satWaveMat,
+        waveScale: 1
+      };
+    });
 
     // Orbital Wireframe Rings
     const ringGeo = new THREE.RingGeometry(R + 0.5, R + 1.2, 64);
@@ -981,6 +1170,16 @@ function initApp() {
       tipMat.color.copy(newPalette.pin);
       ringMat.color.copy(newPalette.ring);
       waveMat.color.copy(newPalette.ring);
+      if (coreMat) {
+        coreMat.color.copy(newPalette.core || newPalette.ring);
+        coreMat.opacity = themeName === "light" ? 0.35 : 0.65;
+      }
+      if (graticuleMat) {
+        graticuleMat.color.copy(newPalette.ring);
+        graticuleMat.opacity = themeName === "light" ? 0.20 : 0.16;
+      }
+      if (sweepLineMat) sweepLineMat.color.copy(newPalette.ring);
+      if (sweepFanMat) sweepFanMat.color.copy(newPalette.ring);
 
       // Re-render active radar arcs with updated theme colors
       const currentQuery = ((document.getElementById("inv-title")?.value || "") + " " + (document.getElementById("inv-text")?.value || "")).trim();
@@ -1133,6 +1332,29 @@ function initApp() {
           arc.progress = (arc.progress + 0.009) % 1;
           const pos = arc.curve.getPoint(arc.progress);
           arc.pulseMesh.position.copy(pos);
+        });
+      }
+
+      // Rotate 3D Polar Radar Surveillance Sweep Beam
+      if (radarSweepGroup) {
+        radarSweepGroup.rotation.y += 0.024;
+      }
+
+      // Animate Orbiting Surveillance Satellites & Pulsing Telemetry Beacons
+      if (satellites && satellites.length > 0) {
+        satellites.forEach(sat => {
+          sat.angle += sat.speed;
+          sat.satCraft.position.set(
+            Math.cos(sat.angle) * sat.radius,
+            0,
+            Math.sin(sat.angle) * sat.radius
+          );
+          sat.satCraft.rotation.y += 0.03;
+
+          sat.waveScale += 0.045;
+          if (sat.waveScale > 3.8) sat.waveScale = 0.5;
+          sat.satWave.scale.set(sat.waveScale, sat.waveScale, 1);
+          sat.satWaveMat.opacity = Math.max(0, 0.8 - (sat.waveScale / 3.8) * 0.8);
         });
       }
 
