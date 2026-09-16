@@ -2195,11 +2195,29 @@ function initApp() {
       }
     }
 
-    // Stop drag / wheel bubbling on the zoom controls bar
+    // Wheel event on zoom controls bar specifically adjusts the zoom slider
     if (zoomControlsEl) {
       zoomControlsEl.addEventListener("pointerdown", (e) => e.stopPropagation());
       zoomControlsEl.addEventListener("mousedown", (e) => e.stopPropagation());
-      zoomControlsEl.addEventListener("wheel", (e) => e.stopPropagation());
+      zoomControlsEl.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const { minZ, maxZ } = getZoomRange();
+        const step = (maxZ - minZ) * 0.1 * Math.sign(e.deltaY);
+        const targetZ = Math.max(minZ, Math.min(maxZ, camera.position.z + step));
+        if (window.gsap) {
+          gsap.killTweensOf(camera.position);
+          gsap.to(camera.position, {
+            z: targetZ,
+            duration: 0.18,
+            ease: "power1.out",
+            onUpdate: updateZoomUI
+          });
+        } else {
+          camera.position.z = targetZ;
+          updateZoomUI();
+        }
+      }, { passive: false });
     }
 
     // Smooth dragging on vertical range slider
@@ -2277,13 +2295,8 @@ function initApp() {
       });
     }
 
-    // Mouse wheel zoom synced with scrollbar
-    mount.addEventListener("wheel", (e) => {
-      e.preventDefault();
-      const { minZ, maxZ } = getZoomRange();
-      camera.position.z = Math.max(minZ, Math.min(maxZ, camera.position.z + e.deltaY * 0.15));
-      updateZoomUI();
-    }, { passive: false });
+    // Globe zoom is strictly dedicated to the vertical zoom scroll bar controls.
+    // Canvas wheel events are intentionally NOT intercepted so scrolling down the website remains completely smooth and unobstructed.
 
     // Initial sync
     updateZoomUI();
