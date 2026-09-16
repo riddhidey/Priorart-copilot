@@ -1864,12 +1864,127 @@ function initApp() {
       isDragging = false;
     });
 
+    // =======================================================================
+    // Tactical 3D Globe Vertical Zoom Control Scrollbar (Beside Globe)
+    // =======================================================================
+    const zoomControlsEl = document.getElementById("globe-zoom-controls");
+    const zoomSlider = document.getElementById("globe-zoom-slider");
+    const zoomValText = document.getElementById("globe-zoom-val-text");
+    const btnZoomIn = document.getElementById("btn-globe-zoom-in");
+    const btnZoomOut = document.getElementById("btn-globe-zoom-out");
+    const btnZoomReset = document.getElementById("btn-globe-zoom-reset");
+
+    function getZoomRange() {
+      const minZ = Math.max(130, currentFittedZ * 0.5); // closest zoom (~2.0x magnification)
+      const maxZ = currentFittedZ * 2.2;               // farthest zoom (~0.45x overview)
+      return { minZ, maxZ };
+    }
+
+    function updateZoomUI() {
+      const { minZ, maxZ } = getZoomRange();
+      const clampedZ = Math.max(minZ, Math.min(maxZ, camera.position.z));
+      const pct = Math.max(0, Math.min(100, Math.round(((maxZ - clampedZ) / (maxZ - minZ)) * 100)));
+      if (zoomSlider && document.activeElement !== zoomSlider) {
+        zoomSlider.value = pct;
+      }
+      if (zoomValText) {
+        const mult = (currentFittedZ / clampedZ).toFixed(1);
+        zoomValText.textContent = `${mult}x`;
+      }
+    }
+
+    // Stop drag / wheel bubbling on the zoom controls bar
+    if (zoomControlsEl) {
+      zoomControlsEl.addEventListener("pointerdown", (e) => e.stopPropagation());
+      zoomControlsEl.addEventListener("mousedown", (e) => e.stopPropagation());
+      zoomControlsEl.addEventListener("wheel", (e) => e.stopPropagation());
+    }
+
+    // Smooth dragging on vertical range slider
+    if (zoomSlider) {
+      zoomSlider.addEventListener("input", (e) => {
+        const { minZ, maxZ } = getZoomRange();
+        const val = parseFloat(e.target.value);
+        const targetZ = maxZ - (val / 100) * (maxZ - minZ);
+        if (window.gsap) gsap.killTweensOf(camera.position);
+        camera.position.z = Math.max(minZ, Math.min(maxZ, targetZ));
+        if (zoomValText) {
+          const mult = (currentFittedZ / camera.position.z).toFixed(1);
+          zoomValText.textContent = `${mult}x`;
+        }
+      });
+    }
+
+    // Step-by-step Zoom In (+)
+    if (btnZoomIn) {
+      btnZoomIn.addEventListener("click", () => {
+        const { minZ, maxZ } = getZoomRange();
+        const step = (maxZ - minZ) * 0.16;
+        const targetZ = Math.max(minZ, camera.position.z - step);
+        if (window.gsap) {
+          gsap.killTweensOf(camera.position);
+          gsap.to(camera.position, {
+            z: targetZ,
+            duration: 0.28,
+            ease: "power2.out",
+            onUpdate: updateZoomUI
+          });
+        } else {
+          camera.position.z = targetZ;
+          updateZoomUI();
+        }
+      });
+    }
+
+    // Step-by-step Zoom Out (-)
+    if (btnZoomOut) {
+      btnZoomOut.addEventListener("click", () => {
+        const { minZ, maxZ } = getZoomRange();
+        const step = (maxZ - minZ) * 0.16;
+        const targetZ = Math.min(maxZ, camera.position.z + step);
+        if (window.gsap) {
+          gsap.killTweensOf(camera.position);
+          gsap.to(camera.position, {
+            z: targetZ,
+            duration: 0.28,
+            ease: "power2.out",
+            onUpdate: updateZoomUI
+          });
+        } else {
+          camera.position.z = targetZ;
+          updateZoomUI();
+        }
+      });
+    }
+
+    // Reset Zoom (1.0x fitted view)
+    if (btnZoomReset) {
+      btnZoomReset.addEventListener("click", () => {
+        if (window.gsap) {
+          gsap.killTweensOf(camera.position);
+          gsap.to(camera.position, {
+            z: currentFittedZ,
+            duration: 0.38,
+            ease: "power2.out",
+            onUpdate: updateZoomUI
+          });
+        } else {
+          camera.position.z = currentFittedZ;
+          updateZoomUI();
+        }
+      });
+    }
+
+    // Mouse wheel zoom synced with scrollbar
     mount.addEventListener("wheel", (e) => {
       e.preventDefault();
-      const minZ = Math.max(130, currentFittedZ * 0.5);
-      const maxZ = currentFittedZ * 2.2;
+      const { minZ, maxZ } = getZoomRange();
       camera.position.z = Math.max(minZ, Math.min(maxZ, camera.position.z + e.deltaY * 0.15));
+      updateZoomUI();
     }, { passive: false });
+
+    // Initial sync
+    updateZoomUI();
 
     // Buttons
     const btnFocus = document.getElementById("btn-focus-visitor");
@@ -2106,6 +2221,7 @@ function initApp() {
       camera.position.y = 6;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      updateZoomUI();
     }
     window.addEventListener("resize", onResize);
     const ro = new ResizeObserver(onResize);

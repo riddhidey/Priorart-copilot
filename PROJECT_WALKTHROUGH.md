@@ -316,6 +316,18 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
     - **Hover Inspection & Assignee HUD Tags**:
       - Mouse raycasting hover cards and the left HUD assignee cluster list now prominently feature the verified `PATENT NO: [NUMBER]` and filing jurisdiction.
 
+13. **Tactical Vertical Zoom Control Scrollbar (Beside Globe)**:
+    - **Floating Tactical Zoom Slider Pill**:
+      - Placed along the right edge of the 3D globe viewport (`#globe-zoom-controls`) in an elevated glassmorphic capsule with backdrop blur and theme borders.
+    - **Interactive Controls**:
+      - **Zoom In Button (`+`)**: Smoothly steps the Three.js camera distance closer (`0.16x` increments) via GSAP tweening.
+      - **Draggable Vertical Range Track**: Real-time slider with glowing circular thumb that dynamically adjusts camera distance between closest inspection (`~2.0x`) and wide overview (`~0.45x`).
+      - **Zoom Out Button (`-`)**: Smoothly steps the camera distance outward.
+      - **Real-Time Multiplier & Reset Badge**: Displays real-time magnification (e.g., `1.0x`, `1.4x`, `2.0x`), and clicking it smoothly animates the camera back to normal fitted perspective (`1.0x`).
+    - **Bidirectional Synchronization**:
+      - Mouse wheel zooming directly on the canvas continuously updates the vertical slider thumb position and magnification badge.
+      - Responsive container resizes and theater mode toggles recalculate fitted depth and synchronize the scrollbar seamlessly.
+
 ---
 
 ## 10. How to Run and Test

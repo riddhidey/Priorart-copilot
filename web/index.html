@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/static/style.css?v=36.0">
+  <link rel="stylesheet" href="/static/style.css?v=37.0">
 </head>
 <body>
 
@@ -374,6 +374,22 @@
             <span class="telemetry-code">ORBITAL RELAYS: 3/3 ONLINE · X-BAND 9.4GHz</span>
           </div>
 
+          <!-- Tactical Vertical Zoom Control Scrollbar (Beside Globe) -->
+          <div class="globe-zoom-controls" id="globe-zoom-controls" aria-label="3D Globe Zoom Controls">
+            <button type="button" class="globe-zoom-btn" id="btn-globe-zoom-in" title="Zoom In (+)" aria-label="Zoom In">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            </button>
+            <div class="globe-zoom-slider-wrap" title="Drag to Zoom In / Out">
+              <input type="range" class="globe-zoom-slider" id="globe-zoom-slider" min="0" max="100" value="50" step="1" aria-label="Globe Zoom Level">
+            </div>
+            <button type="button" class="globe-zoom-btn" id="btn-globe-zoom-out" title="Zoom Out (-)" aria-label="Zoom Out">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/></svg>
+            </button>
+            <button type="button" class="globe-zoom-reset-badge" id="btn-globe-zoom-reset" title="Click to Reset Zoom (1.0x)">
+              <span id="globe-zoom-val-text">1.0x</span>
+            </button>
+          </div>
+
           <!-- Three.js Canvas mount -->
           <div id="three-globe-mount" class="three-globe-mount"></div>
         </div>
@@ -713,7 +729,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-  <script src="/static/world_land_data.js?v=36.0"></script>
-  <script src="/static/app.js?v=36.0"></script>
+  <script src="/static/world_land_data.js?v=37.0"></script>
+  <script src="/static/app.js?v=37.0"></script>
 </body>
 </html>
