@@ -61,6 +61,24 @@ function initApp() {
   const reportActions = document.getElementById("report-actions");
   const loadingStatusText = document.getElementById("loading-status-text");
 
+  const btnCopy = document.getElementById("btn-copy-md");
+  const btnDownloadPdf = document.getElementById("btn-download-pdf");
+  const btnShareLink = document.getElementById("btn-share-link");
+  const btnPrint = document.getElementById("btn-print");
+
+  function setActionButtonsEnabled(enabled) {
+    [btnCopy, btnDownloadPdf, btnShareLink, btnPrint].forEach(b => {
+      if (b) {
+        b.disabled = !enabled;
+        if (enabled) {
+          b.removeAttribute("title");
+        } else {
+          b.setAttribute("title", "Run a screening first to enable");
+        }
+      }
+    });
+  }
+
   // Presets Data Cache (initialized with defaults so buttons work immediately)
   let presetsData = { ...DEFAULT_PRESETS };
 
@@ -231,7 +249,7 @@ function initApp() {
       currentThreatMatrix = null;
       if (stepReviewBox) stepReviewBox.style.display = "none";
       if (resultsContent) resultsContent.style.display = "none";
-      if (reportActions) reportActions.style.display = "none";
+      setActionButtonsEnabled(false);
       if (resultsEmpty) resultsEmpty.style.display = "flex";
       if (titleInput) titleInput.focus();
     });
@@ -279,7 +297,7 @@ function initApp() {
       if (btnScreen) btnScreen.disabled = true;
       if (resultsEmpty) resultsEmpty.style.display = "none";
       if (resultsContent) resultsContent.style.display = "none";
-      if (reportActions) reportActions.style.display = "none";
+      setActionButtonsEnabled(false);
       if (stepReviewBox) stepReviewBox.style.display = "none";
       if (resultsLoading) resultsLoading.style.display = "flex";
 
@@ -438,6 +456,7 @@ function initApp() {
     if (resultsLoading) resultsLoading.style.display = "none";
     if (resultsContent) resultsContent.style.display = "flex";
     if (reportActions) reportActions.style.display = "flex";
+    setActionButtonsEnabled(true);
 
     const isReadOnly = Boolean(options && options.readOnly);
     const workbenchGrid = document.querySelector(".workbench-grid");
@@ -636,7 +655,6 @@ function initApp() {
   }
 
   // Copy Markdown
-  const btnCopy = document.getElementById("btn-copy-md");
   if (btnCopy) {
     btnCopy.addEventListener("click", () => {
       if (!currentReportData) {
@@ -671,7 +689,6 @@ function initApp() {
   }
 
   // Download PDF
-  const btnDownloadPdf = document.getElementById("btn-download-pdf");
   async function downloadReportAsPdf() {
     const reportEl = document.getElementById("results-content");
     if (!reportEl || !currentReportData) {
@@ -720,7 +737,6 @@ function initApp() {
   }
 
   // Share Link (Self-Contained URL with Zero Server Storage)
-  const btnShareLink = document.getElementById("btn-share-link");
   function buildShareUrl(payload) {
     if (typeof LZString === "undefined") {
       throw new Error("Compression library (LZString) not loaded.");
@@ -814,7 +830,6 @@ function initApp() {
   loadSharedReportFromUrl();
 
   // Print / PDF
-  const btnPrint = document.getElementById("btn-print");
   if (btnPrint) {
     btnPrint.addEventListener("click", () => {
       window.print();

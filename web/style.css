@@ -958,6 +958,21 @@ a:hover {
   color: var(--accent);
 }
 
+.btn-ghost:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: auto;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-muted) !important;
+}
+
+.btn-ghost:disabled:hover {
+  background: transparent !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-muted) !important;
+  transform: none !important;
+}
+
 /* Presets Strip */
 .preset-strip {
   display: flex;
