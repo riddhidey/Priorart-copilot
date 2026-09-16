@@ -351,6 +351,13 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
       - **3D Telemetry Radar Engine**: Mathematical overview of the ~8,400 Fibonacci vertex WebGL globe, real-time client triangulation, and ballistic photon arcs.
       - **Technical Specifications Grid**: Gemini 2.5 Flash / 1.5 Pro reasoning, LangGraph orchestration, hybrid dense+BM25 retrieval, and zero-retention ephemeral privacy.
       - **Full Dismissal Controls**: Close reticle `[✕ ESC]`, backdrop click, bottom `Dismiss` button, and physical `Escape` key listener.
+  - **Mobile-Optimized Radar HUD & Stage**:
+    - Complete decluttering on mobile screens (`<= 768px` and `<= 420px`):
+      - Desktop compass markers (`N/S/E/W`) and wide drag hint banner are cleanly hidden to prevent visual obstruction of the 3D globe.
+      - Threat level legend pill is horizontally scrollable and docked at the top margin without clipping.
+      - Vertical zoom scroll bar is resized compactly (`80px` slider) and docked safely on the right edge.
+      - Redundant secondary telemetry string is hidden, leaving a crisp single live telemetry pill in the bottom-left corner with zero element collisions.
+      - Radar header action controls transform into a clean 2x2 grid deck for touch interaction.
 
 ---
 
