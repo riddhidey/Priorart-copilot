@@ -3093,12 +3093,16 @@ body.broadcast-mode .radar-globe-stage {
   gap: 8px;
   font-family: var(--font-mono, 'Geist Mono', monospace);
   font-size: 9.5px;
+  font-weight: 600;
   letter-spacing: 0.08em;
-  color: var(--text-muted);
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid var(--border-subtle);
-  padding: 3px 10px;
+  color: var(--text-primary);
+  background: var(--bg-surface-elevated);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-theme);
+  padding: 4px 12px;
   border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   pointer-events: none;
   z-index: 3;
 }
@@ -3342,14 +3346,17 @@ body.broadcast-mode .radar-globe-stage {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--border-subtle);
-  padding: 4px 10px;
+  background: var(--bg-surface-elevated);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-theme);
+  padding: 5px 12px;
   border-radius: 999px;
   font-family: var(--font-mono, 'Geist Mono', monospace);
-  font-size: 9px;
-  color: var(--text-secondary);
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   z-index: 3;
   pointer-events: none;
 }
@@ -3357,13 +3364,18 @@ body.broadcast-mode .radar-globe-stage {
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+}
+
+.legend-item span {
+  color: var(--text-primary);
 }
 
 .legend-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .legend-dot.client-dot {
@@ -3385,7 +3397,65 @@ body.broadcast-mode .radar-globe-stage {
   width: 14px;
   height: 2px;
   background: var(--accent);
+  border-radius: 2px;
   box-shadow: 0 0 4px var(--accent);
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Clean Light Theme Overrides for 3D Radar Stage Overlays
+   ========================================================================== */
+[data-theme="light"] .globe-radar-legend {
+  background: #ffffff !important;
+  border: 1.5px solid #94a3b8 !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-theme="light"] .globe-radar-legend .legend-item span {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .globe-radar-legend .legend-dot.client-dot {
+  background: #0284c7 !important;
+  box-shadow: 0 0 6px rgba(2, 132, 199, 0.6) !important;
+}
+
+[data-theme="light"] .globe-radar-legend .legend-dot.registry-dot {
+  background: #0284c7 !important;
+  box-shadow: 0 0 6px rgba(2, 132, 199, 0.6) !important;
+}
+
+[data-theme="light"] .globe-radar-legend .legend-dot.assignee-dot {
+  background: #d97706 !important;
+  box-shadow: 0 0 6px rgba(217, 119, 6, 0.6) !important;
+}
+
+[data-theme="light"] .globe-radar-legend .legend-line {
+  background: #0284c7 !important;
+  box-shadow: 0 0 4px rgba(2, 132, 199, 0.5) !important;
+}
+
+[data-theme="light"] .globe-drag-hint {
+  background: #ffffff !important;
+  border: 1.5px solid #94a3b8 !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-theme="light"] .globe-drag-hint span {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .globe-drag-hint svg {
+  stroke: #0f172a !important;
+}
+
+[data-theme="light"] .compass-marker {
+  color: #334155 !important;
+  font-weight: 700 !important;
 }
 
 
