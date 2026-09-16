@@ -174,25 +174,25 @@ function initApp() {
     const THEME_PALETTES = {
       green: {
         land: new THREE.Color("#86efac"),
-        ocean: new THREE.Color("#0f2918"),
+        ocean: new THREE.Color("#0a2213"),
         ring: new THREE.Color("#4ade80"),
         pin: new THREE.Color("#86efac")
       },
       dark: {
         land: new THREE.Color("#ffffff"),
-        ocean: new THREE.Color("#27272a"),
-        ring: new THREE.Color("#e4e4e7"),
+        ocean: new THREE.Color("#18202f"),
+        ring: new THREE.Color("#38bdf8"),
         pin: new THREE.Color("#ffffff")
       },
       light: {
-        land: new THREE.Color("#0284c7"),
-        ocean: new THREE.Color("#cbd5e1"),
-        ring: new THREE.Color("#0f172a"),
+        land: new THREE.Color("#0369a1"),
+        ocean: new THREE.Color("#e2e8f0"),
+        ring: new THREE.Color("#0284c7"),
         pin: new THREE.Color("#0284c7")
       },
       amber: {
         land: new THREE.Color("#fbbf24"),
-        ocean: new THREE.Color("#452405"),
+        ocean: new THREE.Color("#2d1804"),
         ring: new THREE.Color("#f59e0b"),
         pin: new THREE.Color("#fbbf24")
       }
@@ -206,32 +206,57 @@ function initApp() {
     landCanvas.width = 360;
     landCanvas.height = 180;
     const ctx = landCanvas.getContext("2d");
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, 0, 360, 180);
-    ctx.fillStyle = "#ffffff";
+    let hasLandMask = false;
 
     if (window.WORLD_LAND_PATH && typeof Path2D !== "undefined") {
       try {
+        ctx.clearRect(0, 0, 360, 180);
+        ctx.fillStyle = "#ffffff";
         ctx.fill(new Path2D(window.WORLD_LAND_PATH));
+        hasLandMask = true;
       } catch (err) {
         console.warn("Path2D error:", err);
       }
     }
-    const landImgData = ctx.getImageData(0, 0, 360, 180).data;
+    const landImgData = hasLandMask ? ctx.getImageData(0, 0, 360, 180).data : null;
 
     function isLand(lon, lat) {
-      const x = Math.min(359, Math.max(0, Math.floor(((lon + 180) / 360) * 360)));
-      const y = Math.min(179, Math.max(0, Math.floor(((90 - lat) / 180) * 180)));
-      const idx = (y * 360 + x) * 4;
-      return landImgData[idx] > 64 || landImgData[idx + 3] > 128;
+      if (hasLandMask && landImgData) {
+        const x = Math.min(359, Math.max(0, Math.floor(((lon + 180) / 360) * 360)));
+        const y = Math.min(179, Math.max(0, Math.floor(((90 - lat) / 180) * 180)));
+        const idx = (y * 360 + x) * 4;
+        return landImgData[idx] > 64 && landImgData[idx + 3] > 64;
+      }
+      return (
+        (lat >= 15 && lat <= 72 && lon >= -168 && lon <= -52) ||
+        (lat >= -56 && lat <= 13 && lon >= -82 && lon <= -34) ||
+        (lat >= 35 && lat <= 71 && lon >= -10 && lon <= 42) ||
+        (lat >= -35 && lat <= 38 && lon >= -18 && lon <= 52) ||
+        (lat >= 5 && lat <= 75 && lon >= 42 && lon <= 145) ||
+        (lat >= -45 && lat <= -10 && lon >= 112 && lon <= 155)
+      );
     }
 
     // Three.js Scene Setup
     const scene = new THREE.Scene();
     const width = mount.clientWidth || 600;
-    const height = mount.clientHeight || 420;
+    const height = mount.clientHeight || 540;
     const camera = new THREE.PerspectiveCamera(42, width / height, 1, 1000);
-    camera.position.set(0, 20, 250);
+
+    const R = 88;
+
+    function getFittedDistance(aspect) {
+      const baseZ = 230;
+      const diam = R * 2;
+      const fovRad = 42 * (Math.PI / 180);
+      if (aspect < 1.15) {
+        return Math.max(baseZ, (diam * 1.14) / (2 * Math.tan(fovRad / 2) * aspect));
+      }
+      return baseZ;
+    }
+
+    let currentFittedZ = getFittedDistance(width / height);
+    camera.position.set(0, 6, currentFittedZ);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -244,19 +269,22 @@ function initApp() {
 
     function createCircleTexture() {
       const c = document.createElement("canvas");
-      c.width = 32;
-      c.height = 32;
+      c.width = 64;
+      c.height = 64;
       const cctx = c.getContext("2d");
+      const grad = cctx.createRadialGradient(32, 32, 0, 32, 32, 30);
+      grad.addColorStop(0, "rgba(255, 255, 255, 1)");
+      grad.addColorStop(0.65, "rgba(255, 255, 255, 0.85)");
+      grad.addColorStop(1, "rgba(255, 255, 255, 0)");
+      cctx.fillStyle = grad;
       cctx.beginPath();
-      cctx.arc(16, 16, 14, 0, Math.PI * 2);
-      cctx.fillStyle = "#ffffff";
+      cctx.arc(32, 32, 30, 0, Math.PI * 2);
       cctx.fill();
       return new THREE.CanvasTexture(c);
     }
     const circleTexture = createCircleTexture();
 
-    const R = 86;
-    const N = 4200;
+    const N = 5400;
     const goldenRatio = (1 + Math.sqrt(5)) / 2;
     const phi = 2 * Math.PI * (1 - 1 / goldenRatio);
 
@@ -290,12 +318,12 @@ function initApp() {
     geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
 
     const material = new THREE.PointsMaterial({
-      size: 2.3,
+      size: 2.8,
       vertexColors: true,
       map: circleTexture,
       transparent: true,
-      alphaTest: 0.08,
-      opacity: 0.95
+      alphaTest: 0.02,
+      opacity: 0.98
     });
 
     const pointsMesh = new THREE.Points(geometry, material);
@@ -994,7 +1022,9 @@ function initApp() {
 
     mount.addEventListener("wheel", (e) => {
       e.preventDefault();
-      camera.position.z = Math.max(160, Math.min(340, camera.position.z + e.deltaY * 0.15));
+      const minZ = Math.max(130, currentFittedZ * 0.5);
+      const maxZ = currentFittedZ * 2.2;
+      camera.position.z = Math.max(minZ, Math.min(maxZ, camera.position.z + e.deltaY * 0.15));
     }, { passive: false });
 
     // Buttons
@@ -1113,9 +1143,15 @@ function initApp() {
 
     function onResize() {
       if (!mount.clientWidth || !mount.clientHeight) return;
-      camera.aspect = mount.clientWidth / mount.clientHeight;
+      const w = mount.clientWidth;
+      const h = mount.clientHeight;
+      const aspect = w / h;
+      camera.aspect = aspect;
+      currentFittedZ = getFittedDistance(aspect);
+      camera.position.z = currentFittedZ;
+      camera.position.y = 6;
       camera.updateProjectionMatrix();
-      renderer.setSize(mount.clientWidth, mount.clientHeight);
+      renderer.setSize(w, h);
     }
     window.addEventListener("resize", onResize);
     const ro = new ResizeObserver(onResize);
@@ -1270,40 +1306,59 @@ function initApp() {
 
   // Presentation / Broadcast Mode
   const btnBroadcast = document.getElementById("btn-broadcast-mode");
-  if (btnBroadcast) {
-    const btnText = btnBroadcast.querySelector(".broadcast-btn-text");
+  const btnRadarBroadcast = document.getElementById("btn-radar-broadcast");
+  const btnRadarBroadcastLabel = document.getElementById("btn-radar-broadcast-label");
 
-    const updateBroadcastUI = (isActive) => {
-      btnBroadcast.classList.toggle("active", isActive);
-      document.body.classList.toggle("broadcast-mode", isActive);
-      if (btnText) {
-        btnText.textContent = isActive ? "Exit Mode" : "Broadcast";
-      }
-    };
-
-    btnBroadcast.addEventListener("click", async () => {
-      try {
-        if (!document.fullscreenElement) {
-          if (document.documentElement.requestFullscreen) {
-            await document.documentElement.requestFullscreen();
-          }
-          updateBroadcastUI(true);
-        } else {
-          if (document.exitFullscreen) {
-            await document.exitFullscreen();
-          }
-          updateBroadcastUI(false);
-        }
-      } catch (err) {
-        const isCurrentlyActive = document.body.classList.contains("broadcast-mode");
-        updateBroadcastUI(!isCurrentlyActive);
-      }
-    });
-
-    document.addEventListener("fullscreenchange", () => {
-      updateBroadcastUI(Boolean(document.fullscreenElement));
-    });
+  function triggerBroadcastResize() {
+    window.dispatchEvent(new Event("resize"));
+    setTimeout(() => window.dispatchEvent(new Event("resize")), 60);
+    setTimeout(() => window.dispatchEvent(new Event("resize")), 180);
+    setTimeout(() => window.dispatchEvent(new Event("resize")), 420);
   }
+
+  const updateBroadcastUI = (isActive) => {
+    if (btnBroadcast) {
+      btnBroadcast.classList.toggle("active", isActive);
+      const btnText = btnBroadcast.querySelector(".broadcast-btn-text");
+      if (btnText) btnText.textContent = isActive ? "Exit Mode" : "Broadcast";
+    }
+    if (btnRadarBroadcast) {
+      btnRadarBroadcast.classList.toggle("active", isActive);
+      if (btnRadarBroadcastLabel) btnRadarBroadcastLabel.textContent = isActive ? "Exit Broadcast" : "Broadcast";
+    }
+    document.body.classList.toggle("broadcast-mode", isActive);
+    triggerBroadcastResize();
+  };
+
+  async function toggleBroadcastMode() {
+    try {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+        updateBroadcastUI(true);
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+        updateBroadcastUI(false);
+      }
+    } catch (err) {
+      const isCurrentlyActive = document.body.classList.contains("broadcast-mode");
+      updateBroadcastUI(!isCurrentlyActive);
+    }
+  }
+
+  if (btnBroadcast) {
+    btnBroadcast.addEventListener("click", toggleBroadcastMode);
+  }
+  if (btnRadarBroadcast) {
+    btnRadarBroadcast.addEventListener("click", toggleBroadcastMode);
+  }
+
+  document.addEventListener("fullscreenchange", () => {
+    updateBroadcastUI(Boolean(document.fullscreenElement));
+  });
 
   const steps = [
     document.getElementById("step-1"),

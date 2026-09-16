@@ -247,6 +247,11 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
    - Synchronizes the left HUD table to display live matching patent hit volumes and similarity percentages per patent jurisdiction.
    - Interactive hover raycasting reveals detailed reference patent metadata cards (`US11046432B2`, `EP3691954A1`, `CN108928501B`, etc.).
 
+6. **Broadcast Theater Mode & High-Contrast Recognizable Continents**:
+   - **Full-Viewport Sizing (`74vh`)**: In Broadcast presentation mode (`#btn-broadcast-mode` / `#btn-radar-broadcast`), the 3D globe expands to 74% of the viewport height with wide-screen projection, making telemetry arcs, radar pings, and continents immediately prominent.
+   - **High-Contrast Landmask Rendering**: Resolved alpha sampler bug so continental landmasses (Americas, Eurasia, Africa, Australasia) contrast sharply against the dark ocean point matrix across all four color themes.
+   - **Responsive Aspect-Ratio Fitting**: Dynamic camera FOV and distance fitting prevents horizontal clipping on narrow screens or split windows, automatically centering the 3D globe at the top on smaller viewports.
+
 ---
 
 ## 9. How to Run and Test
