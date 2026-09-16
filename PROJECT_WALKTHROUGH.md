@@ -280,6 +280,17 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
      - **Ocean Reference Matrix (`oceanPointsMesh`)**: Subtle `1.7px` points at base radius `R` with muted `0.28` opacity, letting continental coastlines boldly stand out.
    - **Ultra-High Resolution (`8,400` Points)**: Increased Fibonacci sampling density from 5,400 to 8,400 points for razor-sharp continental coastlines and island arcs across all 4 themes.
 
+10. **Fixed Continent Labels & Dynamic 3D Node Place Badges**:
+    - **Fixed Continent Topology Names**: Embedded tactical billboard badges directly on the major world continents (`[ NORTH AMERICA ]`, `[ SOUTH AMERICA ]`, `[ EUROPE ]`, `[ AFRICA ]`, `[ ASIA ]`, `[ AUSTRALIA ]`) that rotate synchronously with the globe.
+    - **Place & Organization Badges for All Active Nodes**:
+      - Floating billboard text tags appear directly above each pin head specifying the geographic city and assignee/registry:
+        - `CHICAGO · BOEING [MOD]` in Vivid Electric Yellow (`#facc15`).
+        - `SHENZHEN · DJI [HIGH]` in Vivid Red (`#ef4444`).
+        - `TOULOUSE · AIRBUS [LOW]` in Emerald Green (`#10b981`).
+        - `ALEXANDRIA · USPTO`, `MUNICH · EPO`, `GENEVA · WIPO`, `TOKYO · JPO`, `BEIJING · CNIPA` in Cobalt Cyan (`#0ea5e9`).
+        - `★ BHUBANESWAR · ORIGIN` in Radiant Neon Magenta (`#d946ef`).
+    - **Smooth Backside Occlusion Culling**: Real-time vector angle dot product (`normal · toCam > 0.12`) smoothly fades and hides labels as they rotate behind the Earth's curvature, preventing visual clutter while keeping foreground labels razor-sharp.
+
 ---
 
 ## 10. How to Run and Test

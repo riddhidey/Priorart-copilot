@@ -564,9 +564,132 @@ function initApp() {
     const beaconGroup = new THREE.Group();
     const arcsGroup = new THREE.Group();
     const priorArtPinsGroup = new THREE.Group();
+    const continentsLabelsGroup = new THREE.Group();
     globeGroup.add(beaconGroup);
     globeGroup.add(arcsGroup);
     globeGroup.add(priorArtPinsGroup);
+    globeGroup.add(continentsLabelsGroup);
+
+    // Helper to draw smooth rounded rectangle on canvas
+    function drawCanvasRoundRect(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    // Dynamic 3D Billboard Text Badge Creator (Crisp typography with high-contrast pill)
+    function create3DTextBadge(text, {
+      textColor = "#ffffff",
+      bgColor = "rgba(6, 11, 20, 0.86)",
+      borderColor = "rgba(255, 255, 255, 0.35)",
+      isContinent = false,
+      scale = 1.0
+    } = {}) {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      const font = isContinent
+        ? "bold 26px 'Geist Mono', monospace"
+        : "600 21px 'Geist Mono', monospace";
+      ctx.font = font;
+      const textMetrics = ctx.measureText(text);
+      const textWidth = Math.ceil(textMetrics.width);
+
+      const padX = isContinent ? 16 : 11;
+      const padY = isContinent ? 7 : 5;
+      const w = textWidth + padX * 2;
+      const h = (isContinent ? 30 : 25) + padY * 2;
+
+      canvas.width = w * 2;
+      canvas.height = h * 2;
+      ctx.scale(2, 2);
+
+      // Pill Background
+      ctx.fillStyle = bgColor;
+      drawCanvasRoundRect(ctx, 0, 0, w, h, 6);
+      ctx.fill();
+
+      // Pill Border
+      if (borderColor) {
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 1.5;
+        drawCanvasRoundRect(ctx, 0, 0, w, h, 6);
+        ctx.stroke();
+      }
+
+      // Text
+      ctx.font = font;
+      ctx.fillStyle = textColor;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, w / 2, h / 2 + 0.5);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.minFilter = THREE.LinearFilter;
+      const spriteMat = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false
+      });
+      const sprite = new THREE.Sprite(spriteMat);
+      const factor = isContinent ? 0.088 : 0.076;
+      sprite.scale.set(w * factor * scale, h * factor * scale, 1);
+      return sprite;
+    }
+
+    // Fixed Continents Topology Database
+    const CONTINENTS_DB = [
+      { name: "NORTH AMERICA", lat: 43.0, lon: -102.0 },
+      { name: "SOUTH AMERICA", lat: -15.0, lon: -56.0 },
+      { name: "EUROPE", lat: 51.0, lon: 16.0 },
+      { name: "AFRICA", lat: 6.0, lon: 22.0 },
+      { name: "ASIA", lat: 46.0, lon: 96.0 },
+      { name: "AUSTRALIA", lat: -25.0, lon: 135.0 }
+    ];
+
+    let continentSprites = [];
+
+    function buildContinentLabels(themeName) {
+      while (continentsLabelsGroup.children.length > 0) {
+        const obj = continentsLabelsGroup.children[0];
+        continentsLabelsGroup.remove(obj);
+        if (obj.material) {
+          if (obj.material.map) obj.material.map.dispose();
+          obj.material.dispose();
+        }
+      }
+      continentSprites = [];
+
+      const isLight = themeName === "light";
+      const isAmber = themeName === "amber";
+      const isGreen = themeName === "green";
+      const textColor = isLight ? "#0369a1" : (isAmber ? "#fbbf24" : (isGreen ? "#86efac" : "#38bdf8"));
+      const bgColor = isLight ? "rgba(255, 255, 255, 0.92)" : "rgba(3, 7, 16, 0.85)";
+      const borderColor = isLight ? "rgba(2, 132, 199, 0.5)" : "rgba(56, 189, 248, 0.45)";
+
+      CONTINENTS_DB.forEach(c => {
+        const pos = latLonToVector3(c.lat, c.lon, R + 1.2);
+        const sprite = create3DTextBadge(`[ ${c.name} ]`, {
+          textColor,
+          bgColor,
+          borderColor,
+          isContinent: true,
+          scale: 1.0
+        });
+        sprite.position.copy(pos);
+        continentsLabelsGroup.add(sprite);
+        continentSprites.push({ sprite, pos });
+      });
+    }
+    buildContinentLabels(currentTheme);
 
     // Distinct Main Origin / Telemetry Node Marker (Radiant Magenta)
     const MAIN_NODE_COLOR = new THREE.Color("#d946ef");
@@ -604,6 +727,26 @@ function initApp() {
     const wave2Mesh = new THREE.Mesh(wave2Geo, wave2Mat);
     wave2Mesh.rotation.x = Math.PI / 2;
 
+    let visitorLabelSprite = null;
+    function updateVisitorLabel(cityName) {
+      if (visitorLabelSprite) {
+        beaconGroup.remove(visitorLabelSprite);
+        if (visitorLabelSprite.material) {
+          if (visitorLabelSprite.material.map) visitorLabelSprite.material.map.dispose();
+          visitorLabelSprite.material.dispose();
+        }
+      }
+      const isLight = currentTheme === "light";
+      visitorLabelSprite = create3DTextBadge(`★ ${cityName.toUpperCase()} · ORIGIN`, {
+        textColor: "#d946ef",
+        bgColor: isLight ? "rgba(255, 255, 255, 0.94)" : "rgba(24, 6, 28, 0.90)",
+        borderColor: "#d946ef",
+        scale: 1.08
+      });
+      visitorLabelSprite.position.set(0, 16.5, 0);
+      beaconGroup.add(visitorLabelSprite);
+    }
+
     beaconGroup.add(stemMesh);
     beaconGroup.add(tipMesh);
     beaconGroup.add(waveMesh);
@@ -625,6 +768,7 @@ function initApp() {
       const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
       beaconGroup.quaternion.copy(quaternion);
       beaconGroup.visible = true;
+      updateVisitorLabel(visitorCoords.city || "Client Node");
 
       const latEl = document.getElementById("visitor-lat");
       const lonEl = document.getElementById("visitor-lon");
@@ -1030,8 +1174,24 @@ function initApp() {
       head.userData = hub;
       stem.userData = hub;
 
+      // Mention place and assignee / registry name on 3D node badge
+      const cityName = (hub.city ? hub.city.split(',')[0] : hub.name).trim().toUpperCase();
+      const entityCode = hub.code || hub.shortName || (hub.name.split(' ')[0]);
+      const threatSuffix = isReg ? "" : (levelInfo.badgeClass === "high" ? " [HIGH]" : (levelInfo.badgeClass === "mod" ? " [MOD]" : " [LOW]"));
+      const labelText = `${cityName} · ${entityCode}${threatSuffix}`;
+
+      const isLight = currentTheme === "light";
+      const labelSprite = create3DTextBadge(labelText, {
+        textColor: levelInfo.hex,
+        bgColor: isLight ? "rgba(255, 255, 255, 0.92)" : "rgba(4, 9, 18, 0.88)",
+        borderColor: `${levelInfo.hex}99`,
+        scale: 0.95
+      });
+      labelSprite.position.set(0, pinHeight + 3.8, 0);
+      pinSubGroup.add(labelSprite);
+
       priorArtPinsGroup.add(pinSubGroup);
-      activeHubPins.push({ pinSubGroup, head, stem, baseMesh, hub, isReg, levelInfo });
+      activeHubPins.push({ pinSubGroup, head, stem, baseMesh, hub, isReg, levelInfo, labelSprite });
     }
 
     // Dynamic Reactive Radar Engine: Triggered on typing and preset clicks
@@ -1292,6 +1452,9 @@ function initApp() {
       if (sweepLineMat) sweepLineMat.color.copy(newPalette.ring);
       if (sweepFanMat) sweepFanMat.color.copy(newPalette.ring);
 
+      buildContinentLabels(themeName);
+      updateVisitorLabel(visitorCoords.city || "Client Node");
+
       // Re-render active radar arcs with updated theme colors
       const currentQuery = ((document.getElementById("inv-title")?.value || "") + " " + (document.getElementById("inv-text")?.value || "")).trim();
       updatePriorArtRadar(currentQuery);
@@ -1516,6 +1679,56 @@ function initApp() {
           sat.satWave.scale.set(sat.waveScale, sat.waveScale, 1);
           sat.satWaveMat.opacity = Math.max(0, 0.8 - (sat.waveScale / 3.8) * 0.8);
         });
+      }
+
+      // Smooth Backside Fade/Culling for 3D Continent & Node Place Labels
+      const camPos = camera.position;
+      const tempPos = new THREE.Vector3();
+
+      if (continentSprites && continentSprites.length > 0) {
+        continentSprites.forEach(item => {
+          if (!item.sprite) return;
+          item.sprite.getWorldPosition(tempPos);
+          const normal = tempPos.clone().normalize();
+          const toCam = camPos.clone().sub(tempPos).normalize();
+          const dot = normal.dot(toCam);
+          if (dot > 0.12) {
+            item.sprite.visible = true;
+            item.sprite.material.opacity = Math.min(1.0, (dot - 0.12) * 3.5);
+          } else {
+            item.sprite.visible = false;
+          }
+        });
+      }
+
+      if (activeHubPins && activeHubPins.length > 0) {
+        activeHubPins.forEach(item => {
+          if (item.labelSprite) {
+            item.labelSprite.getWorldPosition(tempPos);
+            const normal = tempPos.clone().normalize();
+            const toCam = camPos.clone().sub(tempPos).normalize();
+            const dot = normal.dot(toCam);
+            if (dot > 0.12) {
+              item.labelSprite.visible = true;
+              item.labelSprite.material.opacity = Math.min(1.0, (dot - 0.12) * 3.5);
+            } else {
+              item.labelSprite.visible = false;
+            }
+          }
+        });
+      }
+
+      if (visitorLabelSprite && beaconGroup.visible) {
+        visitorLabelSprite.getWorldPosition(tempPos);
+        const normal = tempPos.clone().normalize();
+        const toCam = camPos.clone().sub(tempPos).normalize();
+        const dot = normal.dot(toCam);
+        if (dot > 0.12) {
+          visitorLabelSprite.visible = true;
+          visitorLabelSprite.material.opacity = Math.min(1.0, (dot - 0.12) * 3.5);
+        } else {
+          visitorLabelSprite.visible = false;
+        }
       }
 
       updateFloatingHud();
