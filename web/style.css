@@ -3395,6 +3395,19 @@ body.broadcast-mode .radar-globe-stage {
   transform: translateY(-1px);
 }
 
+.legend-item.active {
+  background: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+[data-theme="light"] .legend-item.active {
+  background: #e2e8f0 !important;
+  box-shadow: 0 0 8px rgba(15, 23, 42, 0.25) !important;
+  border: 1px solid #475569 !important;
+}
+
 .legend-item span {
   color: var(--text-primary);
 }

@@ -878,23 +878,48 @@ function initApp() {
       updatePriorArtRadar(currentQuery);
     }
 
-    function focusCoordinates(lat, lon, immediate) {
+    let autoRotateResumeTimer = null;
+    function pauseAutoRotate(durationMs = 9000) {
+      autoRotate = false;
+      clearTimeout(autoRotateResumeTimer);
+      autoRotateResumeTimer = setTimeout(() => {
+        if (!isDragging) autoRotate = true;
+      }, durationMs);
+    }
+
+    function focusCoordinates(lat, lon, immediate, onComplete) {
+      pauseAutoRotate(9000); // pause auto-rotate so user can inspect focused node
+      
       const targetY = -((lon + 90) * (Math.PI / 180));
-      const targetX = (lat) * (Math.PI / 180) * 0.45;
+      const targetX = Math.max(-0.65, Math.min(0.65, (lat) * (Math.PI / 180) * 0.55));
+
+      // Calculate the shortest equivalent angle to prevent spinning multiple revolutions
+      const currentY = globeGroup.rotation.y;
+      const twoPi = Math.PI * 2;
+      let diffY = (targetY - currentY) % twoPi;
+      if (diffY > Math.PI) diffY -= twoPi;
+      if (diffY < -Math.PI) diffY += twoPi;
+      const shortestTargetY = currentY + diffY;
 
       if (immediate) {
-        globeGroup.rotation.y = targetY;
+        globeGroup.rotation.y = shortestTargetY;
         globeGroup.rotation.x = targetX;
+        if (typeof onComplete === "function") onComplete();
       } else if (window.gsap) {
+        gsap.killTweensOf(globeGroup.rotation);
         gsap.to(globeGroup.rotation, {
-          y: targetY,
+          y: shortestTargetY,
           x: targetX,
-          duration: 1.6,
-          ease: "power2.out"
+          duration: 1.35,
+          ease: "power2.out",
+          onComplete: () => {
+            if (typeof onComplete === "function") onComplete();
+          }
         });
       } else {
-        globeGroup.rotation.y = targetY;
+        globeGroup.rotation.y = shortestTargetY;
         globeGroup.rotation.x = targetX;
+        if (typeof onComplete === "function") onComplete();
       }
     }
 
@@ -1714,24 +1739,99 @@ function initApp() {
       updatePriorArtRadar(text, screeningThreatMatrix);
     };
 
-    // Wire Interactive Radar Legend Clicks (Focus camera on High, Mod, Low, Main Node, or Registry)
+    // Enhanced Node Highlighting, Pulse & Camera Focus
+    function highlightAndFocusNode(target) {
+      if (!target || !target.hub) return;
+      pauseAutoRotate(9000);
+      const hub = target.hub;
+
+      // Smoothly rotate globe with shortest arc to node coordinates
+      focusCoordinates(hub.lat, hub.lon, false, () => {
+        showHubHoverCard(hub);
+      });
+
+      // Show hover card immediately
+      showHubHoverCard(hub);
+
+      // Pulse pin billboard badge scale for unmistakable visual clarity
+      if (target.labelSprite && window.gsap) {
+        const origX = target.labelSprite.scale.x;
+        const origY = target.labelSprite.scale.y;
+        gsap.timeline()
+          .to(target.labelSprite.scale, { x: origX * 1.35, y: origY * 1.35, duration: 0.22, yoyo: true, repeat: 3 })
+          .to(target.labelSprite.scale, { x: origX, y: origY, duration: 0.18 });
+      }
+
+      // Pulse the 3D pinhead mesh
+      if (target.head && window.gsap) {
+        gsap.timeline()
+          .to(target.head.scale, { x: 2.2, y: 2.2, z: 2.2, duration: 0.22, yoyo: true, repeat: 3 })
+          .to(target.head.scale, { x: 1, y: 1, z: 1, duration: 0.18 });
+      }
+    }
+
+    // Interactive Focus on Main Visitor Node
+    function focusMainVisitorNode() {
+      pauseAutoRotate(9000);
+      focusCoordinates(visitorCoords.lat, visitorCoords.lon, false, () => {
+        if (floatingPinHud) {
+          floatingPinHud.style.opacity = "1";
+          floatingPinHud.style.transform = "scale(1.15)";
+          setTimeout(() => {
+            floatingPinHud.style.transform = "scale(1)";
+          }, 600);
+        }
+      });
+      if (tipMesh && window.gsap) {
+        gsap.timeline()
+          .to(tipMesh.scale, { x: 2.2, y: 2.2, z: 2.2, duration: 0.22, yoyo: true, repeat: 3 })
+          .to(tipMesh.scale, { x: 1, y: 1, z: 1, duration: 0.18 });
+      }
+    }
+
+    // Category cycling counters for sequential navigation on repeated clicks
+    const legendCycleIndices = { high: 0, mod: 0, low: 0, registry: 0 };
+
+    // Unified Interactive Radar Legend Clicks
     document.querySelectorAll(".globe-radar-legend .legend-item").forEach(item => {
-      item.addEventListener("click", () => {
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
         const focusType = item.getAttribute("data-focus-type");
+
+        // Visual active ring on clicked legend pill
+        document.querySelectorAll(".globe-radar-legend .legend-item").forEach(el => el.classList.remove("active"));
+        item.classList.add("active");
+
         if (focusType === "main") {
-          focusCoordinates(visitorCoords.lat, visitorCoords.lon, true);
+          focusMainVisitorNode();
         } else if (focusType === "high") {
-          const target = activeHubPins.find(p => p.levelInfo && p.levelInfo.badgeClass === "high");
-          if (target) focusCoordinates(target.hub.lat, target.hub.lon, false);
+          const matching = activeHubPins.filter(p => p.levelInfo && p.levelInfo.badgeClass === "high");
+          if (matching.length > 0) {
+            const target = matching[legendCycleIndices.high % matching.length];
+            legendCycleIndices.high++;
+            highlightAndFocusNode(target);
+          }
         } else if (focusType === "mod") {
-          const target = activeHubPins.find(p => p.levelInfo && p.levelInfo.badgeClass === "mod");
-          if (target) focusCoordinates(target.hub.lat, target.hub.lon, false);
+          const matching = activeHubPins.filter(p => p.levelInfo && p.levelInfo.badgeClass === "mod");
+          if (matching.length > 0) {
+            const target = matching[legendCycleIndices.mod % matching.length];
+            legendCycleIndices.mod++;
+            highlightAndFocusNode(target);
+          }
         } else if (focusType === "low") {
-          const target = activeHubPins.find(p => p.levelInfo && p.levelInfo.badgeClass === "low");
-          if (target) focusCoordinates(target.hub.lat, target.hub.lon, false);
+          const matching = activeHubPins.filter(p => p.levelInfo && p.levelInfo.badgeClass === "low");
+          if (matching.length > 0) {
+            const target = matching[legendCycleIndices.low % matching.length];
+            legendCycleIndices.low++;
+            highlightAndFocusNode(target);
+          }
         } else if (focusType === "registry") {
-          const target = activeHubPins.find(p => p.isReg);
-          if (target) focusCoordinates(target.hub.lat, target.hub.lon, false);
+          const matching = activeHubPins.filter(p => p.isReg);
+          if (matching.length > 0) {
+            const target = matching[legendCycleIndices.registry % matching.length];
+            legendCycleIndices.registry++;
+            highlightAndFocusNode(target);
+          }
         }
       });
     });
@@ -1804,48 +1904,36 @@ function initApp() {
       });
     }
 
-    // Interactive Click Handlers on Globe Radar Legend Items
-    document.querySelectorAll(".globe-radar-legend .legend-item").forEach(item => {
-      item.addEventListener("click", () => {
-        const type = item.getAttribute("data-focus-type");
-        if (type === "main") {
-          focusCoordinates(visitorCoords.lat, visitorCoords.lon, false);
-          return;
-        }
-        if (type === "mod") {
-          // Focus directly on yellow moderate threat node (e.g. Boeing in Chicago)
-          const modPin = activeHubPins.find(p => p.levelInfo && p.levelInfo.badgeClass === "mod");
-          if (modPin && modPin.hub) {
-            focusCoordinates(modPin.hub.lat, modPin.hub.lon, false);
-            showHubHoverCard(modPin.hub);
+    // Direct 3D Pin & Badge Click Raycaster
+    mount.addEventListener("click", (e) => {
+      const rect = mount.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(priorArtPinsGroup.children, true);
+
+      if (intersects.length > 0) {
+        let targetMesh = intersects[0].object;
+        let hub = targetMesh.userData;
+        if (!hub || !hub.name) {
+          if (targetMesh.parent && targetMesh.parent.userData && targetMesh.parent.userData.name) {
+            hub = targetMesh.parent.userData;
           }
-          return;
         }
-        if (type === "high") {
-          const highPin = activeHubPins.find(p => p.levelInfo && p.levelInfo.badgeClass === "high");
-          if (highPin && highPin.hub) {
-            focusCoordinates(highPin.hub.lat, highPin.hub.lon, false);
-            showHubHoverCard(highPin.hub);
+
+        if (hub) {
+          const pinObj = activeHubPins.find(p => p.hub && (p.hub.id === hub.id || p.hub.name === hub.name));
+          if (pinObj) {
+            highlightAndFocusNode(pinObj);
+            const badgeClass = pinObj.levelInfo?.badgeClass;
+            document.querySelectorAll(".globe-radar-legend .legend-item").forEach(el => {
+              const fType = el.getAttribute("data-focus-type");
+              el.classList.toggle("active", fType === badgeClass || (pinObj.isReg && fType === "registry"));
+            });
           }
-          return;
         }
-        if (type === "low") {
-          const lowPin = activeHubPins.find(p => p.levelInfo && p.levelInfo.badgeClass === "low");
-          if (lowPin && lowPin.hub) {
-            focusCoordinates(lowPin.hub.lat, lowPin.hub.lon, false);
-            showHubHoverCard(lowPin.hub);
-          }
-          return;
-        }
-        if (type === "registry") {
-          const regPin = activeHubPins.find(p => p.isReg);
-          if (regPin && regPin.hub) {
-            focusCoordinates(regPin.hub.lat, regPin.hub.lon, false);
-            showHubHoverCard(regPin.hub);
-          }
-          return;
-        }
-      });
+      }
     });
 
     // Geolocation Resolution
