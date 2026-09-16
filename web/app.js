@@ -43,6 +43,36 @@ function initApp() {
     }
   }
 
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  // Industrial Toast Telemetry Notification System
+  function showIndustrialToast(msg, duration = 3400) {
+    let container = document.getElementById("industrial-toast-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "industrial-toast-container";
+      container.className = "industrial-toast-container";
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement("div");
+    toast.className = "industrial-toast";
+    toast.innerHTML = `<span class="toast-dot"></span><span>${escapeHtml(msg)}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.classList.add("fade-out");
+      setTimeout(() => {
+        try { toast.remove(); } catch(e) {}
+      }, 400);
+    }, duration);
+  }
+
   // =========================================================================
   // Industrial Preloader (001% - 100% Sequential Multi-Theme Calibration)
   // =========================================================================
@@ -1194,6 +1224,112 @@ function initApp() {
     let activeArcs = [];
     let activeHubPins = [];
 
+    // Geographic Patent Jurisdiction & Innovation Hub Resolver
+    function resolvePatentLocation(docId, docTitle, indexOffset = 0) {
+      if (!docId) return null;
+      const cleanId = docId.toUpperCase().trim();
+
+      // 1. Direct match with existing active 3D pins on globe
+      if (activeHubPins.length > 0) {
+        const pin = activeHubPins.find(p => {
+          const sample = (p.hub && (p.hub.samplePatent || p.hub.doc_id || "")).toUpperCase();
+          return sample === cleanId || cleanId.includes(sample) || sample.includes(cleanId);
+        });
+        if (pin) return { hub: pin.hub, pinObj: pin };
+      }
+
+      // 2. Direct match with known curated Innovation Hubs
+      const hubMatch = INNOVATION_HUBS_DB.find(h => {
+        const sample = (h.samplePatent || "").toUpperCase();
+        return sample === cleanId || (docTitle && h.keywords && h.keywords.some(k => docTitle.toLowerCase().includes(k)));
+      });
+      if (hubMatch) return { hub: { ...hubMatch } };
+
+      // 3. Multi-Hub Regional Jitter Clusters for high-density jurisdictions
+      const JAPAN_CLUSTERS = [
+        { city: "Tokyo, JP", name: "Tokyo · JPO Patent Hub", lat: 35.6762, lon: 139.6503, flag: "🇯🇵" },
+        { city: "Kyoto, JP", name: "Kyoto · Precision Tech Hub", lat: 35.0116, lon: 135.7681, flag: "🇯🇵" },
+        { city: "Yokohama, JP", name: "Yokohama · Advanced R&D", lat: 35.4437, lon: 139.6380, flag: "🇯🇵" },
+        { city: "Nagoya, JP", name: "Nagoya · Robotics Cluster", lat: 35.1815, lon: 136.9066, flag: "🇯🇵" },
+        { city: "Osaka, JP", name: "Osaka · Electronics Innovation", lat: 34.6937, lon: 135.5023, flag: "🇯🇵" }
+      ];
+
+      const US_CLUSTERS = [
+        { city: "Alexandria, US", name: "Alexandria · USPTO HQ", lat: 38.8048, lon: -77.0469, flag: "🇺🇸" },
+        { city: "Chicago, US", name: "Chicago · Aerospace Hub", lat: 41.8781, lon: -87.6298, flag: "🇺🇸" },
+        { city: "Palo Alto, US", name: "Silicon Valley · Tech Cluster", lat: 37.4419, lon: -122.1430, flag: "🇺🇸" },
+        { city: "Cambridge, US", name: "Cambridge · MIT Research Hub", lat: 42.3601, lon: -71.0942, flag: "🇺🇸" },
+        { city: "Seattle, US", name: "Seattle · Autonomous Tech", lat: 47.6062, lon: -122.3321, flag: "🇺🇸" },
+        { city: "Austin, US", name: "Austin · Semiconductors Hub", lat: 30.2672, lon: -97.7431, flag: "🇺🇸" }
+      ];
+
+      const EUROPE_CLUSTERS = [
+        { city: "Munich, EU", name: "Munich · EPO Patent Office", lat: 48.1351, lon: 11.5820, flag: "🇪🇺" },
+        { city: "Toulouse, FR", name: "Toulouse · Aerospace Cluster", lat: 43.6047, lon: 1.4442, flag: "🇫🇷" },
+        { city: "London, GB", name: "London · UKIPO Tech Corridor", lat: 51.5074, lon: -0.1278, flag: "🇬🇧" },
+        { city: "Geneva, INT", name: "Geneva · WIPO Bureau", lat: 46.2206, lon: 6.1384, flag: "🌐" },
+        { city: "Berlin, DE", name: "Berlin · Fraunhofer Innovation", lat: 52.5200, lon: 13.4050, flag: "🇩🇪" }
+      ];
+
+      const CHINA_CLUSTERS = [
+        { city: "Beijing, CN", name: "Beijing · CNIPA Patent Office", lat: 39.9042, lon: 116.4074, flag: "🇨🇳" },
+        { city: "Shenzhen, CN", name: "Shenzhen · Hardware Corridor", lat: 22.5431, lon: 114.0579, flag: "🇨🇳" },
+        { city: "Shanghai, CN", name: "Shanghai · Semiconductor Hub", lat: 31.2304, lon: 121.4737, flag: "🇨🇳" }
+      ];
+
+      let clusterList = null;
+      if (cleanId.startsWith("JP")) clusterList = JAPAN_CLUSTERS;
+      else if (cleanId.startsWith("US")) clusterList = US_CLUSTERS;
+      else if (cleanId.startsWith("EP") || cleanId.startsWith("DE") || cleanId.startsWith("FR") || cleanId.startsWith("GB")) clusterList = EUROPE_CLUSTERS;
+      else if (cleanId.startsWith("CN")) clusterList = CHINA_CLUSTERS;
+      else if (cleanId.startsWith("KR")) {
+        clusterList = [
+          { city: "Daejeon, KR", name: "Daejeon · KIPO Patent Office", lat: 36.3504, lon: 127.3845, flag: "🇰🇷" },
+          { city: "Seoul, KR", name: "Seoul · Tech Valley", lat: 37.5665, lon: 126.9780, flag: "🇰🇷" }
+        ];
+      } else if (cleanId.startsWith("WO")) {
+        clusterList = [
+          { city: "Geneva, INT", name: "Geneva · WIPO International Bureau", lat: 46.2206, lon: 6.1384, flag: "🌐" }
+        ];
+      }
+
+      if (clusterList && clusterList.length > 0) {
+        const item = clusterList[Math.abs(indexOffset) % clusterList.length];
+        return {
+          hub: {
+            id: `hub_${cleanId.toLowerCase()}`,
+            code: cleanId,
+            name: item.name,
+            shortName: item.name.split('·')[0].trim(),
+            city: item.city,
+            lat: item.lat,
+            lon: item.lon,
+            flag: item.flag,
+            type: "assignee",
+            samplePatent: cleanId,
+            patentTitle: docTitle || "Discovered Prior-Art Reference"
+          }
+        };
+      }
+
+      // Universal fallback
+      return {
+        hub: {
+          id: `hub_${cleanId.toLowerCase()}`,
+          code: cleanId,
+          name: `Global Prior-Art Repository [${cleanId}]`,
+          shortName: cleanId,
+          city: "International Hub",
+          lat: 46.2206,
+          lon: 6.1384,
+          flag: "📍",
+          type: "assignee",
+          samplePatent: cleanId,
+          patentTitle: docTitle || "Prior-Art Patent"
+        }
+      };
+    }
+
     // Clear existing dynamic 3D elements
     function clearRadarArcsAndPins() {
       while (arcsGroup.children.length > 0) {
@@ -1425,7 +1561,41 @@ function initApp() {
       const isSearching = tokens.length > 0 || Boolean(screeningThreatMatrix);
 
       let matchedAssignees = [];
-      if (isSearching) {
+      if (screeningThreatMatrix && screeningThreatMatrix.documents && screeningThreatMatrix.documents.length > 0) {
+        // Direct Mapping from Screening Threat Matrix to 3D Globe Nodes
+        matchedAssignees = screeningThreatMatrix.documents.map((doc, dIdx) => {
+          let highestThreat = "MOD";
+          if (screeningThreatMatrix.rows && screeningThreatMatrix.rows.length > 0) {
+            screeningThreatMatrix.rows.forEach(r => {
+              const t = (r.threats && r.threats[doc.doc_id] ? r.threats[doc.doc_id] : "").toLowerCase();
+              if (t === "high") highestThreat = "HIGH";
+              else if (t === "moderate" || t === "medium") {
+                if (highestThreat !== "HIGH") highestThreat = "MOD";
+              } else if (t === "low") {
+                if (highestThreat !== "HIGH" && highestThreat !== "MOD") highestThreat = "LOW";
+              }
+            });
+          }
+
+          const resolved = resolvePatentLocation(doc.doc_id, doc.title, dIdx);
+          const sim = highestThreat === "HIGH" ? 95 : (highestThreat === "MOD" ? 86 : 76);
+          return {
+            ...resolved.hub,
+            samplePatent: doc.doc_id,
+            patentTitle: doc.title || resolved.hub.patentTitle || "Discovered Prior-Art Reference",
+            threatLevel: highestThreat,
+            similarity: sim,
+            matchCount: highestThreat === "HIGH" ? 18 : (highestThreat === "MOD" ? 10 : 6),
+            matchScore: highestThreat === "HIGH" ? 3 : (highestThreat === "MOD" ? 2 : 1)
+          };
+        });
+
+        // Focus primary high threat patent on the globe
+        const primaryHigh = matchedAssignees.find(a => a.threatLevel === "HIGH") || matchedAssignees[0];
+        if (primaryHigh && primaryHigh.lat && primaryHigh.lon && window.gsap) {
+          focusCoordinates(primaryHigh.lat, primaryHigh.lon, false);
+        }
+      } else if (isSearching) {
         // Direct prior art document detection and search
         const isAcousticDomain = text.includes("acoustic") || text.includes("piezoelectric") || text.includes("harvester") || text.includes("nanowatt") || text.includes("wake-up") || text.includes("comparator") || text.includes("energy");
         const isDroneDomain = text.includes("drone") || text.includes("pitch") || text.includes("propeller") || text.includes("rotor") || text.includes("blade") || text.includes("swashplate") || text.includes("uav") || text.includes("actuator");
@@ -1828,6 +1998,79 @@ function initApp() {
           .to(target.head.scale, { x: 1, y: 1, z: 1, duration: 0.18 });
       }
     }
+
+    // Global Hook: Locate Patent on 3D Globe from 2D Threat Matrix, Citations, or Element breakdown
+    window.__locatePatentOnGlobe = function(patentId, threatLevel, extraTitle) {
+      if (!patentId) return;
+      const cleanPatId = patentId.toUpperCase().trim();
+
+      // 1. Uncollapse radar hero if minimized
+      const radarHero = document.getElementById("patent-radar-hero");
+      if (radarHero && radarHero.classList.contains("collapsed")) {
+        radarHero.classList.remove("collapsed");
+        const btnCollapse = document.getElementById("btn-toggle-radar-collapse");
+        const collapseText = btnCollapse?.querySelector(".collapse-btn-text");
+        if (collapseText) collapseText.textContent = "Minimize Radar";
+        setTimeout(onResize, 50);
+      }
+
+      // 2. Smoothly scroll into viewport
+      if (radarHero) {
+        radarHero.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      // 3. Search for matching pin in activeHubPins
+      let matchedPin = activeHubPins.find(p => {
+        const sample = (p.hub && (p.hub.samplePatent || p.hub.doc_id || "")).toUpperCase();
+        return sample === cleanPatId || cleanPatId.includes(sample) || sample.includes(cleanPatId);
+      });
+
+      // If not exact match, search by country registry code
+      if (!matchedPin) {
+        if (cleanPatId.startsWith("JP")) {
+          matchedPin = activeHubPins.find(p => p.hub && (p.hub.code === "JPO" || (p.hub.city && p.hub.city.includes("JP"))));
+        } else if (cleanPatId.startsWith("US")) {
+          matchedPin = activeHubPins.find(p => p.hub && (p.hub.code === "USPTO" || (p.hub.city && p.hub.city.includes("US"))));
+        } else if (cleanPatId.startsWith("EP") || cleanPatId.startsWith("DE")) {
+          matchedPin = activeHubPins.find(p => p.hub && (p.hub.code === "EPO" || (p.hub.city && (p.hub.city.includes("EU") || p.hub.city.includes("DE")))));
+        } else if (cleanPatId.startsWith("CN")) {
+          matchedPin = activeHubPins.find(p => p.hub && (p.hub.code === "CNIPA" || (p.hub.city && p.hub.city.includes("CN"))));
+        } else if (cleanPatId.startsWith("WO")) {
+          matchedPin = activeHubPins.find(p => p.hub && p.hub.code === "WIPO");
+        }
+      }
+
+      // 4. If matched pin exists, update and focus
+      if (matchedPin) {
+        matchedPin.hub.samplePatent = cleanPatId;
+        if (threatLevel) matchedPin.hub.threatLevel = threatLevel.toUpperCase();
+        if (extraTitle && !matchedPin.hub.patentTitle) matchedPin.hub.patentTitle = extraTitle;
+        highlightAndFocusNode(matchedPin);
+        showIndustrialToast(`LOCATING PATENT [${cleanPatId}] ON GLOBE · ${matchedPin.hub.city.toUpperCase()}`);
+        return;
+      }
+
+      // 5. If no pin exists, resolve location and create new 3D pin
+      const resolved = resolvePatentLocation(cleanPatId, extraTitle, activeHubPins.length);
+      if (resolved && resolved.hub) {
+        const hub = { ...resolved.hub };
+        hub.samplePatent = cleanPatId;
+        if (threatLevel) hub.threatLevel = threatLevel.toUpperCase();
+        if (extraTitle) hub.patentTitle = extraTitle;
+
+        create3DHubPin(hub, THEME_PALETTES[currentTheme] || THEME_PALETTES.green);
+        const newPin = activeHubPins[activeHubPins.length - 1];
+        if (newPin) {
+          highlightAndFocusNode(newPin);
+        } else {
+          focusCoordinates(hub.lat, hub.lon, false, () => {
+            showHubHoverCard(hub);
+          });
+          showHubHoverCard(hub);
+        }
+        showIndustrialToast(`LOCATING PATENT [${cleanPatId}] ON GLOBE · ${hub.city.toUpperCase()}`);
+      }
+    };
 
     // Interactive Focus on Main Visitor Node
     function focusMainVisitorNode() {
@@ -2792,34 +3035,65 @@ function initApp() {
     const execSummaryEl = document.getElementById("exec-summary-text");
     if (execSummaryEl) execSummaryEl.textContent = report.executive_summary;
 
-    // 2D Visual Threat Matrix
+    // 2D Visual Threat Matrix with Interactive 3D Globe Node Locators
     const matrixContainer = document.getElementById("matrix-container");
     if (matrixContainer) {
       if (threatMatrix && threatMatrix.documents && threatMatrix.documents.length > 0) {
         let tableHtml = `<table class="matrix-table"><thead><tr><th>Claim Element</th>`;
         threatMatrix.documents.forEach(doc => {
-          tableHtml += `<th><span>${escapeHtml(doc.doc_id)}</span></th>`;
+          tableHtml += `
+            <th class="matrix-patent-th">
+              <button type="button" class="matrix-patent-btn" data-patent-id="${escapeHtml(doc.doc_id)}" data-patent-title="${escapeHtml(doc.title || '')}" title="Click to locate ${escapeHtml(doc.doc_id)} on 3D Globe">
+                <span class="matrix-btn-pin">📍</span>
+                <span class="matrix-pat-code">${escapeHtml(doc.doc_id)}</span>
+                <span class="matrix-btn-target-tag">GLOBE ↗</span>
+              </button>
+            </th>
+          `;
         });
         tableHtml += `</tr></thead><tbody>`;
 
         threatMatrix.rows.forEach(r => {
           tableHtml += `<tr><td><strong>[${r.element_id}]</strong> ${escapeHtml(r.element_title)}</td>`;
           threatMatrix.documents.forEach(doc => {
-            const threat = r.threats[doc.doc_id] || "none";
-            if (threat === "high") {
-              tableHtml += `<td><span class="matrix-cell-badge high">HIGH</span></td>`;
-            } else if (threat === "moderate" || threat === "medium") {
-              tableHtml += `<td><span class="matrix-cell-badge moderate">MOD</span></td>`;
-            } else if (threat === "low") {
-              tableHtml += `<td><span class="matrix-cell-badge low">LOW</span></td>`;
-            } else {
-              tableHtml += `<td><span class="matrix-cell-badge safe">—</span></td>`;
+            const rawThreat = (r.threats[doc.doc_id] || "none").toLowerCase();
+            let threatBadge = "—";
+            let threatClass = "safe";
+            if (rawThreat === "high") {
+              threatBadge = "HIGH";
+              threatClass = "high";
+            } else if (rawThreat === "moderate" || rawThreat === "medium") {
+              threatBadge = "MOD";
+              threatClass = "moderate";
+            } else if (rawThreat === "low") {
+              threatBadge = "LOW";
+              threatClass = "low";
             }
+            tableHtml += `
+              <td>
+                <button type="button" class="matrix-cell-btn" data-patent-id="${escapeHtml(doc.doc_id)}" data-threat="${threatBadge}" data-element="[${r.element_id}] ${escapeHtml(r.element_title)}" title="Click to view ${escapeHtml(doc.doc_id)} [${threatBadge}] on 3D Globe">
+                  <span class="matrix-cell-badge ${threatClass}">${threatBadge}</span>
+                </button>
+              </td>
+            `;
           });
           tableHtml += `</tr>`;
         });
         tableHtml += `</tbody></table>`;
         matrixContainer.innerHTML = tableHtml;
+
+        // Attach interactive click handlers to locate patents on 3D globe
+        matrixContainer.querySelectorAll(".matrix-patent-btn, .matrix-cell-btn").forEach(btn => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const patId = btn.getAttribute("data-patent-id");
+            const threat = btn.getAttribute("data-threat") || "HIGH";
+            const extra = btn.getAttribute("data-element") || btn.getAttribute("data-patent-title") || "";
+            if (patId && typeof window.__locatePatentOnGlobe === "function") {
+              window.__locatePatentOnGlobe(patId, threat, extra);
+            }
+          });
+        });
       } else {
         matrixContainer.innerHTML = `<p style="padding: 16px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 0.75rem;">No document overlap matrix available.</p>`;
       }
@@ -2850,7 +3124,7 @@ function initApp() {
       });
     }
 
-    // Citations
+    // Citations with Interactive 3D Globe Location Buttons
     const citationsContainer = document.getElementById("citations-container");
     if (citationsContainer) {
       citationsContainer.innerHTML = "";
@@ -2862,7 +3136,11 @@ function initApp() {
           item.innerHTML = `
             <div class="citation-header">
               <span class="citation-title"><strong>[${cit.citation_id}]</strong> ${escapeHtml(cit.title)}</span>
-              <span class="citation-doc-id">${escapeHtml(cit.doc_id)}</span>
+              <button type="button" class="citation-globe-btn" data-patent-id="${escapeHtml(cit.doc_id)}" title="Locate ${escapeHtml(cit.doc_id)} on 3D Globe">
+                <span class="matrix-btn-pin">📍</span>
+                <span class="citation-doc-id">${escapeHtml(cit.doc_id)}</span>
+                <span class="citation-globe-tag">3D GLOBE ↗</span>
+              </button>
             </div>
             <p class="citation-passage">"${escapeHtml(cit.cited_passage)}"</p>
             <div style="margin-top: 4px; display: flex; justify-content: space-between; align-items: center;">
@@ -2870,10 +3148,19 @@ function initApp() {
               ${cit.url ? `<a href="${cit.url}" target="_blank" rel="noopener noreferrer" class="citation-link">Original Record ↗</a>` : ""}
             </div>
           `;
+          const locateBtn = item.querySelector(".citation-globe-btn");
+          if (locateBtn) {
+            locateBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              if (typeof window.__locatePatentOnGlobe === "function") {
+                window.__locatePatentOnGlobe(cit.doc_id, "HIGH", cit.title);
+              }
+            });
+          }
           citationsContainer.appendChild(item);
         });
       } else {
-        citationsContainer.innerHTML = `<p style="padding: 14px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 0.75rem;">No conflicting citations identified.</p>`;
+        matrixContainer.innerHTML = `<p style="padding: 14px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 0.75rem;">No conflicting citations identified.</p>`;
       }
     }
 

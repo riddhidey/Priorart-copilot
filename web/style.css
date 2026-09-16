@@ -1735,6 +1735,163 @@ a:hover {
   color: var(--text-dim);
 }
 
+/* Clickable Interactive Patent Buttons in Threat Matrix */
+.matrix-patent-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-theme);
+  border-radius: 6px;
+  padding: 6px 11px;
+  color: var(--accent);
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.matrix-patent-btn:hover {
+  background: var(--accent);
+  color: #000000;
+  border-color: var(--accent);
+  box-shadow: 0 0 16px var(--accent-glow);
+  transform: translateY(-2px);
+}
+
+.matrix-patent-btn:active {
+  transform: translateY(0);
+}
+
+.matrix-btn-pin {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.matrix-patent-btn:hover .matrix-btn-pin {
+  transform: scale(1.25) rotate(-15deg);
+}
+
+.matrix-btn-target-tag {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Clickable Cell Threat Badges in Matrix */
+.matrix-cell-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  transition: transform 0.18s ease;
+  display: inline-flex;
+}
+
+.matrix-cell-btn:hover {
+  transform: scale(1.18);
+}
+
+.matrix-cell-btn:hover .matrix-cell-badge {
+  box-shadow: 0 0 12px currentColor;
+}
+
+.matrix-cell-btn:active {
+  transform: scale(0.96);
+}
+
+/* Citation Globe Locate Button */
+.citation-globe-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-theme);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.citation-globe-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000000;
+  box-shadow: 0 0 12px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.citation-globe-btn:hover .citation-globe-tag {
+  color: #000000;
+}
+
+.citation-globe-tag {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+
+/* Industrial Toast Notification */
+.industrial-toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.industrial-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-surface-elevated, #111a14);
+  border: 1px solid var(--border-theme);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 16px var(--accent-glow);
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: auto;
+}
+
+.industrial-toast.fade-out {
+  opacity: 0;
+  transform: translateY(12px) scale(0.95);
+}
+
+.industrial-toast .toast-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: radarPulse 1.4s infinite ease-in-out;
+}
+
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* Claim Elements Breakdown */
 .elements-grid {
   display: flex;

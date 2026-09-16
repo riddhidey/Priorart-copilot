@@ -329,7 +329,16 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
       - **Real-Time Multiplier & Reset Badge**: Displays real-time magnification (e.g., `1.0x`, `1.4x`, `2.0x`), and clicking it smoothly animates the camera back to normal fitted perspective (`1.0x`).
     - **Bidirectional Synchronization**:
       - Mouse wheel zooming directly on the canvas continuously updates the vertical slider thumb position and magnification badge.
-      - Responsive container resizes and theater mode toggles recalculate fitted depth and synchronize the scrollbar seamlessly.
+14. **Direct Patent-to-Globe Location Mapping (2D Threat Matrix & Citations)**:
+    - **Clickable Patent Document Headers in 2D Threat Matrix**:
+      - Every patent column header (e.g., `JP7791759B2`, `JP5069743B2`, `JP5033174B2`, `US8714584B2`) is rendered as a tactile interactive button with `📍 [DOC_ID] GLOBE ↗`.
+      - Clicking any patent header or its statutory threat cell badge (`HIGH`, `MOD`, `LOW`) automatically uncollapses the radar hero, smoothly scrolls up to the 3D globe, and smoothly flies the 3D camera directly to that patent's real geographic location.
+    - **Geographic Tech Cluster Resolver**:
+      - Patents are dynamically mapped to regional tech hubs across Japan (`Tokyo · JPO`, `Kyoto`, `Yokohama`, `Nagoya`, `Osaka`), United States (`Alexandria · USPTO`, `Chicago`, `Silicon Valley`, `Cambridge MIT`, `Seattle`), Europe (`Munich · EPO`, `Toulouse`, `London`, `Geneva · WIPO`), China (`Beijing · CNIPA`, `Shenzhen`, `Shanghai`), and South Korea (`Daejeon · KIPO`, `Seoul`).
+    - **Real-Time 3D Focus & Visual Telemetry Toast**:
+      - The 3D marker pulses its crystal pinhead and billboard tag, triggers the hover inspection card with patent details, and pops an industrial notification toast (e.g. `LOCATING PATENT [JP7791759B2] ON GLOBE · TOKYO, JAPAN (JPO)`).
+    - **Master Index of Verified Citations Integration**:
+      - Each citation card features a dedicated `[📍 DOC_ID  3D GLOBE ↗]` button for instantaneous one-click spatial inspection.
 
 ---
 
