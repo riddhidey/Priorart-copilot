@@ -2534,6 +2534,74 @@ body.broadcast-mode .radar-globe-stage {
   color: var(--accent);
   text-shadow: 0 0 24px var(--accent-glow);
   letter-spacing: -0.03em;
+  transition: color 0.35s ease, text-shadow 0.35s ease;
+}
+
+/* Sequential Theme Calibration Ticker (Green -> Dark -> Light -> Amber) */
+.preloader-theme-ticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--border-theme);
+  border-radius: 999px;
+  padding: 5px 12px;
+  margin: 0 0 6px 0;
+  transition: all 0.35s ease;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+}
+
+.preloader-theme-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #71717a;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.55;
+  user-select: none;
+}
+
+.preloader-theme-pill .theme-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.preloader-theme-pill .theme-dot.green {
+  background: #4ade80;
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.5);
+}
+.preloader-theme-pill .theme-dot.dark {
+  background: #ffffff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+}
+.preloader-theme-pill .theme-dot.light {
+  background: #0284c7;
+  box-shadow: 0 0 6px rgba(2, 132, 199, 0.6);
+}
+.preloader-theme-pill .theme-dot.amber {
+  background: #facc15;
+  box-shadow: 0 0 6px rgba(250, 204, 21, 0.6);
+}
+
+.preloader-theme-pill.active {
+  opacity: 1;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  font-weight: 700;
+  transform: scale(1.08);
+}
+
+.preloader-theme-pill.active .theme-dot {
+  transform: scale(1.35);
 }
 
 /* Segmented progress bar */
@@ -2639,6 +2707,111 @@ body.broadcast-mode .radar-globe-stage {
 .preloader-bottom-status {
   color: var(--accent);
   font-weight: 600;
+  transition: color 0.35s ease;
+}
+
+/* ==========================================================================
+   Preloader Sequential Theme Color Overrides (Green -> Dark -> Light -> Amber)
+   ========================================================================== */
+.industrial-preloader {
+  transition: background-color 0.4s ease, opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.preloader-frame {
+  transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.preloader-bracket,
+.preloader-status-dot,
+.preloader-sys-tag,
+.preloader-metric-badge,
+.preloader-phase-tag,
+.preloader-bottom-status {
+  transition: color 0.35s ease, background-color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+/* 1. Phosphor Green */
+.industrial-preloader[data-theme="green"] {
+  --preloader-bg: #030504;
+  --bg-surface-elevated: #0a130d;
+  --accent: #86efac;
+  --accent-dim: #4ade80;
+  --accent-glow: rgba(134, 239, 172, 0.35);
+  --accent-subtle: rgba(134, 239, 172, 0.12);
+  --accent-border-subtle: rgba(134, 239, 172, 0.28);
+  --border-theme: rgba(134, 239, 172, 0.38);
+  --text-primary: #f4f4f5;
+  --text-secondary: #86efac;
+  --preloader-glow: rgba(74, 222, 128, 0.28);
+}
+.industrial-preloader[data-theme="green"] .preloader-theme-pill[data-preloader-theme="green"].active {
+  border-color: #86efac;
+  color: #86efac;
+  background: rgba(134, 239, 172, 0.12);
+  box-shadow: 0 0 12px rgba(134, 239, 172, 0.4);
+}
+
+/* 2. Obsidian Dark */
+.industrial-preloader[data-theme="dark"] {
+  --preloader-bg: #06070a;
+  --bg-surface-elevated: #11131a;
+  --accent: #ffffff;
+  --accent-dim: #38bdf8;
+  --accent-glow: rgba(255, 255, 255, 0.35);
+  --accent-subtle: rgba(255, 255, 255, 0.12);
+  --accent-border-subtle: rgba(255, 255, 255, 0.28);
+  --border-theme: rgba(255, 255, 255, 0.38);
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --preloader-glow: rgba(255, 255, 255, 0.25);
+}
+.industrial-preloader[data-theme="dark"] .preloader-theme-pill[data-preloader-theme="dark"].active {
+  border-color: #ffffff;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+}
+
+/* 3. Clean Light / Electric Cobalt Blue */
+.industrial-preloader[data-theme="light"] {
+  --preloader-bg: #030a16;
+  --bg-surface-elevated: #08162b;
+  --accent: #38bdf8;
+  --accent-dim: #0284c7;
+  --accent-glow: rgba(14, 165, 233, 0.45);
+  --accent-subtle: rgba(14, 165, 233, 0.15);
+  --accent-border-subtle: rgba(14, 165, 233, 0.32);
+  --border-theme: rgba(14, 165, 233, 0.42);
+  --text-primary: #f0f9ff;
+  --text-secondary: #7dd3fc;
+  --preloader-glow: rgba(14, 165, 233, 0.32);
+}
+.industrial-preloader[data-theme="light"] .preloader-theme-pill[data-preloader-theme="light"].active {
+  border-color: #38bdf8;
+  color: #38bdf8;
+  background: rgba(14, 165, 233, 0.14);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+}
+
+/* 4. Amber CRT */
+.industrial-preloader[data-theme="amber"] {
+  --preloader-bg: #060401;
+  --bg-surface-elevated: #161005;
+  --accent: #fbbf24;
+  --accent-dim: #f59e0b;
+  --accent-glow: rgba(251, 191, 36, 0.45);
+  --accent-subtle: rgba(251, 191, 36, 0.15);
+  --accent-border-subtle: rgba(251, 191, 36, 0.32);
+  --border-theme: rgba(251, 191, 36, 0.45);
+  --text-primary: #fef3c7;
+  --text-secondary: #fcd34d;
+  --preloader-glow: rgba(251, 191, 36, 0.32);
+}
+.industrial-preloader[data-theme="amber"] .preloader-theme-pill[data-preloader-theme="amber"].active {
+  border-color: #fbbf24;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.14);
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.45);
 }
 
 /* ==========================================================================

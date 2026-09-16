@@ -213,14 +213,17 @@ Priorart-copilot/
 
 Inspired by precision industrial telemetry and the WeEvolveIT landing experience, PriorArt Copilot features a real-time 3D hero visualization and loading sequence:
 
-1. **Industrial Milestone Preloader**:
-   - `001%` to `100%` monospace progress counter with reticle corner brackets (`┌ ┐ └ ┘`).
-   - 4 discrete milestone phases:
-     - **Phase 01/04**: Initializing Claim Decomposition Matrix
-     - **Phase 02/04**: Synchronizing Global Registries (USPTO, EPO, WIPO, CNIPA, JPO)
-     - **Phase 03/04**: Compiling Fibonacci 3D Point Cloud & Geolocation
-     - **Phase 04/04**: System Armed — Disclosure Radar Online
-   - Segmented technical progress track with instant `[SKIP]` / `[ESC]` escape hatch.
+1. **Industrial Milestone Preloader & Sequential Multi-Theme Calibration**:
+   - `001%` to `100%` monospace progress counter with reticle corner brackets (`┌ ┐ └ ┘`) and custom ambient radial lighting.
+   - **Sequential 4-Theme Color Calibration (Green -> Dark -> Light -> Amber)**:
+     - As the counter increments from `001%` to `100%`, the preloader frame, counter, progress bar, reticles, and ambient lighting seamlessly cycle through all four project themes one by one:
+       - **01% - 25% (Phase 01/04 · Green Matrix)**: Glowing **Phosphor Green** (`#86efac` / `#4ade80`).
+       - **26% - 50% (Phase 02/04 · Obsidian Dark)**: High-contrast **Obsidian White & Cyber Cyan** (`#ffffff` / `#38bdf8`).
+       - **51% - 75% (Phase 03/04 · Clean Light)**: Radiant **Electric Cobalt / Sky Blue** (`#38bdf8` / `#0284c7`).
+       - **76% - 100% (Phase 04/04 · Amber CRT)**: Warm **Amber CRT Industrial Gold** (`#fbbf24` / `#facc15`).
+     - Embedded **Interactive Theme Ticker Pill Bar** (`[● Green]  [● Dark]  [● Light]  [● Amber]`) mirroring the project header switcher, highlighting the active spectrum tier in real-time.
+     - Synchronized live telemetry stream logs announcing each spectrum initialization phase.
+     - On completion (or instant `[SKIP]` / `[ESC]`), the workbench smoothly restores the user's permanent theme preference.
 
 2. **3D Fibonacci Point-Cloud Globe (Three.js)**:
    - High-density spherical lattice (~4,200 points) sampling Earth's continental landmasses from offline Natural Earth vector boundaries via an offscreen 2D canvas sampler.

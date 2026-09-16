@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/static/style.css?v=37.0">
+  <link rel="stylesheet" href="/static/style.css?v=38.0">
 </head>
 <body>
 
@@ -45,6 +45,26 @@
         <div class="preloader-metric-badge">INITIALIZATION SEQUENCE</div>
         <div class="preloader-counter" id="preloader-counter">001%</div>
 
+        <!-- Sequential Theme Calibration Ticker (Green -> Dark -> Light -> Amber) -->
+        <div class="preloader-theme-ticker" id="preloader-theme-ticker" aria-label="Theme Spectrum Calibration">
+          <span class="preloader-theme-pill active" data-preloader-theme="green">
+            <span class="theme-dot green"></span>
+            <span>Green</span>
+          </span>
+          <span class="preloader-theme-pill" data-preloader-theme="dark">
+            <span class="theme-dot dark"></span>
+            <span>Dark</span>
+          </span>
+          <span class="preloader-theme-pill" data-preloader-theme="light">
+            <span class="theme-dot light"></span>
+            <span>Light</span>
+          </span>
+          <span class="preloader-theme-pill" data-preloader-theme="amber">
+            <span class="theme-dot amber"></span>
+            <span>Amber</span>
+          </span>
+        </div>
+
         <!-- Segmented Industrial Progress Track -->
         <div class="preloader-progress-wrap">
           <div class="preloader-progress-bar" id="preloader-progress-bar" style="width: 1%;"></div>
@@ -53,12 +73,13 @@
 
         <!-- Milestone Phase Ticker -->
         <div class="preloader-phase-box">
-          <div class="preloader-phase-tag" id="preloader-phase-tag">PHASE 01/04</div>
+          <div class="preloader-phase-tag" id="preloader-phase-tag">PHASE 01/04 · GREEN SPECTRUM</div>
           <div class="preloader-phase-desc" id="preloader-phase-desc">INITIALIZING CLAIM DECOMPOSITION MATRIX...</div>
         </div>
 
         <!-- Live Telemetry Stream -->
         <div class="preloader-stream" id="preloader-stream" aria-hidden="true">
+          <div class="stream-line" id="stream-line-theme">> SPECTRUM 01/04: PHOSPHOR GREEN MATRIX ONLINE</div>
           <div class="stream-line" id="stream-line-1">> MEMORY ALLOC: 768-D VECTOR MATRIX ARMED</div>
           <div class="stream-line" id="stream-line-2">> CONNECTING REPOSITORIES: USPTO, EPO, WIPO, CNIPA, JPO...</div>
           <div class="stream-line" id="stream-line-3">> COMPILING FIBONACCI 3D LANDMASS POINT CLOUD...</div>
@@ -729,7 +750,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-  <script src="/static/world_land_data.js?v=37.0"></script>
-  <script src="/static/app.js?v=37.0"></script>
+  <script src="/static/world_land_data.js?v=38.0"></script>
+  <script src="/static/app.js?v=38.0"></script>
 </body>
 </html>

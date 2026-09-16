@@ -44,7 +44,7 @@ function initApp() {
   }
 
   // =========================================================================
-  // Industrial Preloader (001% - 100% WeEvolveIT-Style Milestone Sequence)
+  // Industrial Preloader (001% - 100% Sequential Multi-Theme Calibration)
   // =========================================================================
   function initIndustrialPreloader() {
     const preloader = document.getElementById("industrial-preloader");
@@ -58,6 +58,8 @@ function initApp() {
     const geoStatus = document.getElementById("preloader-geo-status");
     const skipBtn = document.getElementById("btn-preloader-skip");
     const bottomStatus = document.getElementById("preloader-bottom-status");
+    const themePills = preloader.querySelectorAll(".preloader-theme-pill");
+    const streamTheme = document.getElementById("stream-line-theme");
 
     // Populate segment tick marks
     if (segmentsWrap && segmentsWrap.children.length === 0) {
@@ -68,15 +70,48 @@ function initApp() {
       }
     }
 
+    // 4 Sequential Theme Color Calibration Phases (Green -> Dark -> Light -> Amber)
     const phases = [
-      { max: 25, tag: "PHASE 01/04", desc: "INITIALIZING CLAIM DECOMPOSITION MATRIX...", status: "CALIBRATING MATRIX" },
-      { max: 55, tag: "PHASE 02/04", desc: "SYNCHRONIZING GLOBAL REGISTRIES (USPTO/EPO/WIPO)...", status: "SYNCING REGISTRIES" },
-      { max: 85, tag: "PHASE 03/04", desc: "COMPILING FIBONACCI 3D POINT CLOUD & GEOLOCATION...", status: "COMPILING LATTICE" },
-      { max: 100, tag: "PHASE 04/04", desc: "SYSTEM ARMED — DISCLOSURE RADAR ONLINE", status: "SYSTEM ARMED" }
+      {
+        max: 25,
+        theme: "green",
+        tag: "PHASE 01/04 · GREEN SPECTRUM",
+        desc: "CALIBRATING PHOSPHOR GREEN MATRIX & CLAIM DECOMPOSITION...",
+        status: "SPECTRUM: GREEN ONLINE",
+        stream: "> SPECTRUM 01/04: PHOSPHOR GREEN TERMINAL MATRIX ARMED"
+      },
+      {
+        max: 50,
+        theme: "dark",
+        tag: "PHASE 02/04 · OBSIDIAN DARK",
+        desc: "SYNCHRONIZING OBSIDIAN DARK REGISTRIES (USPTO / EPO / WIPO)...",
+        status: "SPECTRUM: DARK ONLINE",
+        stream: "> SPECTRUM 02/04: OBSIDIAN DARK CONTRAST MATRIX ARMED"
+      },
+      {
+        max: 75,
+        theme: "light",
+        tag: "PHASE 03/04 · CLEAN LIGHT",
+        desc: "COMPILING CLEAN LIGHT FIBONACCI LATTICE & SATELLITES...",
+        status: "SPECTRUM: LIGHT ONLINE",
+        stream: "> SPECTRUM 03/04: CLEAN LIGHT AEROSPACE SPECTRUM ARMED"
+      },
+      {
+        max: 100,
+        theme: "amber",
+        tag: "PHASE 04/04 · AMBER CRT",
+        desc: "SYSTEM ARMED — AMBER CRT DISCLOSURE RADAR ONLINE",
+        status: "SPECTRUM: AMBER ONLINE",
+        stream: "> SPECTRUM 04/04: AMBER CRT INDUSTRIAL CATHODE PHOSPHOR ARMED"
+      }
     ];
 
     let dismissed = false;
     let animFrame = null;
+    let currentPhaseTheme = null;
+
+    // Set initial preloader theme
+    preloader.setAttribute("data-theme", "green");
 
     function updateDisplay(val) {
       const clamped = Math.min(100, Math.max(1, Math.round(val)));
@@ -88,6 +123,28 @@ function initApp() {
       if (phaseTag) phaseTag.textContent = currentPhase.tag;
       if (phaseDesc) phaseDesc.textContent = currentPhase.desc;
       if (bottomStatus) bottomStatus.textContent = currentPhase.status;
+
+      // Cycle project theme colors one by one as progress advances
+      if (currentPhaseTheme !== currentPhase.theme) {
+        currentPhaseTheme = currentPhase.theme;
+        preloader.setAttribute("data-theme", currentPhase.theme);
+
+        // Update pills in the preloader ticker
+        themePills.forEach(p => {
+          const isTarget = p.getAttribute("data-preloader-theme") === currentPhase.theme;
+          p.classList.toggle("active", isTarget);
+        });
+
+        // Update dynamic telemetry stream line
+        if (streamTheme && currentPhase.stream) {
+          streamTheme.textContent = currentPhase.stream;
+        }
+
+        // Live preview on 3D globe in background if initialized
+        if (typeof window.__updateGlobeTheme === "function") {
+          window.__updateGlobeTheme(currentPhase.theme);
+        }
+      }
     }
 
     function dismissPreloader() {
@@ -95,6 +152,14 @@ function initApp() {
       dismissed = true;
       if (animFrame) cancelAnimationFrame(animFrame);
       updateDisplay(100);
+
+      // Restore user's actual saved/selected theme for the main workbench
+      const savedTheme = safeGetStorage("priorart_theme", "green");
+      if (typeof applyTheme === "function") {
+        applyTheme(savedTheme);
+      } else if (typeof window.__updateGlobeTheme === "function") {
+        window.__updateGlobeTheme(savedTheme);
+      }
 
       if (window.gsap) {
         gsap.to(preloader, {
@@ -126,21 +191,15 @@ function initApp() {
     });
 
     const startTime = performance.now();
-    const duration = 1800;
+    const duration = 2400; // 2400ms = 600ms per theme phase (Green -> Dark -> Light -> Amber)
 
     function step(now) {
       if (dismissed) return;
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / duration);
       
-      let progress = 0;
-      if (t < 0.45) {
-        progress = (t / 0.45) * 50;
-      } else if (t < 0.6) {
-        progress = 50 + ((t - 0.45) / 0.15) * 12;
-      } else {
-        progress = 62 + ((t - 0.6) / 0.4) * 38;
-      }
+      // Smooth linear progress from 1% to 100%
+      const progress = 1 + t * 99;
 
       updateDisplay(progress);
 
@@ -148,7 +207,7 @@ function initApp() {
         animFrame = requestAnimationFrame(step);
       } else {
         updateDisplay(100);
-        setTimeout(dismissPreloader, 200);
+        setTimeout(dismissPreloader, 260);
       }
     }
 
