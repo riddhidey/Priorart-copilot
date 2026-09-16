@@ -736,6 +736,80 @@ function initApp() {
     btnDownloadPdf.addEventListener("click", downloadReportAsPdf);
   }
 
+  // Compact Schema Serialization for Ultra-Compressed Self-Contained URLs
+  function packCompactReport(report, threatMatrix) {
+    if (!report) return null;
+    return {
+      t: report.title || "",
+      r: report.overall_novelty_risk || "medium",
+      s: report.executive_summary || "",
+      e: (report.element_sections || []).map(sec => [
+        sec.element_id || "",
+        sec.element_title || "",
+        sec.risk_level || "low",
+        sec.element_description || "",
+        sec.findings_analysis || "",
+        sec.distinguishing_features || ""
+      ]),
+      c: (report.all_citations || []).map(cit => [
+        cit.citation_id || "",
+        cit.title || "",
+        cit.doc_id || "",
+        cit.cited_passage || "",
+        cit.source || "patent",
+        cit.url || ""
+      ]),
+      ref: report.recommended_refinements || [],
+      m: threatMatrix ? {
+        d: (threatMatrix.documents || []).map(d => [d.doc_id || "", d.title || ""]),
+        r: (threatMatrix.rows || []).map(row => [row.element_id || "", row.element_title || "", row.threats || {}])
+      } : null
+    };
+  }
+
+  function unpackCompactReport(data) {
+    if (data && data.t && data.e) {
+      const report = {
+        title: data.t,
+        overall_novelty_risk: data.r || "medium",
+        executive_summary: data.s || "",
+        disclaimer: "LEGAL NOTICE: Automated preliminary screening for research and exploration only.",
+        element_sections: (data.e || []).map(row => ({
+          element_id: row[0] || "",
+          element_title: row[1] || "",
+          risk_level: row[2] || "low",
+          element_description: row[3] || "",
+          findings_analysis: row[4] || "",
+          distinguishing_features: row[5] || ""
+        })),
+        all_citations: (data.c || []).map(row => ({
+          citation_id: row[0] || "",
+          title: row[1] || "",
+          doc_id: row[2] || "",
+          cited_passage: row[3] || "",
+          source: row[4] || "patent",
+          url: row[5] || ""
+        })),
+        recommended_refinements: data.ref || []
+      };
+
+      let threatMatrix = null;
+      if (data.m) {
+        threatMatrix = {
+          documents: (data.m.d || []).map(d => ({ doc_id: d[0], title: d[1] })),
+          rows: (data.m.r || []).map(r => ({ element_id: r[0], element_title: r[1], threats: r[2] || {} }))
+        };
+      }
+
+      return { report, threat_matrix: threatMatrix };
+    }
+
+    return {
+      report: data.report || data,
+      threat_matrix: data.threat_matrix || null
+    };
+  }
+
   // Share Link (Self-Contained URL with Zero Server Storage)
   function buildShareUrl(payload) {
     if (typeof LZString === "undefined") {
@@ -755,15 +829,12 @@ function initApp() {
       return;
     }
 
-    const payload = {
-      report: currentReportData,
-      threat_matrix: currentThreatMatrix || null
-    };
+    const compactPayload = packCompactReport(currentReportData, currentThreatMatrix);
 
     try {
-      const shareUrl = buildShareUrl(payload);
+      const shareUrl = buildShareUrl(compactPayload);
 
-      if (shareUrl.length > 7500) {
+      if (shareUrl.length > 16000) {
         showToast("Report too large for self-contained link — use 'Copy MD' instead.", "warning");
         return;
       }
@@ -809,14 +880,13 @@ function initApp() {
         return false;
       }
 
-      const data = JSON.parse(decompressed);
-      const report = data.report || data;
-      const threatMatrix = data.threat_matrix || null;
+      const rawData = JSON.parse(decompressed);
+      const { report, threat_matrix } = unpackCompactReport(rawData);
 
       currentReportData = report;
-      currentThreatMatrix = threatMatrix;
+      currentThreatMatrix = threat_matrix;
 
-      renderReport(report, threatMatrix, { readOnly: true });
+      renderReport(report, threat_matrix, { readOnly: true });
       showToast("Loaded shared screening report (Read-Only Mode)");
       return true;
     } catch (err) {
