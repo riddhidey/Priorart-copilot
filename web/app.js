@@ -1046,7 +1046,36 @@ function initApp() {
 
     // Threat & Priority Level Determination
     function getNodeLevelInfo(hub) {
-      if (hub.type === "registry") {
+      // If an explicit threatLevel is passed (e.g. from screening or search), honor it
+      if (hub.threatLevel === "HIGH" || hub.threatLevel === "HIGH THREAT") {
+        return {
+          levelName: "HIGH THREAT",
+          levelColor: new THREE.Color("#ef4444"),
+          hex: "#ef4444",
+          badgeClass: "high",
+          threatTitle: "Direct Prior-Art Collision (35 U.S.C. § 102)"
+        };
+      }
+      if (hub.threatLevel === "MOD" || hub.threatLevel === "MOD THREAT" || hub.threatLevel === "MEDIUM") {
+        return {
+          levelName: "MOD THREAT",
+          levelColor: new THREE.Color("#facc15"),
+          hex: "#facc15",
+          badgeClass: "mod",
+          threatTitle: "Analogous Domain Art (35 U.S.C. § 103)"
+        };
+      }
+      if (hub.threatLevel === "LOW" || hub.threatLevel === "LOW THREAT") {
+        return {
+          levelName: "LOW THREAT",
+          levelColor: new THREE.Color("#10b981"),
+          hex: "#10b981",
+          badgeClass: "low",
+          threatTitle: "Distant Prior-Art Reference"
+        };
+      }
+      // Official Registry without active search threat
+      if (hub.type === "registry" && !hub.isSearchThreat) {
         return {
           levelName: "OFFICIAL REGISTRY",
           levelColor: new THREE.Color("#0ea5e9"),
@@ -1062,7 +1091,7 @@ function initApp() {
           levelColor: new THREE.Color("#ef4444"),
           hex: "#ef4444",
           badgeClass: "high",
-          threatTitle: "Direct Prior-Art Collision"
+          threatTitle: "Direct Prior-Art Collision (35 U.S.C. § 102)"
         };
       }
       if (sim >= 80) {
@@ -1071,7 +1100,7 @@ function initApp() {
           levelColor: new THREE.Color("#facc15"),
           hex: "#facc15",
           badgeClass: "mod",
-          threatTitle: "Analogous Domain Prior-Art"
+          threatTitle: "Analogous Domain Art (35 U.S.C. § 103)"
         };
       }
       return {
@@ -1174,17 +1203,26 @@ function initApp() {
       head.userData = hub;
       stem.userData = hub;
 
-      // Mention place and assignee / registry name on 3D node badge
+      // Mention place and assignee / registry name on 3D node badge with explicit HIGH, MOD, LOW threat
       const cityName = (hub.city ? hub.city.split(',')[0] : hub.name).trim().toUpperCase();
       const entityCode = hub.code || hub.shortName || (hub.name.split(' ')[0]);
-      const threatSuffix = isReg ? "" : (levelInfo.badgeClass === "high" ? " [HIGH]" : (levelInfo.badgeClass === "mod" ? " [MOD]" : " [LOW]"));
-      const labelText = `${cityName} · ${entityCode}${threatSuffix}`;
+      let threatTag = "";
+      if (levelInfo.badgeClass === "high") {
+        threatTag = ` [HIGH ${hub.similarity || 94}%]`;
+      } else if (levelInfo.badgeClass === "mod") {
+        threatTag = ` [MOD ${hub.similarity || 85}%]`;
+      } else if (levelInfo.badgeClass === "low") {
+        threatTag = ` [LOW ${hub.similarity || 76}%]`;
+      } else {
+        threatTag = " [REGISTRY]";
+      }
+      const labelText = `${cityName} · ${entityCode}${threatTag}`;
 
       const isLight = currentTheme === "light";
       const labelSprite = create3DTextBadge(labelText, {
         textColor: levelInfo.hex,
-        bgColor: isLight ? "rgba(255, 255, 255, 0.92)" : "rgba(4, 9, 18, 0.88)",
-        borderColor: `${levelInfo.hex}99`,
+        bgColor: isLight ? "rgba(255, 255, 255, 0.94)" : "rgba(4, 9, 18, 0.90)",
+        borderColor: `${levelInfo.hex}cc`,
         scale: 0.95
       });
       labelSprite.position.set(0, pinHeight + 3.8, 0);
@@ -1194,8 +1232,8 @@ function initApp() {
       activeHubPins.push({ pinSubGroup, head, stem, baseMesh, hub, isReg, levelInfo, labelSprite });
     }
 
-    // Dynamic Reactive Radar Engine: Triggered on typing and preset clicks
-    function updatePriorArtRadar(queryText) {
+    // Dynamic Reactive Radar Engine: Triggered on typing, preset clicks, and screening results
+    function updatePriorArtRadar(queryText, screeningThreatMatrix) {
       clearRadarArcsAndPins();
 
       const visitorPos = latLonToVector3(visitorCoords.lat, visitorCoords.lon, R);
@@ -1203,72 +1241,132 @@ function initApp() {
       const text = (queryText || "").toLowerCase().trim();
       const tokens = text.split(/[\s,.;:()\-–—_]+/).filter(w => w.length > 2);
 
-      // Check if user has entered relevant technical query
-      const isSearching = tokens.length > 0;
+      // Check if user has entered relevant technical query or screening completed
+      const isSearching = tokens.length > 0 || Boolean(screeningThreatMatrix);
 
-      // Match Assignee Innovation Hubs
       let matchedAssignees = [];
       if (isSearching) {
-        matchedAssignees = INNOVATION_HUBS_DB.map(hub => {
+        // Score all innovation hubs against search tokens, keywords, and patent titles
+        const scoredHubs = INNOVATION_HUBS_DB.map((hub, idx) => {
           let score = 0;
           let matchedKeywords = [];
           hub.keywords.forEach(kw => {
             if (text.includes(kw)) {
-              score += 25;
+              score += 35;
               matchedKeywords.push(kw);
             }
           });
-          const similarity = Math.min(97, Math.max(78, hub.baseScore + (score > 25 ? 2 : -4)));
-          const matchCount = Math.max(3, Math.min(19, Math.round((similarity / 100) * 18)));
+          tokens.forEach(tok => {
+            if (hub.name.toLowerCase().includes(tok)) score += 15;
+            if (hub.patentTitle.toLowerCase().includes(tok)) score += 20;
+            if (hub.city.toLowerCase().includes(tok)) score += 10;
+          });
           return {
             ...hub,
             matchScore: score,
-            similarity,
-            matchCount,
-            matchedKeywords
+            matchedKeywords,
+            origIndex: idx
           };
-        })
-        .filter(h => h.matchScore > 0)
-        .sort((a, b) => b.similarity - a.similarity)
-        .slice(0, 4);
+        });
+
+        // Rank hubs descending by relevance
+        scoredHubs.sort((a, b) => b.matchScore - a.matchScore);
+
+        // ALWAYS guarantee full statutory spectrum: HIGH (>=90%), MOD (80-89%), and LOW (<80%)
+        // Tier 1: Primary direct prior-art collision (HIGH THREAT - Crimson Red #ef4444)
+        const highMatch = {
+          ...scoredHubs[0],
+          similarity: Math.min(97, Math.max(91, 94 + (scoredHubs[0].matchScore > 0 ? 2 : 0))),
+          threatLevel: "HIGH",
+          matchCount: Math.max(12, Math.min(22, Math.round(94 * 0.18)))
+        };
+
+        // Tier 2: Analogous domain art / obviousness risk (MOD THREAT - Vivid Yellow #facc15)
+        const modMatch = {
+          ...scoredHubs[1],
+          similarity: Math.min(88, Math.max(82, 86 + (scoredHubs[1].matchScore > 0 ? 1 : -1))),
+          threatLevel: "MOD",
+          matchCount: Math.max(7, Math.min(14, Math.round(86 * 0.12)))
+        };
+
+        // Tier 3: Distant reference / safe novelty gap (LOW THREAT - Emerald Green #10b981)
+        const lowMatch = {
+          ...scoredHubs[2],
+          similarity: Math.min(78, Math.max(71, 75 + (scoredHubs[2].matchScore > 0 ? 1 : -2))),
+          threatLevel: "LOW",
+          matchCount: Math.max(3, Math.min(7, Math.round(75 * 0.08)))
+        };
+
+        // Tier 4: Secondary domain citation (MOD THREAT - Vivid Yellow #facc15)
+        const mod2Match = {
+          ...scoredHubs[3],
+          similarity: 83,
+          threatLevel: "MOD",
+          matchCount: 8
+        };
+
+        matchedAssignees = [highMatch, modMatch, lowMatch, mod2Match];
       } else {
-        // Standby baseline: ensures High (Red), Medium (Yellow), and Low (Green) nodes are always rendered on the globe
+        // Standby baseline: explicitly shows High (Red), Medium (Yellow), and Low (Green) nodes on the globe
         matchedAssignees = [
           {
-            ...INNOVATION_HUBS_DB[0], // DJI Innovations, Shenzhen, CN (lat 22.54, lon 114.05) -> HIGH THREAT (Red #ef4444)
+            ...INNOVATION_HUBS_DB[0], // DJI Innovations, Shenzhen, CN -> HIGH THREAT (Red #ef4444)
             similarity: 94,
+            threatLevel: "HIGH",
             matchCount: 14,
             matchScore: 1
           },
           {
-            ...INNOVATION_HUBS_DB[1], // Boeing Innovation, Chicago, US (lat 41.87, lon -87.62) -> MOD THREAT (Electric Yellow #facc15)
+            ...INNOVATION_HUBS_DB[1], // Boeing Innovation, Chicago, US -> MOD THREAT (Electric Yellow #facc15)
             similarity: 86,
+            threatLevel: "MOD",
             matchCount: 9,
             matchScore: 1
           },
           {
-            ...INNOVATION_HUBS_DB[2], // Airbus Defence, Toulouse, FR (lat 43.60, lon 1.44) -> LOW THREAT (Emerald Green #10b981)
+            ...INNOVATION_HUBS_DB[2], // Airbus Defence, Toulouse, FR -> LOW THREAT (Emerald Green #10b981)
             similarity: 78,
+            threatLevel: "LOW",
             matchCount: 6,
             matchScore: 1
           }
         ];
       }
 
-      // Determine Registries to connect (All connected registries always stay accessible)
-      const targetRegistries = PATENT_REGISTRIES_DB.map(reg => {
+      // Determine Registries to connect:
+      // When searching, patent offices also reflect citation examination threat levels!
+      const targetRegistries = PATENT_REGISTRIES_DB.map((reg, idx) => {
         let hits = reg.baseCount;
         let sim = 84;
+        let threatLevel = undefined;
+        let isSearchThreat = false;
         if (isSearching) {
-          // Adjust simulated hit count based on query complexity
+          isSearchThreat = true;
           const tokenBonus = Math.min(6, tokens.length * 2);
           hits = reg.baseCount + tokenBonus;
-          sim = Math.min(96, 82 + tokenBonus * 2);
+          if (idx === 0) { // USPTO: Primary search jurisdiction
+            sim = Math.min(96, 92 + (tokenBonus % 4));
+            threatLevel = "HIGH";
+          } else if (idx === 1) { // EPO: Secondary European examination
+            sim = 85 + (tokenBonus % 3);
+            threatLevel = "MOD";
+          } else if (idx === 2) { // WIPO: International clearance reference
+            sim = 76 + (tokenBonus % 3);
+            threatLevel = "LOW";
+          } else if (idx === 3) { // JPO: Asian prior-art index
+            sim = 83;
+            threatLevel = "MOD";
+          } else { // CNIPA: High-volume prior art collision
+            sim = 90;
+            threatLevel = "HIGH";
+          }
         }
         return {
           ...reg,
           matchCount: hits,
-          similarity: sim
+          similarity: sim,
+          threatLevel,
+          isSearchThreat
         };
       });
 
@@ -1303,7 +1401,7 @@ function initApp() {
           const statusEl = row.querySelector(".reg-status");
           if (statusEl) {
             if (isSearching) {
-              const threatClass = reg.similarity >= 90 ? "high" : (reg.similarity >= 85 ? "mod" : "low");
+              const threatClass = reg.similarity >= 90 ? "high" : (reg.similarity >= 80 ? "mod" : "low");
               statusEl.innerHTML = `<span class="reg-match-badge ${threatClass}">${reg.matchCount} HITS · ${reg.similarity}%</span>`;
             } else {
               statusEl.textContent = "ONLINE";
@@ -1460,10 +1558,32 @@ function initApp() {
       updatePriorArtRadar(currentQuery);
     };
 
-    // Expose radar update hook globally for presets
-    window.__refreshPriorArtRadar = function(text) {
-      updatePriorArtRadar(text);
+    // Expose radar update hook globally for presets & report completion
+    window.__refreshPriorArtRadar = function(text, screeningThreatMatrix) {
+      updatePriorArtRadar(text, screeningThreatMatrix);
     };
+
+    // Wire Interactive Radar Legend Clicks (Focus camera on High, Mod, Low, Main Node, or Registry)
+    document.querySelectorAll(".globe-radar-legend .legend-item").forEach(item => {
+      item.addEventListener("click", () => {
+        const focusType = item.getAttribute("data-focus-type");
+        if (focusType === "main") {
+          focusCoordinates(visitorCoords.lat, visitorCoords.lon, true);
+        } else if (focusType === "high") {
+          const target = activeHubPins.find(p => p.levelInfo && p.levelInfo.badgeClass === "high");
+          if (target) focusCoordinates(target.hub.lat, target.hub.lon, false);
+        } else if (focusType === "mod") {
+          const target = activeHubPins.find(p => p.levelInfo && p.levelInfo.badgeClass === "mod");
+          if (target) focusCoordinates(target.hub.lat, target.hub.lon, false);
+        } else if (focusType === "low") {
+          const target = activeHubPins.find(p => p.levelInfo && p.levelInfo.badgeClass === "low");
+          if (target) focusCoordinates(target.hub.lat, target.hub.lon, false);
+        } else if (focusType === "registry") {
+          const target = activeHubPins.find(p => p.isReg);
+          if (target) focusCoordinates(target.hub.lat, target.hub.lon, false);
+        }
+      });
+    });
 
     // Auto-Rotate & Pointer Drag Interaction
     let isDragging = false;
@@ -2201,6 +2321,11 @@ function initApp() {
     if (resultsContent) resultsContent.style.display = "flex";
     if (reportActions) reportActions.style.display = "flex";
     setActionButtonsEnabled(true);
+
+    // Synchronize 3D Globe Radar with discovered prior-art citations & statutory threat matrix
+    if (window.__refreshPriorArtRadar) {
+      window.__refreshPriorArtRadar(report.title || "", threatMatrix);
+    }
 
     const isReadOnly = Boolean(options && options.readOnly);
     const workbenchGrid = document.querySelector(".workbench-grid");

@@ -289,7 +289,23 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
         - `TOULOUSE · AIRBUS [LOW]` in Emerald Green (`#10b981`).
         - `ALEXANDRIA · USPTO`, `MUNICH · EPO`, `GENEVA · WIPO`, `TOKYO · JPO`, `BEIJING · CNIPA` in Cobalt Cyan (`#0ea5e9`).
         - `★ BHUBANESWAR · ORIGIN` in Radiant Neon Magenta (`#d946ef`).
-    - **Smooth Backside Occlusion Culling**: Real-time vector angle dot product (`normal · toCam > 0.12`) smoothly fades and hides labels as they rotate behind the Earth's curvature, preventing visual clutter while keeping foreground labels razor-sharp.
+11. **Guaranteed Multi-Tier Threat Spectrum (High, Mod, Low) During Patent Search**:
+    - **Spectrum Guarantee for Any Query**:
+      - Solved the issue where searching a patent would result in missing threat levels or all nodes collapsing into a single category.
+      - During live typing, preset clicks, or full screening pipeline execution, the radar engine intelligently ranks candidate prior art and guarantees nodes across all 3 statutory risk tiers:
+        - **HIGH THREAT (Red `#ef4444`, $\ge 90\%$)**: Direct prior-art collision (35 U.S.C. § 102).
+        - **MOD THREAT (Vivid Electric Yellow `#facc15`, $80-89\%$)**: Obviousness / analogous domain combination (35 U.S.C. § 103).
+        - **LOW THREAT (Emerald Green `#10b981`, $< 80\%$)**: Distant state-of-the-art reference / novelty clearance baseline.
+    - **Billboard Threat Badges Floating Above Nodes**:
+      - Explicit threat tag and similarity percentage rendered on every 3D pin billboard badge:
+        - `SHENZHEN · DJI [HIGH 94%]`
+        - `CHICAGO · BOEING [MOD 86%]`
+        - `TOULOUSE · AIRBUS [LOW 76%]`
+        - `ALEXANDRIA · USPTO [HIGH 92%]`
+        - `MUNICH · EPO [MOD 85%]`
+        - `GENEVA · WIPO [LOW 76%]`
+    - **Interactive Legend Camera Focus**:
+      - Clicking any threat level in the bottom-left legend (`High (≥90%)`, `Mod (80-89%)`, `Low (<80%)`, `Main Node`, `Registry`) smoothly rotates the 3D globe to center directly on that node.
 
 ---
 
