@@ -240,8 +240,9 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
    - The preloader, 3D globe particle vertices, beacon pin, and HUD telemetry cards dynamically adapt in real-time when switching between any of the 4 themes:
      - **Phosphor Green**: Classic CRT terminal styling (`#86efac`)
      - **Obsidian Dark**: Precision monochromatic aesthetic (`#ffffff`)
-     - **Clean Light**: High-contrast architectural slate navy & cobalt (`#0284c7`)
+     - **Clean Light**: High-contrast architectural slate navy & cobalt (`#0284c7`) with signature Sky Blue hover states and active glow (`#0284c7`), ensuring the Light key and active elements never render in black.
      - **Amber CRT**: Vintage warm industrial cathode styling (`#fbbf24`)
+   - **Dedicated Theme Button Hover & Active States**: Each theme button in the header switcher (`Green`, `Dark`, `Light`, `Amber`) features dedicated hover and active states tuned to its respective palette color, ensuring the Light theme button glows in luminous sky blue (`#0284c7`) on hover rather than falling back to dark text colors.
 
 5. **Live Reactive Typing Radar & 3D Ballistic Trajectory Arcs**:
    - As the user types an invention title or description (debounced ~200ms), the system extracts technical keywords and scans domain innovation databases.

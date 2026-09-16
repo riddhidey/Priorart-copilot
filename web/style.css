@@ -127,13 +127,13 @@
   --bg-input: #f8fafc;
   --bg-input-focus: #ffffff;
 
-  --accent: #0f172a;
-  --accent-bright: #0284c7;
-  --accent-dim: #334155;
-  --accent-glow: rgba(15, 23, 42, 0.12);
-  --accent-subtle: rgba(15, 23, 42, 0.06);
-  --accent-border: rgba(15, 23, 42, 0.35);
-  --accent-border-subtle: rgba(15, 23, 42, 0.18);
+  --accent: #0284c7;
+  --accent-bright: #38bdf8;
+  --accent-dim: #0369a1;
+  --accent-glow: rgba(2, 132, 199, 0.22);
+  --accent-subtle: rgba(2, 132, 199, 0.10);
+  --accent-border: rgba(2, 132, 199, 0.40);
+  --accent-border-subtle: rgba(2, 132, 199, 0.20);
 
   /* Primary Button High-Contrast Tokens (Pure White Text on Dark Slate Navy) */
   --btn-primary-bg: #0f172a;
@@ -751,6 +751,56 @@ a:hover {
   color: var(--accent);
   border-color: var(--accent-border);
   box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* Signature Theme-Specific Button Hover & Active States */
+.theme-btn[data-set-theme="green"]:hover {
+  color: #86efac;
+  background: rgba(134, 239, 172, 0.12);
+  border-color: rgba(134, 239, 172, 0.35);
+}
+.theme-btn[data-set-theme="green"].active {
+  background: rgba(134, 239, 172, 0.15) !important;
+  color: #86efac !important;
+  border-color: #86efac !important;
+  box-shadow: 0 0 10px rgba(134, 239, 172, 0.35) !important;
+}
+
+.theme-btn[data-set-theme="dark"]:hover {
+  color: #f4f4f5;
+  background: rgba(244, 244, 245, 0.12);
+  border-color: rgba(244, 244, 245, 0.35);
+}
+.theme-btn[data-set-theme="dark"].active {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3) !important;
+}
+
+.theme-btn[data-set-theme="light"]:hover {
+  color: #0284c7 !important;
+  background: rgba(2, 132, 199, 0.12) !important;
+  border-color: rgba(2, 132, 199, 0.45) !important;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.25) !important;
+}
+.theme-btn[data-set-theme="light"].active {
+  background: rgba(2, 132, 199, 0.14) !important;
+  color: #0284c7 !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 12px rgba(2, 132, 199, 0.35) !important;
+}
+
+.theme-btn[data-set-theme="amber"]:hover {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.35);
+}
+.theme-btn[data-set-theme="amber"].active {
+  background: rgba(251, 191, 36, 0.15) !important;
+  color: #fbbf24 !important;
+  border-color: #fbbf24 !important;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.35) !important;
 }
 
 .theme-dot {
