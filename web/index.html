@@ -11,9 +11,68 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/static/style.css?v=22.0">
+  <link rel="stylesheet" href="/static/style.css?v=23.0">
 </head>
 <body>
+
+  <!-- Industrial Preloader (001% - 100% Sequence with Milestone Phases) -->
+  <div id="industrial-preloader" class="industrial-preloader" aria-live="polite" aria-label="System Initializing">
+    <div class="preloader-overlay"></div>
+    <div class="preloader-frame">
+      <!-- Reticle corner brackets -->
+      <span class="preloader-bracket top-left">┌</span>
+      <span class="preloader-bracket top-right">┐</span>
+      <span class="preloader-bracket bottom-left">└</span>
+      <span class="preloader-bracket bottom-right">┘</span>
+
+      <!-- Header bar -->
+      <div class="preloader-topbar">
+        <div class="preloader-top-left">
+          <span class="preloader-status-dot"></span>
+          <span class="preloader-sys-tag">SYS // PRIORART-COPILOT v2.4</span>
+        </div>
+        <div class="preloader-top-right">
+          <span class="preloader-geo-tag" id="preloader-geo-status">GEO: SENSING CLIENT NODE...</span>
+          <button type="button" id="btn-preloader-skip" class="preloader-skip-btn" title="Skip initialization sequence">
+            <span>SKIP</span>
+            <kbd>ESC</kbd>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main center display -->
+      <div class="preloader-core">
+        <div class="preloader-metric-badge">INITIALIZATION SEQUENCE</div>
+        <div class="preloader-counter" id="preloader-counter">001%</div>
+
+        <!-- Segmented Industrial Progress Track -->
+        <div class="preloader-progress-wrap">
+          <div class="preloader-progress-bar" id="preloader-progress-bar" style="width: 1%;"></div>
+          <div class="preloader-segments" id="preloader-segments"></div>
+        </div>
+
+        <!-- Milestone Phase Ticker -->
+        <div class="preloader-phase-box">
+          <div class="preloader-phase-tag" id="preloader-phase-tag">PHASE 01/04</div>
+          <div class="preloader-phase-desc" id="preloader-phase-desc">INITIALIZING CLAIM DECOMPOSITION MATRIX...</div>
+        </div>
+
+        <!-- Live Telemetry Stream -->
+        <div class="preloader-stream" id="preloader-stream" aria-hidden="true">
+          <div class="stream-line" id="stream-line-1">> MEMORY ALLOC: 768-D VECTOR MATRIX ARMED</div>
+          <div class="stream-line" id="stream-line-2">> CONNECTING REPOSITORIES: USPTO, EPO, WIPO, CNIPA, JPO...</div>
+          <div class="stream-line" id="stream-line-3">> COMPILING FIBONACCI 3D LANDMASS POINT CLOUD...</div>
+        </div>
+      </div>
+
+      <!-- Bottom bar -->
+      <div class="preloader-bottombar">
+        <span>SECURITY: ISOLATED</span>
+        <span class="preloader-bottom-center">HIGH-DENSITY PATENTABILITY SCREENING RADAR</span>
+        <span class="preloader-bottom-status" id="preloader-bottom-status">STANDBY CALIBRATING</span>
+      </div>
+    </div>
+  </div>
 
   <!-- Dedicated Fixed Animated Background (Multi-Layer Technical Motion) -->
   <div class="animated-background" aria-hidden="true">
@@ -101,6 +160,170 @@
         </div>
       </div>
     </header>
+
+    <!-- 3D Industrial Patent Intelligence Radar & Geolocation Hero -->
+    <section id="patent-radar-hero" class="patent-radar-hero" aria-label="Global Patent Intelligence Radar">
+      <div class="radar-hero-header">
+        <div class="radar-hero-title-group">
+          <div class="radar-status-beacon">
+            <span class="beacon-pulse"></span>
+            <span class="beacon-core"></span>
+          </div>
+          <div>
+            <div class="radar-hero-title-row">
+              <h2 class="radar-hero-title">Global Patent Intelligence Radar</h2>
+              <span class="radar-badge">3D POINT-CLOUD TELEMETRY</span>
+            </div>
+            <p class="radar-hero-sub">Live multi-registry surveillance & visitor geolocation node triangulation</p>
+          </div>
+        </div>
+
+        <div class="radar-hero-actions">
+          <button type="button" id="btn-focus-visitor" class="radar-action-btn" title="Rotate 3D globe to your detected location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+            <span id="btn-focus-label">Target My Node</span>
+          </button>
+          <button type="button" id="btn-toggle-globe-spin" class="radar-action-btn" title="Toggle automatic globe rotation">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <span id="btn-spin-label">Auto-Rotate: ON</span>
+          </button>
+          <button type="button" id="btn-toggle-radar-collapse" class="radar-action-btn radar-collapse-btn" title="Minimize or expand radar hero">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="collapse-icon"><polyline points="18 15 12 9 6 15"></polyline></svg>
+            <span class="collapse-btn-text">Minimize Radar</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="radar-hero-body" id="radar-hero-body">
+        <!-- Left Column: Industrial Telemetry HUD -->
+        <div class="radar-telemetry-hud">
+          
+          <!-- Visitor Location Card -->
+          <div class="hud-card visitor-node-card">
+            <div class="hud-card-header">
+              <span class="hud-tag">CLIENT TELEMETRY NODE</span>
+              <span class="hud-live-tag" id="visitor-status-tag">ACTIVE 3D BEACON</span>
+            </div>
+            <div class="visitor-location-name" id="visitor-location-name">
+              <span class="loc-city">Detecting Visitor Node...</span>
+            </div>
+            <div class="visitor-coords-grid">
+              <div class="coord-item">
+                <span class="coord-label">LATITUDE</span>
+                <span class="coord-val" id="visitor-lat">--.----°</span>
+              </div>
+              <div class="coord-item">
+                <span class="coord-label">LONGITUDE</span>
+                <span class="coord-val" id="visitor-lon">--.----°</span>
+              </div>
+              <div class="coord-item">
+                <span class="coord-label">STATUS</span>
+                <span class="coord-val text-accent" id="visitor-acc">TRIANGULATED</span>
+              </div>
+              <div class="coord-item">
+                <span class="coord-label">RADAR PING</span>
+                <span class="coord-val ping-green" id="visitor-ping">16 ms</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Global Registries Grid -->
+          <div class="hud-card registries-card">
+            <div class="hud-card-header">
+              <span class="hud-tag">CONNECTED PATENT REGISTRIES</span>
+              <span class="registry-count">5/5 SYNCED</span>
+            </div>
+            <div class="registries-grid">
+              <div class="registry-row">
+                <span class="reg-dot active"></span>
+                <span class="reg-code">USPTO</span>
+                <span class="reg-loc">Alexandria, US</span>
+                <span class="reg-status">ONLINE</span>
+              </div>
+              <div class="registry-row">
+                <span class="reg-dot active"></span>
+                <span class="reg-code">EPO</span>
+                <span class="reg-loc">Munich, EU</span>
+                <span class="reg-status">ONLINE</span>
+              </div>
+              <div class="registry-row">
+                <span class="reg-dot active"></span>
+                <span class="reg-code">WIPO</span>
+                <span class="reg-loc">Geneva, INT</span>
+                <span class="reg-status">ONLINE</span>
+              </div>
+              <div class="registry-row">
+                <span class="reg-dot active"></span>
+                <span class="reg-code">JPO</span>
+                <span class="reg-loc">Tokyo, JP</span>
+                <span class="reg-status">ONLINE</span>
+              </div>
+              <div class="registry-row">
+                <span class="reg-dot active"></span>
+                <span class="reg-code">CNIPA</span>
+                <span class="reg-loc">Beijing, CN</span>
+                <span class="reg-status">ONLINE</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Radar Spec Micro-Ticker -->
+          <div class="hud-metrics-row">
+            <div class="hud-micro-metric">
+              <span class="metric-lbl">SAMPLING POINTS</span>
+              <span class="metric-num">4,200 PTS</span>
+            </div>
+            <div class="hud-micro-metric">
+              <span class="metric-lbl">ORBITAL AXIS</span>
+              <span class="metric-num">23.44° TILT</span>
+            </div>
+            <div class="hud-micro-metric">
+              <span class="metric-lbl">LATENCY</span>
+              <span class="metric-num">< 300 MS</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: 3D Point-Cloud Globe Canvas Stage -->
+        <div class="radar-globe-stage" id="radar-globe-container">
+          <!-- Corner Reticles -->
+          <span class="globe-reticle top-left">┌</span>
+          <span class="globe-reticle top-right">┐</span>
+          <span class="globe-reticle bottom-left">└</span>
+          <span class="globe-reticle bottom-right">┘</span>
+
+          <!-- Cardinal Crosshairs & Compass Ticks -->
+          <div class="compass-marker north">N 00°</div>
+          <div class="compass-marker south">S 180°</div>
+          <div class="compass-marker east">E 90°</div>
+          <div class="compass-marker west">W 270°</div>
+
+          <!-- Center Crosshairs -->
+          <div class="globe-crosshair horizontal"></div>
+          <div class="globe-crosshair vertical"></div>
+
+          <!-- Floating 3D Geolocation Tooltip Overlay -->
+          <div class="globe-floating-pin-hud" id="globe-pin-hud">
+            <span class="pin-hud-pulse"></span>
+            <div class="pin-hud-content">
+              <div class="pin-hud-tag">CLIENT BEACON NODE</div>
+              <div class="pin-hud-name" id="pin-hud-city">Locating...</div>
+              <div class="pin-hud-coords" id="pin-hud-coords">-- , --</div>
+            </div>
+          </div>
+
+          <!-- Interactive Drag Hint -->
+          <div class="globe-drag-hint">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+            <span>DRAG TO ROTATE · SCROLL TO ZOOM</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+          </div>
+
+          <!-- Three.js Canvas mount -->
+          <div id="three-globe-mount" class="three-globe-mount"></div>
+        </div>
+      </div>
+    </section>
 
     <!-- TAB 1: SCREENING WORKBENCH -->
     <div id="tab-screening" class="tab-content active">
@@ -430,9 +653,12 @@
     </footer>
   </div>
 
-  <!-- Pinned CDN Dependencies for PDF Generation & URL State Compression -->
+  <!-- Pinned CDN Dependencies: Three.js (3D WebGL), GSAP (Industrial Motion), PDF Gen, & Compression -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-  <script src="/static/app.js?v=22.0"></script>
+  <script src="/static/world_land_data.js?v=23.0"></script>
+  <script src="/static/app.js?v=23.0"></script>
 </body>
 </html>

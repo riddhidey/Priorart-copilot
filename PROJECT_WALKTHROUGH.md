@@ -209,7 +209,40 @@ Priorart-copilot/
 
 ---
 
-## 8. How to Run and Test
+## 8. Industrial Preloader & 3D Interactive Point-Cloud Globe
+
+Inspired by precision industrial telemetry and the WeEvolveIT landing experience, PriorArt Copilot features a real-time 3D hero visualization and loading sequence:
+
+1. **Industrial Milestone Preloader**:
+   - `001%` to `100%` monospace progress counter with reticle corner brackets (`┌ ┐ └ ┘`).
+   - 4 discrete milestone phases:
+     - **Phase 01/04**: Initializing Claim Decomposition Matrix
+     - **Phase 02/04**: Synchronizing Global Registries (USPTO, EPO, WIPO, CNIPA, JPO)
+     - **Phase 03/04**: Compiling Fibonacci 3D Point Cloud & Geolocation
+     - **Phase 04/04**: System Armed — Disclosure Radar Online
+   - Segmented technical progress track with instant `[SKIP]` / `[ESC]` escape hatch.
+
+2. **3D Fibonacci Point-Cloud Globe (Three.js)**:
+   - High-density spherical lattice (~4,200 points) sampling Earth's continental landmasses from offline Natural Earth vector boundaries via an offscreen 2D canvas sampler.
+   - Landmass vertices render with vibrant theme accents and larger particle sizes, while ocean coordinates render with subdued secondary tones.
+   - Atmospheric orbital rings, equatorial latitude circles, and polar meridian wireframes aligned at Earth's ~23.44° axial tilt.
+
+3. **Visitor Geolocation Triangulation & 3D Beacon**:
+   - Real-time client IP/geolocation lookup via `geojs.io` (latitude, longitude, city, country, and ping latency).
+   - Projects client coordinates to 3D Cartesian space on the sphere surface ($R = 86$).
+   - Renders an active 3D beacon pin with continuous expanding radar wave rings.
+   - Interactive camera auto-rotation smoothly rotates the globe to bring the visitor's node directly to the center perspective.
+
+4. **Multi-Theme Synchronization (`Green`, `Dark`, `Light`, `Amber`)**:
+   - The preloader, 3D globe particle vertices, beacon pin, and HUD telemetry cards dynamically adapt in real-time when switching between any of the 4 themes:
+     - **Phosphor Green**: Classic CRT terminal styling (`#86efac`)
+     - **Obsidian Dark**: Precision monochromatic aesthetic (`#ffffff`)
+     - **Clean Light**: High-contrast architectural slate navy & cobalt (`#0284c7`)
+     - **Amber CRT**: Vintage warm industrial cathode styling (`#fbbf24`)
+
+---
+
+## 9. How to Run and Test
 
 ### Local Execution
 ```bash
@@ -240,6 +273,6 @@ pytest -v tests/
 
 ---
 
-## 9. Legal & Ethical Disclaimer
+## 10. Legal & Ethical Disclaimer
 
 > **IMPORTANT NOTICE**: PriorArt Copilot is an AI-assisted research and exploration workstation. Its outputs represent preliminary risk and similarity assessments and do **not** constitute legal advice or a formal patentability opinion. Users must consult a registered patent attorney or patent agent prior to making filing decisions or taking legal actions before the USPTO, EPO, or other national patent offices.

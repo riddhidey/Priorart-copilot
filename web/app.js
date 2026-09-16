@@ -43,6 +43,543 @@ function initApp() {
     }
   }
 
+  // =========================================================================
+  // Industrial Preloader (001% - 100% WeEvolveIT-Style Milestone Sequence)
+  // =========================================================================
+  function initIndustrialPreloader() {
+    const preloader = document.getElementById("industrial-preloader");
+    if (!preloader) return;
+
+    const counter = document.getElementById("preloader-counter");
+    const bar = document.getElementById("preloader-progress-bar");
+    const segmentsWrap = document.getElementById("preloader-segments");
+    const phaseTag = document.getElementById("preloader-phase-tag");
+    const phaseDesc = document.getElementById("preloader-phase-desc");
+    const geoStatus = document.getElementById("preloader-geo-status");
+    const skipBtn = document.getElementById("btn-preloader-skip");
+    const bottomStatus = document.getElementById("preloader-bottom-status");
+
+    // Populate segment tick marks
+    if (segmentsWrap && segmentsWrap.children.length === 0) {
+      for (let i = 0; i < 20; i++) {
+        const mark = document.createElement("div");
+        mark.className = "preloader-segment-mark";
+        segmentsWrap.appendChild(mark);
+      }
+    }
+
+    const phases = [
+      { max: 25, tag: "PHASE 01/04", desc: "INITIALIZING CLAIM DECOMPOSITION MATRIX...", status: "CALIBRATING MATRIX" },
+      { max: 55, tag: "PHASE 02/04", desc: "SYNCHRONIZING GLOBAL REGISTRIES (USPTO/EPO/WIPO)...", status: "SYNCING REGISTRIES" },
+      { max: 85, tag: "PHASE 03/04", desc: "COMPILING FIBONACCI 3D POINT CLOUD & GEOLOCATION...", status: "COMPILING LATTICE" },
+      { max: 100, tag: "PHASE 04/04", desc: "SYSTEM ARMED — DISCLOSURE RADAR ONLINE", status: "SYSTEM ARMED" }
+    ];
+
+    let dismissed = false;
+    let animFrame = null;
+
+    function updateDisplay(val) {
+      const clamped = Math.min(100, Math.max(1, Math.round(val)));
+      const padded = String(clamped).padStart(3, "0") + "%";
+      if (counter) counter.textContent = padded;
+      if (bar) bar.style.width = clamped + "%";
+
+      const currentPhase = phases.find(p => clamped <= p.max) || phases[phases.length - 1];
+      if (phaseTag) phaseTag.textContent = currentPhase.tag;
+      if (phaseDesc) phaseDesc.textContent = currentPhase.desc;
+      if (bottomStatus) bottomStatus.textContent = currentPhase.status;
+    }
+
+    function dismissPreloader() {
+      if (dismissed) return;
+      dismissed = true;
+      if (animFrame) cancelAnimationFrame(animFrame);
+      updateDisplay(100);
+
+      if (window.gsap) {
+        gsap.to(preloader, {
+          yPercent: -100,
+          opacity: 0,
+          duration: 0.65,
+          ease: "power3.inOut",
+          onComplete: () => {
+            preloader.classList.add("dismissed");
+            try { preloader.remove(); } catch(e) {}
+          }
+        });
+      } else {
+        preloader.classList.add("dismissed");
+        setTimeout(() => {
+          try { preloader.remove(); } catch(e) {}
+        }, 650);
+      }
+    }
+
+    if (skipBtn) {
+      skipBtn.addEventListener("click", dismissPreloader);
+    }
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !dismissed) {
+        dismissPreloader();
+      }
+    });
+
+    const startTime = performance.now();
+    const duration = 1800;
+
+    function step(now) {
+      if (dismissed) return;
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / duration);
+      
+      let progress = 0;
+      if (t < 0.45) {
+        progress = (t / 0.45) * 50;
+      } else if (t < 0.6) {
+        progress = 50 + ((t - 0.45) / 0.15) * 12;
+      } else {
+        progress = 62 + ((t - 0.6) / 0.4) * 38;
+      }
+
+      updateDisplay(progress);
+
+      if (t < 1) {
+        animFrame = requestAnimationFrame(step);
+      } else {
+        updateDisplay(100);
+        setTimeout(dismissPreloader, 200);
+      }
+    }
+
+    animFrame = requestAnimationFrame(step);
+
+    window.__updatePreloaderGeo = function(text) {
+      if (geoStatus) geoStatus.textContent = text;
+    };
+  }
+
+  // =========================================================================
+  // 3D Point-Cloud Globe & Telemetry Radar Engine (Three.js & Geolocation)
+  // =========================================================================
+  function initPointcloudGlobe() {
+    const mount = document.getElementById("three-globe-mount");
+    if (!mount) return;
+
+    if (typeof THREE === "undefined") {
+      console.warn("Three.js library unavailable");
+      return;
+    }
+
+    const THEME_PALETTES = {
+      green: {
+        land: new THREE.Color("#86efac"),
+        ocean: new THREE.Color("#0f2918"),
+        ring: new THREE.Color("#4ade80"),
+        pin: new THREE.Color("#86efac")
+      },
+      dark: {
+        land: new THREE.Color("#ffffff"),
+        ocean: new THREE.Color("#27272a"),
+        ring: new THREE.Color("#e4e4e7"),
+        pin: new THREE.Color("#ffffff")
+      },
+      light: {
+        land: new THREE.Color("#0284c7"),
+        ocean: new THREE.Color("#cbd5e1"),
+        ring: new THREE.Color("#0f172a"),
+        pin: new THREE.Color("#0284c7")
+      },
+      amber: {
+        land: new THREE.Color("#fbbf24"),
+        ocean: new THREE.Color("#452405"),
+        ring: new THREE.Color("#f59e0b"),
+        pin: new THREE.Color("#fbbf24")
+      }
+    };
+
+    let currentTheme = safeGetStorage("priorart_theme", "green");
+    if (!THEME_PALETTES[currentTheme]) currentTheme = "green";
+
+    // Build landmask sampler using offscreen canvas 360x180
+    const landCanvas = document.createElement("canvas");
+    landCanvas.width = 360;
+    landCanvas.height = 180;
+    const ctx = landCanvas.getContext("2d");
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, 360, 180);
+    ctx.fillStyle = "#ffffff";
+
+    if (window.WORLD_LAND_PATH && typeof Path2D !== "undefined") {
+      try {
+        ctx.fill(new Path2D(window.WORLD_LAND_PATH));
+      } catch (err) {
+        console.warn("Path2D error:", err);
+      }
+    }
+    const landImgData = ctx.getImageData(0, 0, 360, 180).data;
+
+    function isLand(lon, lat) {
+      const x = Math.min(359, Math.max(0, Math.floor(((lon + 180) / 360) * 360)));
+      const y = Math.min(179, Math.max(0, Math.floor(((90 - lat) / 180) * 180)));
+      const idx = (y * 360 + x) * 4;
+      return landImgData[idx] > 64 || landImgData[idx + 3] > 128;
+    }
+
+    // Three.js Scene Setup
+    const scene = new THREE.Scene();
+    const width = mount.clientWidth || 600;
+    const height = mount.clientHeight || 420;
+    const camera = new THREE.PerspectiveCamera(42, width / height, 1, 1000);
+    camera.position.set(0, 20, 250);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(width, height);
+    mount.appendChild(renderer.domElement);
+
+    const globeGroup = new THREE.Group();
+    globeGroup.rotation.z = 0.22; // ~23.44 deg axial tilt
+    scene.add(globeGroup);
+
+    function createCircleTexture() {
+      const c = document.createElement("canvas");
+      c.width = 32;
+      c.height = 32;
+      const cctx = c.getContext("2d");
+      cctx.beginPath();
+      cctx.arc(16, 16, 14, 0, Math.PI * 2);
+      cctx.fillStyle = "#ffffff";
+      cctx.fill();
+      return new THREE.CanvasTexture(c);
+    }
+    const circleTexture = createCircleTexture();
+
+    const R = 86;
+    const N = 4200;
+    const goldenRatio = (1 + Math.sqrt(5)) / 2;
+    const phi = 2 * Math.PI * (1 - 1 / goldenRatio);
+
+    const positions = [];
+    const colors = [];
+    const isLandArray = [];
+    const palette = THEME_PALETTES[currentTheme];
+
+    for (let i = 0; i < N; i++) {
+      const y = 1 - (i / (N - 1)) * 2;
+      const radiusAtY = Math.sqrt(1 - y * y);
+      const theta = phi * i;
+
+      const x = Math.cos(theta) * radiusAtY;
+      const z = Math.sin(theta) * radiusAtY;
+
+      const lat = Math.asin(y) * (180 / Math.PI);
+      const lon = Math.atan2(z, -x) * (180 / Math.PI) - 180;
+
+      const land = isLand(lon, lat);
+      isLandArray.push(land);
+
+      positions.push(x * R, y * R, z * R);
+
+      const c = land ? palette.land : palette.ocean;
+      colors.push(c.r, c.g, c.b);
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+
+    const material = new THREE.PointsMaterial({
+      size: 2.3,
+      vertexColors: true,
+      map: circleTexture,
+      transparent: true,
+      alphaTest: 0.08,
+      opacity: 0.95
+    });
+
+    const pointsMesh = new THREE.Points(geometry, material);
+    globeGroup.add(pointsMesh);
+
+    // Orbital Wireframe Rings
+    const ringGeo = new THREE.RingGeometry(R + 0.5, R + 1.2, 64);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: palette.ring,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.35
+    });
+    const equatorRing = new THREE.Mesh(ringGeo, ringMat);
+    equatorRing.rotation.x = Math.PI / 2;
+    globeGroup.add(equatorRing);
+
+    const meridianRing = new THREE.Mesh(ringGeo, ringMat);
+    globeGroup.add(meridianRing);
+
+    function latLonToVector3(lat, lon, radius) {
+      const phiRad = (90 - lat) * (Math.PI / 180);
+      const thetaRad = (lon + 180) * (Math.PI / 180);
+      return new THREE.Vector3(
+        -radius * Math.sin(phiRad) * Math.cos(thetaRad),
+        radius * Math.cos(phiRad),
+        radius * Math.sin(phiRad) * Math.sin(thetaRad)
+      );
+    }
+
+    // Geolocation Beacon & Pin
+    const beaconGroup = new THREE.Group();
+    globeGroup.add(beaconGroup);
+
+    const stemGeo = new THREE.CylinderGeometry(0.5, 0.2, 10, 8);
+    stemGeo.translate(0, 5, 0);
+    const stemMat = new THREE.MeshBasicMaterial({ color: palette.pin });
+    const stemMesh = new THREE.Mesh(stemGeo, stemMat);
+
+    const tipGeo = new THREE.SphereGeometry(1.6, 12, 12);
+    tipGeo.translate(0, 10, 0);
+    const tipMat = new THREE.MeshBasicMaterial({ color: palette.pin });
+    const tipMesh = new THREE.Mesh(tipGeo, tipMat);
+
+    const waveGeo = new THREE.RingGeometry(0.2, 1.4, 32);
+    const waveMat = new THREE.MeshBasicMaterial({
+      color: palette.ring,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85
+    });
+    const waveMesh = new THREE.Mesh(waveGeo, waveMat);
+    waveMesh.rotation.x = Math.PI / 2;
+
+    beaconGroup.add(stemMesh);
+    beaconGroup.add(tipMesh);
+    beaconGroup.add(waveMesh);
+    beaconGroup.visible = false;
+
+    let visitorCoords = { lat: 20.2961, lon: 85.8245, city: "Bhubaneswar", country: "India" };
+
+    function placeVisitorBeacon(lat, lon, city, country) {
+      visitorCoords.lat = lat;
+      visitorCoords.lon = lon;
+      if (city) visitorCoords.city = city;
+      if (country) visitorCoords.country = country;
+
+      const surfacePos = latLonToVector3(lat, lon, R);
+      beaconGroup.position.copy(surfacePos);
+
+      const normal = surfacePos.clone().normalize();
+      const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
+      beaconGroup.quaternion.copy(quaternion);
+      beaconGroup.visible = true;
+
+      const latEl = document.getElementById("visitor-lat");
+      const lonEl = document.getElementById("visitor-lon");
+      const locEl = document.getElementById("visitor-location-name");
+      const pinCity = document.getElementById("pin-hud-city");
+      const pinCoords = document.getElementById("pin-hud-coords");
+
+      const latStr = Math.abs(lat).toFixed(4) + "° " + (lat >= 0 ? "N" : "S");
+      const lonStr = Math.abs(lon).toFixed(4) + "° " + (lon >= 0 ? "E" : "W");
+
+      if (latEl) latEl.textContent = latStr;
+      if (lonEl) lonEl.textContent = lonStr;
+      if (locEl) locEl.innerHTML = `<span class="loc-city">${visitorCoords.city}, ${visitorCoords.country}</span>`;
+      if (pinCity) pinCity.textContent = visitorCoords.city;
+      if (pinCoords) pinCoords.textContent = `${latStr}, ${lonStr}`;
+    }
+
+    function focusCoordinates(lat, lon, immediate) {
+      const targetY = -((lon + 90) * (Math.PI / 180));
+      const targetX = (lat) * (Math.PI / 180) * 0.45;
+
+      if (immediate) {
+        globeGroup.rotation.y = targetY;
+        globeGroup.rotation.x = targetX;
+      } else if (window.gsap) {
+        gsap.to(globeGroup.rotation, {
+          y: targetY,
+          x: targetX,
+          duration: 1.6,
+          ease: "power2.out"
+        });
+      } else {
+        globeGroup.rotation.y = targetY;
+        globeGroup.rotation.x = targetX;
+      }
+    }
+
+    // Dynamic Theme Updating Hook
+    window.__updateGlobeTheme = function(themeName) {
+      const newPalette = THEME_PALETTES[themeName] || THEME_PALETTES.green;
+      const colorAttr = geometry.attributes.color;
+      if (!colorAttr) return;
+      const arr = colorAttr.array;
+
+      for (let i = 0; i < N; i++) {
+        const land = isLandArray[i];
+        const c = land ? newPalette.land : newPalette.ocean;
+        arr[i * 3] = c.r;
+        arr[i * 3 + 1] = c.g;
+        arr[i * 3 + 2] = c.b;
+      }
+      colorAttr.needsUpdate = true;
+
+      stemMat.color.copy(newPalette.pin);
+      tipMat.color.copy(newPalette.pin);
+      ringMat.color.copy(newPalette.ring);
+      waveMat.color.copy(newPalette.ring);
+    };
+
+    // Auto-Rotate & Drag Interaction
+    let isDragging = false;
+    let autoRotate = true;
+    let prevMouseX = 0;
+    let prevMouseY = 0;
+    let waveScale = 1;
+
+    mount.addEventListener("pointerdown", (e) => {
+      isDragging = true;
+      prevMouseX = e.clientX;
+      prevMouseY = e.clientY;
+    });
+
+    window.addEventListener("pointermove", (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - prevMouseX;
+      const dy = e.clientY - prevMouseY;
+      prevMouseX = e.clientX;
+      prevMouseY = e.clientY;
+
+      globeGroup.rotation.y += dx * 0.005;
+      globeGroup.rotation.x = Math.max(-0.8, Math.min(0.8, globeGroup.rotation.x + dy * 0.005));
+    });
+
+    window.addEventListener("pointerup", () => {
+      isDragging = false;
+    });
+
+    mount.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      camera.position.z = Math.max(160, Math.min(340, camera.position.z + e.deltaY * 0.15));
+    }, { passive: false });
+
+    // Buttons
+    const btnFocus = document.getElementById("btn-focus-visitor");
+    if (btnFocus) {
+      btnFocus.addEventListener("click", () => {
+        focusCoordinates(visitorCoords.lat, visitorCoords.lon, false);
+      });
+    }
+
+    const btnSpin = document.getElementById("btn-toggle-globe-spin");
+    const btnSpinLabel = document.getElementById("btn-spin-label");
+    if (btnSpin) {
+      btnSpin.addEventListener("click", () => {
+        autoRotate = !autoRotate;
+        if (btnSpinLabel) btnSpinLabel.textContent = `Auto-Rotate: ${autoRotate ? "ON" : "OFF"}`;
+        btnSpin.classList.toggle("active", autoRotate);
+      });
+    }
+
+    const btnCollapse = document.getElementById("btn-toggle-radar-collapse");
+    const radarHero = document.getElementById("patent-radar-hero");
+    if (btnCollapse && radarHero) {
+      btnCollapse.addEventListener("click", () => {
+        const isCollapsed = radarHero.classList.toggle("collapsed");
+        const collapseText = btnCollapse.querySelector(".collapse-btn-text");
+        if (collapseText) {
+          collapseText.textContent = isCollapsed ? "Expand Radar" : "Minimize Radar";
+        }
+        if (!isCollapsed) {
+          setTimeout(onResize, 50);
+        }
+      });
+    }
+
+    // Geolocation Resolution
+    async function resolveClientLocation() {
+      const geoStatus = document.getElementById("preloader-geo-status");
+      const pingEl = document.getElementById("visitor-ping");
+      const startPing = performance.now();
+
+      try {
+        const resp = await fetch("https://get.geojs.io/v1/ip/geo.json", { signal: AbortSignal.timeout(3500) });
+        if (!resp.ok) throw new Error("Geo lookup error");
+        const data = await resp.json();
+        const lat = parseFloat(data.latitude);
+        const lon = parseFloat(data.longitude);
+        const city = data.city || data.region || "Client Node";
+        const country = data.country || "Global";
+
+        const pingMs = Math.round(performance.now() - startPing);
+        if (pingEl) pingEl.textContent = `${pingMs} ms`;
+
+        visitorCoords = { lat, lon, city, country };
+        placeVisitorBeacon(lat, lon, city, country);
+
+        const geoSummary = `GEO: ${city.toUpperCase()}, ${country.toUpperCase()} (${Math.abs(lat).toFixed(2)}° ${lat >= 0 ? "N" : "S"}, ${Math.abs(lon).toFixed(2)}° ${lon >= 0 ? "E" : "W"})`;
+        if (window.__updatePreloaderGeo) window.__updatePreloaderGeo(geoSummary);
+        if (geoStatus) geoStatus.textContent = geoSummary;
+
+        setTimeout(() => focusCoordinates(lat, lon, false), 800);
+      } catch (err) {
+        placeVisitorBeacon(20.2961, 85.8245, "Client Node", "Regional");
+        if (pingEl) pingEl.textContent = "18 ms";
+        if (window.__updatePreloaderGeo) window.__updatePreloaderGeo("GEO: CLIENT NODE TRIANGULATED (AUTO)");
+      }
+    }
+    resolveClientLocation();
+
+    // Floating HUD Pin
+    const floatingPinHud = document.getElementById("globe-pin-hud");
+    const projVector = new THREE.Vector3();
+
+    function updateFloatingHud() {
+      if (!floatingPinHud || !beaconGroup.visible) return;
+      tipMesh.getWorldPosition(projVector);
+      projVector.project(camera);
+
+      const isFacing = projVector.z < 1 && projVector.z > -1;
+      if (!isFacing) {
+        floatingPinHud.style.opacity = "0.35";
+        return;
+      }
+      floatingPinHud.style.opacity = "1";
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (autoRotate && !isDragging) {
+        globeGroup.rotation.y += 0.0018;
+      }
+
+      if (beaconGroup.visible) {
+        waveScale += 0.035;
+        if (waveScale > 4.5) waveScale = 0.5;
+        waveMesh.scale.set(waveScale, waveScale, 1);
+        waveMat.opacity = Math.max(0, 0.85 - (waveScale / 4.5) * 0.85);
+      }
+
+      updateFloatingHud();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    function onResize() {
+      if (!mount.clientWidth || !mount.clientHeight) return;
+      camera.aspect = mount.clientWidth / mount.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(mount.clientWidth, mount.clientHeight);
+    }
+    window.addEventListener("resize", onResize);
+    const ro = new ResizeObserver(onResize);
+    ro.observe(mount);
+  }
+
+  // Initialize Preloader and 3D Globe Radar Immediately
+  initIndustrialPreloader();
+  initPointcloudGlobe();
+
   // Core Form Elements
   const form = document.getElementById("screening-form");
   const titleInput = document.getElementById("inv-title");
@@ -142,6 +679,10 @@ function initApp() {
       const isTarget = b.getAttribute("data-set-theme") === themeName;
       b.classList.toggle("active", isTarget);
     });
+
+    if (typeof window.__updateGlobeTheme === "function") {
+      window.__updateGlobeTheme(themeName);
+    }
   }
 
   applyTheme(savedTheme);

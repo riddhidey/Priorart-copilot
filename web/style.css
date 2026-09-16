@@ -229,6 +229,9 @@
   --particle-glow: rgba(251, 191, 36, 0.5);
   --particle-line: rgba(251, 191, 36, 0.25);
   --bg-panel-glass: rgba(18, 13, 4, 0.72);
+  --preloader-bg: #060401;
+  --preloader-glow: rgba(251, 191, 36, 0.22);
+  --radar-stage-bg: radial-gradient(circle at center, rgba(251, 191, 36, 0.09) 0%, rgba(6, 4, 1, 0.95) 75%);
 }
 
 [data-theme="green"] {
@@ -240,6 +243,9 @@
   --particle-glow: rgba(134, 239, 172, 0.5);
   --particle-line: rgba(134, 239, 172, 0.25);
   --bg-panel-glass: rgba(12, 19, 15, 0.72);
+  --preloader-bg: #030504;
+  --preloader-glow: rgba(134, 239, 172, 0.22);
+  --radar-stage-bg: radial-gradient(circle at center, rgba(134, 239, 172, 0.09) 0%, rgba(3, 5, 4, 0.95) 75%);
 }
 
 [data-theme="dark"] {
@@ -251,6 +257,9 @@
   --particle-glow: rgba(255, 255, 255, 0.45);
   --particle-line: rgba(255, 255, 255, 0.18);
   --bg-panel-glass: rgba(20, 20, 25, 0.72);
+  --preloader-bg: #09090b;
+  --preloader-glow: rgba(255, 255, 255, 0.2);
+  --radar-stage-bg: radial-gradient(circle at center, rgba(255, 255, 255, 0.06) 0%, rgba(9, 9, 11, 0.95) 75%);
 }
 
 [data-theme="light"] {
@@ -262,6 +271,9 @@
   --particle-glow: rgba(2, 132, 199, 0.35);
   --particle-line: rgba(15, 23, 42, 0.16);
   --bg-panel-glass: rgba(255, 255, 255, 0.84);
+  --preloader-bg: #090d16;
+  --preloader-glow: rgba(2, 132, 199, 0.25);
+  --radar-stage-bg: radial-gradient(circle at center, rgba(2, 132, 199, 0.09) 0%, rgba(244, 246, 248, 0.95) 75%);
 }
 
 /* ==========================================================================
@@ -2338,3 +2350,764 @@ body.broadcast-mode .disclaimer-banner {
   from { opacity: 0; transform: translateY(12px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* ==========================================================================
+   Industrial Preloader (001% - 100% WeEvolveIT-Style Milestone Sequence)
+   ========================================================================== */
+.industrial-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background-color: var(--preloader-bg, #030504);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.industrial-preloader.dismissed {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-100%);
+}
+
+.preloader-overlay {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 50% 50%, var(--preloader-glow, rgba(134, 239, 172, 0.22)) 0%, transparent 65%),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.3) 2px, rgba(0, 0, 0, 0.3) 4px);
+  pointer-events: none;
+}
+
+.preloader-frame {
+  position: relative;
+  width: min(880px, 92vw);
+  padding: 44px 40px;
+  background: var(--bg-surface-elevated, #111a14);
+  border: 1px solid var(--border-theme);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7), 0 0 32px var(--accent-glow);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  z-index: 2;
+  border-radius: 4px;
+}
+
+/* Reticle corner brackets */
+.preloader-bracket {
+  position: absolute;
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 24px;
+  line-height: 1;
+  color: var(--accent);
+  font-weight: 700;
+  pointer-events: none;
+  opacity: 0.9;
+}
+.preloader-bracket.top-left { top: -2px; left: -2px; }
+.preloader-bracket.top-right { top: -2px; right: -2px; }
+.preloader-bracket.bottom-left { bottom: -2px; left: -2px; }
+.preloader-bracket.bottom-right { bottom: -2px; right: -2px; }
+
+/* Preloader top bar */
+.preloader-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px dashed var(--border-subtle);
+  padding-bottom: 14px;
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.preloader-top-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.preloader-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: radarPulse 1.4s infinite ease-in-out;
+}
+
+.preloader-sys-tag {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.preloader-top-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.preloader-geo-tag {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.preloader-skip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border-theme);
+  color: var(--text-primary);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preloader-skip-btn:hover {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+
+.preloader-skip-btn kbd {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: 9.5px;
+}
+
+/* Preloader center display */
+.preloader-core {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 6px 0;
+  gap: 18px;
+}
+
+.preloader-metric-badge {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  text-transform: uppercase;
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent-border-subtle);
+  padding: 3px 12px;
+  border-radius: 999px;
+}
+
+.preloader-counter {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: clamp(56px, 11vw, 100px);
+  font-weight: 700;
+  line-height: 0.95;
+  color: var(--accent);
+  text-shadow: 0 0 24px var(--accent-glow);
+  letter-spacing: -0.03em;
+}
+
+/* Segmented progress bar */
+.preloader-progress-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--border-subtle);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.preloader-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+  box-shadow: 0 0 14px var(--accent);
+  transition: width 0.08s linear;
+}
+
+.preloader-segments {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.preloader-segment-mark {
+  width: 1px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+/* Phase box */
+.preloader-phase-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.preloader-phase-tag {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.preloader-phase-desc {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 12.5px;
+  color: var(--text-primary);
+  letter-spacing: 0.04em;
+  min-height: 18px;
+}
+
+/* Live stream */
+.preloader-stream {
+  width: 100%;
+  max-width: 640px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-subtle);
+  padding: 10px 14px;
+  border-radius: 4px;
+  text-align: left;
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.preloader-stream .stream-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Preloader bottom bar */
+.preloader-bottombar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px dashed var(--border-subtle);
+  padding-top: 14px;
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 10.5px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preloader-bottom-center {
+  color: var(--text-secondary);
+}
+
+.preloader-bottom-status {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   3D Patent Radar Hero Section
+   ========================================================================== */
+.patent-radar-hero {
+  margin: 18px 0 24px 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-theme);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  transition: all 0.3s ease;
+}
+
+.radar-hero-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.radar-hero-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.radar-status-beacon {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.beacon-core {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+.beacon-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  animation: beaconWave 2s infinite ease-out;
+}
+
+@keyframes beaconWave {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.radar-hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.radar-hero-title {
+  font-family: var(--font-sans, 'Geist', sans-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-white);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.radar-badge {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border: 1px solid var(--accent-border-subtle);
+}
+
+.radar-hero-sub {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin: 2px 0 0 0;
+}
+
+.radar-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.radar-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-theme);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.radar-action-btn:hover {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.radar-action-btn.active {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.radar-collapse-btn {
+  border-color: var(--border-subtle);
+}
+
+.collapse-icon {
+  transition: transform 0.3s ease;
+}
+
+/* Radar Hero Body */
+.radar-hero-body {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  min-height: 420px;
+  background: var(--bg-surface);
+  transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  overflow: hidden;
+}
+
+.patent-radar-hero.collapsed .radar-hero-body {
+  display: none;
+}
+
+.patent-radar-hero.collapsed .collapse-icon {
+  transform: rotate(180deg);
+}
+
+/* Left Column: Industrial Telemetry HUD */
+.radar-telemetry-hud {
+  padding: 20px;
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg-card);
+}
+
+.hud-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.hud-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.hud-tag {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.hud-live-tag {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-subtle);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--accent-border-subtle);
+}
+
+.visitor-location-name {
+  font-family: var(--font-sans, 'Geist', sans-serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-white);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.visitor-coords-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.coord-item {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.coord-label {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.coord-val {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ping-green {
+  color: var(--accent) !important;
+}
+
+/* Registries Matrix */
+.registry-count {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 9.5px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.registries-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.registry-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 11px;
+}
+
+.reg-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #71717a;
+  margin-right: 6px;
+}
+
+.reg-dot.active {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+.reg-code {
+  font-weight: 700;
+  color: var(--text-white);
+  min-width: 54px;
+}
+
+.reg-loc {
+  color: var(--text-secondary);
+  font-size: 10px;
+  flex: 1;
+  padding-left: 6px;
+}
+
+.reg-status {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* HUD micro metrics */
+.hud-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: auto;
+}
+
+.hud-micro-metric {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.metric-lbl {
+  display: block;
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.metric-num {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* Right Column: 3D Point-Cloud Globe Stage */
+.radar-globe-stage {
+  position: relative;
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--radar-stage-bg);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Reticle brackets on globe frame */
+.globe-reticle {
+  position: absolute;
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 20px;
+  color: var(--accent);
+  font-weight: 700;
+  pointer-events: none;
+  opacity: 0.75;
+  z-index: 3;
+}
+.globe-reticle.top-left { top: 10px; left: 12px; }
+.globe-reticle.top-right { top: 10px; right: 12px; }
+.globe-reticle.bottom-left { bottom: 10px; left: 12px; }
+.globe-reticle.bottom-right { bottom: 10px; right: 12px; }
+
+/* Compass markers */
+.compass-marker {
+  position: absolute;
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 3;
+}
+.compass-marker.north { top: 14px; left: 50%; transform: translateX(-50%); }
+.compass-marker.south { bottom: 14px; left: 50%; transform: translateX(-50%); }
+.compass-marker.east { right: 16px; top: 50%; transform: translateY(-50%); }
+.compass-marker.west { left: 16px; top: 50%; transform: translateY(-50%); }
+
+/* Subtle crosshairs */
+.globe-crosshair {
+  position: absolute;
+  background: var(--border-subtle);
+  pointer-events: none;
+  opacity: 0.45;
+  z-index: 2;
+}
+.globe-crosshair.horizontal {
+  left: 30px;
+  right: 30px;
+  top: 50%;
+  height: 1px;
+}
+.globe-crosshair.vertical {
+  top: 30px;
+  bottom: 30px;
+  left: 50%;
+  width: 1px;
+}
+
+/* Floating 3D Geolocation HUD */
+.globe-floating-pin-hud {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-theme);
+  border-radius: 6px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 16px var(--accent-glow);
+  z-index: 4;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.pin-hud-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+  animation: radarPulse 1.2s infinite ease-in-out;
+}
+
+.pin-hud-tag {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.pin-hud-name {
+  font-family: var(--font-sans, 'Geist', sans-serif);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.pin-hud-coords {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 10px;
+  color: var(--accent);
+}
+
+/* Drag Hint */
+.globe-drag-hint {
+  position: absolute;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--border-subtle);
+  padding: 3px 10px;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Three.js mount element */
+.three-globe-mount {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  z-index: 1;
+}
+.three-globe-mount:active {
+  cursor: grabbing;
+}
+
+/* Responsive queries */
+@media (max-width: 960px) {
+  .radar-hero-body {
+    grid-template-columns: 1fr;
+  }
+  .radar-telemetry-hud {
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .radar-globe-stage {
+    min-height: 380px;
+  }
+}
+
