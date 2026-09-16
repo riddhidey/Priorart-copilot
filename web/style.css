@@ -2290,16 +2290,25 @@ body.broadcast-mode .patent-radar-hero {
 }
 
 body.broadcast-mode .radar-hero-body {
-  min-height: 74vh;
-  height: 74vh;
+  min-height: clamp(620px, 80vh, 880px);
+  height: clamp(620px, 80vh, 880px);
   grid-template-columns: 390px minmax(0, 1fr);
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
 }
 
+body.broadcast-mode .radar-telemetry-hud {
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 18px;
+  gap: 12px;
+}
+
 body.broadcast-mode .radar-globe-stage {
-  min-height: 74vh;
+  min-height: clamp(620px, 80vh, 880px);
   height: 100%;
   min-width: 0;
   width: 100%;
@@ -2313,23 +2322,46 @@ body.broadcast-mode .globe-zoom-controls {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 16px var(--accent-glow);
 }
 
+body.broadcast-mode .globe-reticle.top-left {
+  top: 14px;
+  left: 18px;
+}
+
 body.broadcast-mode .globe-reticle.top-right {
   top: 14px;
   right: 24px;
 }
 
+body.broadcast-mode .globe-reticle.bottom-left {
+  bottom: 16px;
+  left: 18px;
+}
+
 body.broadcast-mode .globe-reticle.bottom-right {
-  bottom: 14px;
+  bottom: 16px;
   right: 24px;
+}
+
+body.broadcast-mode .compass-marker.south {
+  bottom: 18px;
 }
 
 body.broadcast-mode .compass-marker.east {
   right: 24px;
 }
 
+body.broadcast-mode .globe-drag-hint {
+  bottom: 18px;
+}
+
+body.broadcast-mode .globe-telemetry-badge.bottom-left-badge {
+  bottom: 16px;
+  left: 20px;
+}
+
 body.broadcast-mode .globe-telemetry-badge.bottom-right-badge {
-  bottom: 14px;
-  right: 26px;
+  bottom: 16px;
+  right: 28px;
 }
 
 /* ==========================================================================
@@ -3170,12 +3202,30 @@ body.broadcast-mode .globe-telemetry-badge.bottom-right-badge {
 
 /* Left Column: Industrial Telemetry HUD */
 .radar-telemetry-hud {
-  padding: 20px;
+  padding: 16px 18px;
   border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   background: var(--bg-card);
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-theme) transparent;
+}
+
+.radar-telemetry-hud::-webkit-scrollbar {
+  width: 5px;
+}
+
+.radar-telemetry-hud::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.radar-telemetry-hud::-webkit-scrollbar-thumb {
+  background: var(--border-theme);
+  border-radius: 4px;
 }
 
 .hud-card {
@@ -3384,7 +3434,7 @@ body.broadcast-mode .globe-telemetry-badge.bottom-right-badge {
   font-weight: 700;
   pointer-events: none;
   opacity: 0.75;
-  z-index: 3;
+  z-index: 15;
 }
 .globe-reticle.top-left { top: 10px; left: 12px; }
 .globe-reticle.top-right { top: 10px; right: 12px; }
@@ -3399,7 +3449,7 @@ body.broadcast-mode .globe-telemetry-badge.bottom-right-badge {
   letter-spacing: 0.1em;
   color: var(--text-muted);
   pointer-events: none;
-  z-index: 3;
+  z-index: 15;
 }
 .compass-marker.north { top: 14px; left: 50%; transform: translateX(-50%); }
 .compass-marker.south { bottom: 14px; left: 50%; transform: translateX(-50%); }
@@ -3512,7 +3562,7 @@ body.broadcast-mode .globe-telemetry-badge.bottom-right-badge {
   border-radius: 999px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   pointer-events: none;
-  z-index: 3;
+  z-index: 20;
 }
 
 /* Three.js mount element */
@@ -3595,7 +3645,21 @@ body.broadcast-mode .globe-telemetry-badge.bottom-right-badge {
 .assignees-pills-wrap {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-theme) transparent;
+  padding-right: 3px;
+}
+
+.assignees-pills-wrap::-webkit-scrollbar {
+  width: 4px;
+}
+
+.assignees-pills-wrap::-webkit-scrollbar-thumb {
+  background: var(--border-theme);
+  border-radius: 3px;
 }
 
 .assignee-item-card {
@@ -3604,12 +3668,14 @@ body.broadcast-mode .globe-telemetry-badge.bottom-right-badge {
   border-radius: 4px;
   padding: 6px 8px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   font-family: var(--font-mono, 'Geist Mono', monospace);
   font-size: 10.5px;
   transition: all 0.2s ease;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .assignee-item-card:hover {
@@ -3977,7 +4043,7 @@ body.broadcast-mode .globe-telemetry-badge.bottom-right-badge {
   border: 1px solid var(--border-subtle);
   padding: 3px 8px;
   border-radius: 4px;
-  z-index: 3;
+  z-index: 20;
   pointer-events: none;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }

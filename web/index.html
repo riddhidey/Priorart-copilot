@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/static/style.css?v=40.0">
+  <link rel="stylesheet" href="/static/style.css?v=41.0">
 </head>
 <body>
 
@@ -320,6 +320,9 @@
 
         <!-- Right Column: 3D Point-Cloud Globe Canvas Stage -->
         <div class="radar-globe-stage" id="radar-globe-container">
+          <!-- Three.js Canvas mount (Base layer) -->
+          <div id="three-globe-mount" class="three-globe-mount"></div>
+
           <!-- Corner Reticles -->
           <span class="globe-reticle top-left">┌</span>
           <span class="globe-reticle top-right">┐</span>
@@ -410,9 +413,6 @@
               <span id="globe-zoom-val-text">1.0x</span>
             </button>
           </div>
-
-          <!-- Three.js Canvas mount -->
-          <div id="three-globe-mount" class="three-globe-mount"></div>
         </div>
       </div>
     </section>
@@ -750,7 +750,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-  <script src="/static/world_land_data.js?v=40.0"></script>
-  <script src="/static/app.js?v=40.0"></script>
+  <script src="/static/world_land_data.js?v=41.0"></script>
+  <script src="/static/app.js?v=41.0"></script>
 </body>
 </html>
