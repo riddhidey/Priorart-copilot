@@ -252,6 +252,7 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
 
 6. **Broadcast Theater Mode & High-Contrast Recognizable Continents**:
    - **Full-Viewport Sizing (`74vh`)**: In Broadcast presentation mode (`#btn-broadcast-mode` / `#btn-radar-broadcast`), the 3D globe expands to 74% of the viewport height with wide-screen projection, making telemetry arcs, radar pings, and continents immediately prominent.
+   - **Unclipped Zoom Slider Capsule & Tactical Corner Reticles**: Fixed edge-clipping in Broadcast mode by enforcing `minmax(0, 1fr)` grid column sizing, decoupling the Three.js canvas mount from normal DOM flow via absolute positioning, setting safe horizontal scroll containment, and dedicating `right: 36px` clearance with enhanced elevation shadow for `.globe-zoom-controls` so all corners and controls remain 100% visible and interactive.
    - **High-Contrast Landmask Rendering**: Resolved alpha sampler bug so continental landmasses (Americas, Eurasia, Africa, Australasia) contrast sharply against the dark ocean point matrix across all four color themes.
    - **Responsive Aspect-Ratio Fitting**: Dynamic camera FOV and distance fitting prevents horizontal clipping on narrow screens or split windows, automatically centering the 3D globe at the top on smaller viewports.
 

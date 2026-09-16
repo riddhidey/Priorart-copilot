@@ -2263,10 +2263,16 @@ a:hover {
    Broadcast Presentation Mode
    ========================================================================== */
 
+body.broadcast-mode {
+  overflow-x: hidden;
+}
+
 body.broadcast-mode .app-wrapper {
-  max-width: 100vw;
+  max-width: 100%;
   width: 100%;
   padding: 12px 24px;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 body.broadcast-mode .disclaimer-banner {
@@ -2278,17 +2284,52 @@ body.broadcast-mode .patent-radar-hero {
   border-color: var(--accent);
   box-shadow: 0 0 50px rgba(0, 0, 0, 0.85), 0 0 32px var(--accent-glow);
   margin-bottom: 24px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 body.broadcast-mode .radar-hero-body {
   min-height: 74vh;
   height: 74vh;
-  grid-template-columns: 390px 1fr;
+  grid-template-columns: 390px minmax(0, 1fr);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 body.broadcast-mode .radar-globe-stage {
   min-height: 74vh;
   height: 100%;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Dedicated Broadcast Mode Adjustments for Globe Right-Edge Zoom Controls & Corner Reticles */
+body.broadcast-mode .globe-zoom-controls {
+  right: 36px !important;
+  z-index: 60;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 16px var(--accent-glow);
+}
+
+body.broadcast-mode .globe-reticle.top-right {
+  top: 14px;
+  right: 24px;
+}
+
+body.broadcast-mode .globe-reticle.bottom-right {
+  bottom: 14px;
+  right: 24px;
+}
+
+body.broadcast-mode .compass-marker.east {
+  right: 24px;
+}
+
+body.broadcast-mode .globe-telemetry-badge.bottom-right-badge {
+  bottom: 14px;
+  right: 26px;
 }
 
 /* ==========================================================================
@@ -3110,11 +3151,13 @@ body.broadcast-mode .radar-globe-stage {
 /* Radar Hero Body */
 .radar-hero-body {
   display: grid;
-  grid-template-columns: minmax(320px, 380px) 1fr;
+  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
   min-height: 540px;
   background: var(--bg-surface);
   transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 .patent-radar-hero.collapsed .radar-hero-body {
@@ -3307,12 +3350,29 @@ body.broadcast-mode .radar-globe-stage {
 .radar-globe-stage {
   position: relative;
   min-height: 540px;
+  min-width: 0;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--radar-stage-bg);
   overflow: hidden;
   user-select: none;
+}
+
+.three-globe-mount {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.three-globe-mount canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* Reticle brackets on globe frame */
@@ -3971,7 +4031,7 @@ body.broadcast-mode .radar-globe-stage {
    ========================================================================== */
 .globe-zoom-controls {
   position: absolute;
-  right: 18px;
+  right: 22px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -3988,6 +4048,7 @@ body.broadcast-mode .radar-globe-stage {
   z-index: 40;
   pointer-events: auto;
   user-select: none;
+  box-sizing: border-box;
 }
 
 .globe-zoom-btn {
