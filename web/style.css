@@ -3290,20 +3290,23 @@ body.broadcast-mode .radar-globe-stage {
 /* Dynamic Node Hover Tooltip Card */
 .globe-node-hover-card {
   position: absolute;
-  top: 76px;
-  right: 28px;
+  top: 54px;
+  left: 18px;
   background: var(--bg-card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--border-theme);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 10px 14px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 16px var(--accent-glow);
-  z-index: 5;
+  z-index: 45;
   pointer-events: none;
   animation: fadeIn 0.2s ease;
-  min-width: 200px;
+  min-width: 220px;
+  max-width: 320px;
 }
 
 .hover-card-header {
@@ -3375,8 +3378,8 @@ body.broadcast-mode .radar-globe-stage {
   font-weight: 500;
   color: var(--text-primary);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-  z-index: 3;
-  pointer-events: none;
+  z-index: 50;
+  pointer-events: auto;
 }
 
 .legend-item {
@@ -3384,10 +3387,11 @@ body.broadcast-mode .radar-globe-stage {
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  padding: 3px 6px;
-  border-radius: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
   transition: all 0.18s ease;
   user-select: none;
+  pointer-events: auto;
 }
 
 .legend-item:hover {

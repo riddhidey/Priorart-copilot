@@ -891,7 +891,7 @@ function initApp() {
       pauseAutoRotate(9000); // pause auto-rotate so user can inspect focused node
       
       const targetY = -((lon + 90) * (Math.PI / 180));
-      const targetX = Math.max(-0.65, Math.min(0.65, (lat) * (Math.PI / 180) * 0.55));
+      const targetX = Math.max(-0.80, Math.min(0.80, ((lat) * (Math.PI / 180)) - 0.105));
 
       // Calculate the shortest equivalent angle to prevent spinning multiple revolutions
       const currentY = globeGroup.rotation.y;
