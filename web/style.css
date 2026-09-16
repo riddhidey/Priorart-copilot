@@ -3064,11 +3064,29 @@ body.broadcast-mode .radar-globe-stage {
   animation: radarPulse 1.2s infinite ease-in-out;
 }
 
+.pin-hud-pulse.main-node-pulse {
+  background: #d946ef !important;
+  box-shadow: 0 0 10px #d946ef, 0 0 20px rgba(217, 70, 239, 0.7) !important;
+}
+
 .pin-hud-tag {
   font-family: var(--font-mono, 'Geist Mono', monospace);
   font-size: 8.5px;
   letter-spacing: 0.1em;
   color: var(--text-muted);
+}
+
+.pin-hud-tag.main-node-tag {
+  color: #d946ef !important;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.hud-live-tag.main-node-beacon {
+  background: rgba(217, 70, 239, 0.16) !important;
+  color: #d946ef !important;
+  border: 1px solid rgba(217, 70, 239, 0.45) !important;
+  box-shadow: 0 0 8px rgba(217, 70, 239, 0.3);
 }
 
 .pin-hud-name {
@@ -3378,19 +3396,29 @@ body.broadcast-mode .radar-globe-stage {
   flex-shrink: 0;
 }
 
-.legend-dot.client-dot {
-  background: var(--accent);
-  box-shadow: 0 0 6px var(--accent);
+.legend-dot.main-node-dot {
+  background: #d946ef;
+  box-shadow: 0 0 8px #d946ef, 0 0 14px rgba(217, 70, 239, 0.6);
+}
+
+.legend-dot.threat-high-dot {
+  background: #ef4444;
+  box-shadow: 0 0 7px #ef4444;
+}
+
+.legend-dot.threat-mod-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 7px #f59e0b;
+}
+
+.legend-dot.threat-low-dot {
+  background: #10b981;
+  box-shadow: 0 0 7px #10b981;
 }
 
 .legend-dot.registry-dot {
-  background: #38bdf8;
-  box-shadow: 0 0 6px #38bdf8;
-}
-
-.legend-dot.assignee-dot {
-  background: #f59e0b;
-  box-shadow: 0 0 6px #f59e0b;
+  background: #0ea5e9;
+  box-shadow: 0 0 7px #0ea5e9;
 }
 
 .legend-line {
@@ -3417,19 +3445,29 @@ body.broadcast-mode .radar-globe-stage {
   font-weight: 600 !important;
 }
 
-[data-theme="light"] .globe-radar-legend .legend-dot.client-dot {
-  background: #0284c7 !important;
-  box-shadow: 0 0 6px rgba(2, 132, 199, 0.6) !important;
+[data-theme="light"] .globe-radar-legend .legend-dot.main-node-dot {
+  background: #c026d3 !important;
+  box-shadow: 0 0 6px rgba(192, 38, 211, 0.7) !important;
+}
+
+[data-theme="light"] .globe-radar-legend .legend-dot.threat-high-dot {
+  background: #dc2626 !important;
+  box-shadow: 0 0 6px rgba(220, 38, 38, 0.7) !important;
+}
+
+[data-theme="light"] .globe-radar-legend .legend-dot.threat-mod-dot {
+  background: #d97706 !important;
+  box-shadow: 0 0 6px rgba(217, 119, 6, 0.7) !important;
+}
+
+[data-theme="light"] .globe-radar-legend .legend-dot.threat-low-dot {
+  background: #16a34a !important;
+  box-shadow: 0 0 6px rgba(22, 163, 74, 0.7) !important;
 }
 
 [data-theme="light"] .globe-radar-legend .legend-dot.registry-dot {
   background: #0284c7 !important;
-  box-shadow: 0 0 6px rgba(2, 132, 199, 0.6) !important;
-}
-
-[data-theme="light"] .globe-radar-legend .legend-dot.assignee-dot {
-  background: #d97706 !important;
-  box-shadow: 0 0 6px rgba(217, 119, 6, 0.6) !important;
+  box-shadow: 0 0 6px rgba(2, 132, 199, 0.7) !important;
 }
 
 [data-theme="light"] .globe-radar-legend .legend-line {

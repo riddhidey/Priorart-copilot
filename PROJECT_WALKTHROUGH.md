@@ -259,6 +259,20 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
    - **Orbital Surveillance Satellites**: 3 active satellite crafts (`SAT-USPTO`, `SAT-EPO`, `SAT-WIPO`) with solar panels and pulsing radio beacon waves orbiting on inclined tracks.
    - **Concentric Radar Range Rings & Tactical Corner Badges**: Fixed range rings (`5,000`–`20,000 KM`) and live telemetry status indicators in the stage corners.
 
+8. **Threat-Level Node Coloring & Distinct Main Telemetry Origin Node**:
+   - **Distinct Main Telemetry Node (Client Origin)**:
+     - Styled in **Radiant Neon Magenta / Violet (`#d946ef` / `#e879f9`)** to distinctly separate it from all threat levels and theme palettes.
+     - Elevated beacon stem (`12` units) with a prominent crystal tip (`2.0` radius) and dual concentric pulsing radar wave rings (`waveMesh` + `wave2Mesh`).
+     - Persistent branding across HUD badges (`★ MAIN TELEMETRY NODE`), 3D tooltip overlay, and left control panel status cards.
+   - **Dynamic Threat-Level Coloring for Target Nodes & Arcs**:
+     - **High Threat / Direct Overlap (≥90%)**: Vivid Neon Red (`#ef4444`) with spherical head, matching ballistic trajectory arc, and flying photon particle.
+     - **Moderate Threat / Analogous Art (80%–89%)**: Electric Amber (`#f59e0b`) indicating potential obviousness under 35 U.S.C. § 103.
+     - **Low Threat / Distant Art (<80%)**: Emerald Mint Green (`#10b981`) highlighting safe differentiation zones.
+     - **Official Patent Registries (USPTO, EPO, WIPO, JPO, CNIPA)**: Cobalt Cyan Blue (`#0ea5e9`) with an Octahedron diamond head geometry (`1.8` radius) and 8.5-unit elevation stem.
+   - **Interactive Threat Legend & Assignee Badges**:
+     - Updated legend with real-time indicators for Main Node, High (≥90%), Mod (80-89%), Low (<80%), and Registry.
+     - Assignee cards in the left HUD display color-coded glowing dots, colored left borders, and exact threat level pills corresponding to their globe nodes.
+
 ---
 
 ## 9. How to Run and Test

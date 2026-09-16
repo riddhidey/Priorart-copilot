@@ -551,20 +551,24 @@ function initApp() {
     globeGroup.add(arcsGroup);
     globeGroup.add(priorArtPinsGroup);
 
-    // Visitor Pin Components
-    const stemGeo = new THREE.CylinderGeometry(0.5, 0.2, 10, 8);
-    stemGeo.translate(0, 5, 0);
-    const stemMat = new THREE.MeshBasicMaterial({ color: palette.pin });
+    // Distinct Main Origin / Telemetry Node Marker (Radiant Magenta)
+    const MAIN_NODE_COLOR = new THREE.Color("#d946ef");
+    const MAIN_NODE_RING = new THREE.Color("#e879f9");
+
+    const stemGeo = new THREE.CylinderGeometry(0.6, 0.25, 12, 8);
+    stemGeo.translate(0, 6, 0);
+    const stemMat = new THREE.MeshBasicMaterial({ color: MAIN_NODE_COLOR });
     const stemMesh = new THREE.Mesh(stemGeo, stemMat);
 
-    const tipGeo = new THREE.SphereGeometry(1.6, 12, 12);
-    tipGeo.translate(0, 10, 0);
-    const tipMat = new THREE.MeshBasicMaterial({ color: palette.pin });
+    const tipGeo = new THREE.SphereGeometry(2.0, 16, 16);
+    tipGeo.translate(0, 12, 0);
+    const tipMat = new THREE.MeshBasicMaterial({ color: MAIN_NODE_COLOR });
     const tipMesh = new THREE.Mesh(tipGeo, tipMat);
 
-    const waveGeo = new THREE.RingGeometry(0.2, 1.4, 32);
+    // Primary pulse wave
+    const waveGeo = new THREE.RingGeometry(0.3, 1.8, 32);
     const waveMat = new THREE.MeshBasicMaterial({
-      color: palette.ring,
+      color: MAIN_NODE_RING,
       side: THREE.DoubleSide,
       transparent: true,
       opacity: 0.85
@@ -572,9 +576,21 @@ function initApp() {
     const waveMesh = new THREE.Mesh(waveGeo, waveMat);
     waveMesh.rotation.x = Math.PI / 2;
 
+    // Dual concentric pulse wave for distinct visual prominence
+    const wave2Geo = new THREE.RingGeometry(0.4, 2.8, 32);
+    const wave2Mat = new THREE.MeshBasicMaterial({
+      color: MAIN_NODE_COLOR,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.7
+    });
+    const wave2Mesh = new THREE.Mesh(wave2Geo, wave2Mat);
+    wave2Mesh.rotation.x = Math.PI / 2;
+
     beaconGroup.add(stemMesh);
     beaconGroup.add(tipMesh);
     beaconGroup.add(waveMesh);
+    beaconGroup.add(wave2Mesh);
     beaconGroup.visible = false;
 
     let visitorCoords = { lat: 20.2961, lon: 85.8245, city: "Bhubaneswar", country: "India" };
@@ -867,8 +883,47 @@ function initApp() {
       activeHubPins = [];
     }
 
+    // Threat & Priority Level Determination
+    function getNodeLevelInfo(hub) {
+      if (hub.type === "registry") {
+        return {
+          levelName: "OFFICIAL REGISTRY",
+          levelColor: new THREE.Color("#0ea5e9"),
+          hex: "#0ea5e9",
+          badgeClass: "registry",
+          threatTitle: "Connected Patent Registry"
+        };
+      }
+      const sim = hub.similarity || 85;
+      if (sim >= 90) {
+        return {
+          levelName: "HIGH THREAT",
+          levelColor: new THREE.Color("#ef4444"),
+          hex: "#ef4444",
+          badgeClass: "high",
+          threatTitle: "Direct Prior-Art Collision"
+        };
+      }
+      if (sim >= 82) {
+        return {
+          levelName: "MOD THREAT",
+          levelColor: new THREE.Color("#f59e0b"),
+          hex: "#f59e0b",
+          badgeClass: "mod",
+          threatTitle: "Analogous Domain Prior-Art"
+        };
+      }
+      return {
+        levelName: "LOW THREAT",
+        levelColor: new THREE.Color("#10b981"),
+        hex: "#10b981",
+        badgeClass: "low",
+        threatTitle: "Distant Prior-Art Reference"
+      };
+    }
+
     // Build curved 3D Bézier radar trajectory arc
-    function create3DRadarArc(startPos, endPos, paletteRef, index) {
+    function create3DRadarArc(startPos, endPos, paletteRef, index, levelInfo) {
       const dist = startPos.distanceTo(endPos);
       const midPos = new THREE.Vector3().addVectors(startPos, endPos).multiplyScalar(0.5);
       
@@ -880,18 +935,19 @@ function initApp() {
       const points = curve.getPoints(44);
       const arcGeo = new THREE.BufferGeometry().setFromPoints(points);
 
+      const arcColor = (levelInfo && levelInfo.levelColor) ? levelInfo.levelColor : paletteRef.ring;
       const arcMat = new THREE.LineBasicMaterial({
-        color: paletteRef.ring,
+        color: arcColor,
         transparent: true,
-        opacity: 0.65
+        opacity: 0.70
       });
       const arcMesh = new THREE.Line(arcGeo, arcMat);
       arcsGroup.add(arcMesh);
 
-      // Flying photon pulse particle
-      const pulseGeo = new THREE.SphereGeometry(1.4, 8, 8);
+      // Flying photon pulse particle in target node's threat color
+      const pulseGeo = new THREE.SphereGeometry(1.6, 8, 8);
       const pulseMat = new THREE.MeshBasicMaterial({
-        color: paletteRef.pin,
+        color: arcColor,
         transparent: true,
         opacity: 0.95
       });
@@ -917,31 +973,33 @@ function initApp() {
       pinSubGroup.quaternion.copy(quaternion);
 
       const isReg = hub.type === "registry";
-      const pinColor = isReg ? paletteRef.ring : new THREE.Color("#f59e0b");
+      const levelInfo = getNodeLevelInfo(hub);
+      const pinColor = levelInfo.levelColor;
 
-      const pinStemGeo = new THREE.CylinderGeometry(0.4, 0.2, isReg ? 8 : 6.5, 6);
-      pinStemGeo.translate(0, (isReg ? 8 : 6.5) / 2, 0);
+      const pinHeight = isReg ? 8.5 : 7.0;
+      const pinStemGeo = new THREE.CylinderGeometry(0.4, 0.2, pinHeight, 6);
+      pinStemGeo.translate(0, pinHeight / 2, 0);
       const pinStemMat = new THREE.MeshBasicMaterial({ color: pinColor });
       const stem = new THREE.Mesh(pinStemGeo, pinStemMat);
 
       // Diamond octahedron for official patent offices, sphere for assignees
       let headGeo;
       if (isReg) {
-        headGeo = new THREE.OctahedronGeometry(1.6, 0);
+        headGeo = new THREE.OctahedronGeometry(1.8, 0);
       } else {
-        headGeo = new THREE.SphereGeometry(1.3, 8, 8);
+        headGeo = new THREE.SphereGeometry(1.4, 8, 8);
       }
-      headGeo.translate(0, isReg ? 8 : 6.5, 0);
+      headGeo.translate(0, pinHeight, 0);
       const headMat = new THREE.MeshBasicMaterial({ color: pinColor });
       const head = new THREE.Mesh(headGeo, headMat);
 
-      // Pulsing base ring
-      const baseGeo = new THREE.RingGeometry(0.3, 1.2, 16);
+      // Pulsing base ring colored by threat level
+      const baseGeo = new THREE.RingGeometry(0.3, 1.4, 16);
       const baseMat = new THREE.MeshBasicMaterial({
         color: pinColor,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.75
+        opacity: 0.8
       });
       const baseMesh = new THREE.Mesh(baseGeo, baseMat);
       baseMesh.rotation.x = Math.PI / 2;
@@ -951,11 +1009,12 @@ function initApp() {
       pinSubGroup.add(baseMesh);
 
       // Attach data for mouse raycasting tooltip
+      hub.levelInfo = levelInfo;
       head.userData = hub;
       stem.userData = hub;
 
       priorArtPinsGroup.add(pinSubGroup);
-      activeHubPins.push({ pinSubGroup, head, stem, baseMesh, hub, isReg });
+      activeHubPins.push({ pinSubGroup, head, stem, baseMesh, hub, isReg, levelInfo });
     }
 
     // Dynamic Reactive Radar Engine: Triggered on typing and preset clicks
@@ -1021,7 +1080,8 @@ function initApp() {
       allTargetHubs.forEach((hub, idx) => {
         create3DHubPin(hub, activePalette);
         const hubPos = latLonToVector3(hub.lat, hub.lon, R);
-        const arcData = create3DRadarArc(visitorPos, hubPos, activePalette, idx);
+        const levelInfo = getNodeLevelInfo(hub);
+        const arcData = create3DRadarArc(visitorPos, hubPos, activePalette, idx, levelInfo);
         activeArcs.push(arcData);
       });
 
@@ -1053,7 +1113,7 @@ function initApp() {
         }
       });
 
-      // Update Assignee Hubs Box
+      // Update Assignee Hubs Box with Level Colors
       const clusterBox = document.getElementById("assignees-cluster-box");
       const pillsWrap = document.getElementById("assignees-pills-wrap");
       if (clusterBox && pillsWrap) {
@@ -1061,15 +1121,17 @@ function initApp() {
           clusterBox.style.display = "flex";
           pillsWrap.innerHTML = "";
           matchedAssignees.forEach(assignee => {
+            const levelInfo = getNodeLevelInfo(assignee);
             const card = document.createElement("div");
             card.className = "assignee-item-card";
-            card.title = `Click to rotate globe to ${assignee.name} (${assignee.city})`;
+            card.style.borderLeft = `3px solid ${levelInfo.hex}`;
+            card.title = `Click to rotate globe to ${assignee.name} (${assignee.city}) - [${levelInfo.levelName}]`;
             card.innerHTML = `
               <div class="assignee-name-group">
-                <span class="assignee-dot"></span>
+                <span class="assignee-dot" style="background:${levelInfo.hex}; box-shadow:0 0 7px ${levelInfo.hex}"></span>
                 <span class="assignee-name">${assignee.shortName || assignee.name}</span>
               </div>
-              <span class="assignee-score">${assignee.similarity}% SIMILAR</span>
+              <span class="assignee-score" style="color:${levelInfo.hex}; border-color:${levelInfo.hex}44; background:${levelInfo.hex}18">${assignee.similarity}% · ${levelInfo.levelName}</span>
             `;
             card.addEventListener("click", () => {
               focusCoordinates(assignee.lat, assignee.lon, false);
@@ -1106,6 +1168,7 @@ function initApp() {
         }
 
         if (hub && hoverCard) {
+          const levelInfo = hub.levelInfo || getNodeLevelInfo(hub);
           const flagEl = document.getElementById("hover-node-flag");
           const titleEl = document.getElementById("hover-node-title");
           const typeEl = document.getElementById("hover-node-type");
@@ -1116,10 +1179,18 @@ function initApp() {
 
           if (flagEl) flagEl.textContent = hub.flag || "📍";
           if (titleEl) titleEl.textContent = hub.code || hub.shortName || hub.name;
-          if (typeEl) typeEl.textContent = hub.type === "registry" ? "REGISTRY" : "ASSIGNEE";
+          if (typeEl) {
+            typeEl.textContent = levelInfo.levelName;
+            typeEl.style.color = levelInfo.hex;
+            typeEl.style.borderColor = `${levelInfo.hex}55`;
+            typeEl.style.background = `${levelInfo.hex}22`;
+          }
           if (cityEl) cityEl.textContent = hub.city;
           if (matchesEl) matchesEl.textContent = hub.matchCount || 12;
-          if (simEl) simEl.textContent = (hub.similarity || 90) + "%";
+          if (simEl) {
+            simEl.textContent = (hub.similarity || 90) + "%";
+            simEl.style.color = levelInfo.hex;
+          }
           if (patentEl) patentEl.textContent = `Ref: ${hub.samplePatent || "US10423190B"}`;
 
           hoverCard.style.display = "flex";
@@ -1166,10 +1237,12 @@ function initApp() {
         colorAttr.needsUpdate = true;
       }
 
-      stemMat.color.copy(newPalette.pin);
-      tipMat.color.copy(newPalette.pin);
+      // Main visitor origin node retains its distinct radiant magenta marker
+      stemMat.color.copy(MAIN_NODE_COLOR);
+      tipMat.color.copy(MAIN_NODE_COLOR);
+      waveMat.color.copy(MAIN_NODE_RING);
+      if (wave2Mat) wave2Mat.color.copy(MAIN_NODE_COLOR);
       ringMat.color.copy(newPalette.ring);
-      waveMat.color.copy(newPalette.ring);
       if (coreMat) {
         coreMat.color.copy(newPalette.core || newPalette.ring);
         coreMat.opacity = themeName === "light" ? 0.35 : 0.65;
@@ -1318,12 +1391,17 @@ function initApp() {
         globeGroup.rotation.y += 0.0018;
       }
 
-      // Visitor Beacon Radar Wave Pulse
+      // Visitor Beacon Radar Wave Pulse (Dual Concentric Rings for Distinct Main Node)
       if (beaconGroup.visible) {
         waveScale += 0.035;
         if (waveScale > 4.5) waveScale = 0.5;
         waveMesh.scale.set(waveScale, waveScale, 1);
         waveMat.opacity = Math.max(0, 0.85 - (waveScale / 4.5) * 0.85);
+
+        let wave2Scale = (waveScale + 2.0);
+        if (wave2Scale > 4.5) wave2Scale = 0.5 + (wave2Scale - 4.5);
+        wave2Mesh.scale.set(wave2Scale, wave2Scale, 1);
+        wave2Mat.opacity = Math.max(0, 0.70 - (wave2Scale / 4.5) * 0.70);
       }
 
       // Animate Photon Particles along 3D Ballistic Radar Arcs
