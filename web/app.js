@@ -205,6 +205,7 @@ function initApp() {
   ];
 
   let currentReportData = null;
+  let currentThreatMatrix = null;
   let parsedDisclosureData = null;
 
   // Character counter
@@ -226,6 +227,8 @@ function initApp() {
         b.classList.remove("active");
       });
       resetSteps();
+      currentReportData = null;
+      currentThreatMatrix = null;
       if (stepReviewBox) stepReviewBox.style.display = "none";
       if (resultsContent) resultsContent.style.display = "none";
       if (reportActions) reportActions.style.display = "none";
@@ -428,10 +431,50 @@ function initApp() {
   }
 
   // Render Full Report & Threat Matrix
-  function renderReport(report, threatMatrix) {
+  function renderReport(report, threatMatrix, options = {}) {
+    currentReportData = report;
+    currentThreatMatrix = threatMatrix;
+
     if (resultsLoading) resultsLoading.style.display = "none";
     if (resultsContent) resultsContent.style.display = "flex";
     if (reportActions) reportActions.style.display = "flex";
+
+    const isReadOnly = Boolean(options && options.readOnly);
+    const workbenchGrid = document.querySelector(".workbench-grid");
+    if (workbenchGrid) {
+      workbenchGrid.classList.toggle("shared-view-mode", isReadOnly);
+    }
+
+    // Shared View Banner Management
+    let sharedBanner = document.getElementById("shared-view-banner");
+    if (isReadOnly) {
+      if (!sharedBanner) {
+        sharedBanner = document.createElement("div");
+        sharedBanner.id = "shared-view-banner";
+        sharedBanner.className = "shared-view-banner";
+        sharedBanner.innerHTML = `
+          <div class="shared-banner-text">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span><strong>Shared Report View</strong> — Displaying read-only preliminary screening findings.</span>
+          </div>
+          <button type="button" class="btn-new-screening" id="btn-exit-shared">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            <span>Create New Screening</span>
+          </button>
+        `;
+        const findingsSection = document.querySelector(".findings-section");
+        if (findingsSection) {
+          findingsSection.insertBefore(sharedBanner, findingsSection.children[1] || null);
+        }
+        document.getElementById("btn-exit-shared")?.addEventListener("click", () => {
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.search = "";
+          window.location.href = cleanUrl.toString();
+        });
+      }
+    } else if (sharedBanner) {
+      sharedBanner.remove();
+    }
 
     // Executive Summary Card
     const riskBadge = document.getElementById("risk-badge");
@@ -555,11 +598,51 @@ function initApp() {
       .replace(/"/g, "&quot;");
   }
 
+  // Toast Notification System
+  function showToast(message, type = "info") {
+    let container = document.getElementById("toast-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "toast-container";
+      container.className = "toast-container";
+      document.body.appendChild(container);
+    }
+
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+
+    let iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>`;
+    if (type === "warning") {
+      iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+    } else if (type === "error") {
+      iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+    }
+
+    toast.innerHTML = `${iconSvg}<span>${escapeHtml(message)}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add("fade-out");
+      setTimeout(() => toast.remove(), 250);
+    }, 3200);
+  }
+
+  function slugify(text) {
+    return (text || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+  }
+
   // Copy Markdown
   const btnCopy = document.getElementById("btn-copy-md");
   if (btnCopy) {
     btnCopy.addEventListener("click", () => {
-      if (!currentReportData) return;
+      if (!currentReportData) {
+        showToast("No report available to copy.", "warning");
+        return;
+      }
       let md = `# ${currentReportData.title}\n\n`;
       md += `> **${currentReportData.disclaimer}**\n\n`;
       md += `## Executive Summary\n${currentReportData.executive_summary}\n\n`;
@@ -573,6 +656,7 @@ function initApp() {
 
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(md).then(() => {
+          showToast("Markdown copied to clipboard!");
           const originalText = btnCopy.innerHTML;
           btnCopy.innerHTML = `<span style="color: var(--accent);">✓ Copied</span>`;
           setTimeout(() => {
@@ -580,10 +664,154 @@ function initApp() {
           }, 2000);
         }).catch(err => {
           console.warn("Clipboard write failed:", err);
+          showToast("Clipboard write failed.", "error");
         });
       }
     });
   }
+
+  // Download PDF
+  const btnDownloadPdf = document.getElementById("btn-download-pdf");
+  async function downloadReportAsPdf() {
+    const reportEl = document.getElementById("results-content");
+    if (!reportEl || !currentReportData) {
+      showToast("No report available to export as PDF.", "warning");
+      return;
+    }
+
+    const originalContent = btnDownloadPdf ? btnDownloadPdf.innerHTML : null;
+    if (btnDownloadPdf) {
+      btnDownloadPdf.disabled = true;
+      btnDownloadPdf.innerHTML = `<span>Exporting...</span>`;
+    }
+
+    reportEl.classList.add("pdf-export-mode");
+    const titleSlug = slugify(currentReportData.title || "priorart-report");
+    const opt = {
+      margin: [0.35, 0.35, 0.35, 0.35],
+      filename: `${titleSlug || "priorart-report"}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+    };
+
+    try {
+      if (typeof html2pdf !== "undefined") {
+        await html2pdf().set(opt).from(reportEl).save();
+        showToast("PDF downloaded successfully!");
+      } else {
+        window.print();
+      }
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      showToast("PDF generator busy. Opening print dialog...", "warning");
+      window.print();
+    } finally {
+      reportEl.classList.remove("pdf-export-mode");
+      if (btnDownloadPdf) {
+        btnDownloadPdf.disabled = false;
+        if (originalContent) btnDownloadPdf.innerHTML = originalContent;
+      }
+    }
+  }
+
+  if (btnDownloadPdf) {
+    btnDownloadPdf.addEventListener("click", downloadReportAsPdf);
+  }
+
+  // Share Link (Self-Contained URL with Zero Server Storage)
+  const btnShareLink = document.getElementById("btn-share-link");
+  function buildShareUrl(payload) {
+    if (typeof LZString === "undefined") {
+      throw new Error("Compression library (LZString) not loaded.");
+    }
+    const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(payload));
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.hash = "";
+    url.searchParams.set("shared", compressed);
+    return url.toString();
+  }
+
+  async function shareCurrentReport() {
+    if (!currentReportData) {
+      showToast("No report available to share.", "warning");
+      return;
+    }
+
+    const payload = {
+      report: currentReportData,
+      threat_matrix: currentThreatMatrix || null
+    };
+
+    try {
+      const shareUrl = buildShareUrl(payload);
+
+      if (shareUrl.length > 7500) {
+        showToast("Report too large for self-contained link — use 'Copy MD' instead.", "warning");
+        return;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        showToast("Share link copied to clipboard!");
+      } else {
+        window.prompt("Copy this share link:", shareUrl);
+      }
+
+      if (btnShareLink) {
+        const originalHTML = btnShareLink.innerHTML;
+        btnShareLink.innerHTML = `<span style="color: var(--accent);">✓ Copied</span>`;
+        setTimeout(() => {
+          btnShareLink.innerHTML = originalHTML;
+        }, 2000);
+      }
+    } catch (err) {
+      console.error("Failed to generate share URL:", err);
+      showToast("Could not generate share link.", "error");
+    }
+  }
+
+  if (btnShareLink) {
+    btnShareLink.addEventListener("click", shareCurrentReport);
+  }
+
+  // Load Shared Report from URL Query Parameter
+  function loadSharedReportFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const payloadStr = params.get("shared");
+    if (!payloadStr) return false;
+
+    try {
+      if (typeof LZString === "undefined") {
+        console.warn("LZString not ready yet for decompression");
+        return false;
+      }
+      const decompressed = LZString.decompressFromEncodedURIComponent(payloadStr);
+      if (!decompressed) {
+        showToast("Corrupted or incomplete share link.", "error");
+        return false;
+      }
+
+      const data = JSON.parse(decompressed);
+      const report = data.report || data;
+      const threatMatrix = data.threat_matrix || null;
+
+      currentReportData = report;
+      currentThreatMatrix = threatMatrix;
+
+      renderReport(report, threatMatrix, { readOnly: true });
+      showToast("Loaded shared screening report (Read-Only Mode)");
+      return true;
+    } catch (err) {
+      console.error("Failed to load shared report from URL:", err);
+      showToast("This share link looks corrupted or incomplete.", "error");
+      return false;
+    }
+  }
+
+  // Check URL on load for shared payload
+  loadSharedReportFromUrl();
 
   // Print / PDF
   const btnPrint = document.getElementById("btn-print");
