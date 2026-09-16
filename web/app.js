@@ -173,32 +173,32 @@ function initApp() {
 
     const THEME_PALETTES = {
       green: {
-        land: new THREE.Color("#86efac"),
-        ocean: new THREE.Color("#144326"),
-        ring: new THREE.Color("#4ade80"),
-        pin: new THREE.Color("#86efac"),
-        core: new THREE.Color("#031208")
+        land: new THREE.Color("#4ade80"),      // Vibrant luminous neon green
+        ocean: new THREE.Color("#062410"),     // Deep dark matrix forest
+        ring: new THREE.Color("#22c55e"),
+        pin: new THREE.Color("#4ade80"),
+        core: new THREE.Color("#020f06")
       },
       dark: {
-        land: new THREE.Color("#ffffff"),
-        ocean: new THREE.Color("#2a374a"),
-        ring: new THREE.Color("#38bdf8"),
-        pin: new THREE.Color("#ffffff"),
-        core: new THREE.Color("#0a0f18")
+        land: new THREE.Color("#38bdf8"),      // Radiant electric cyber cyan
+        ocean: new THREE.Color("#0f172a"),     // Deep space slate
+        ring: new THREE.Color("#0ea5e9"),
+        pin: new THREE.Color("#38bdf8"),
+        core: new THREE.Color("#030712")
       },
       light: {
-        land: new THREE.Color("#0369a1"),
-        ocean: new THREE.Color("#cbd5e1"),
-        ring: new THREE.Color("#0284c7"),
+        land: new THREE.Color("#0284c7"),      // Crisp architectural high-contrast blue
+        ocean: new THREE.Color("#cbd5e1"),     // Soft muted atmospheric slate
+        ring: new THREE.Color("#0369a1"),
         pin: new THREE.Color("#0284c7"),
-        core: new THREE.Color("#f1f5f9")
+        core: new THREE.Color("#f8fafc")
       },
       amber: {
-        land: new THREE.Color("#fbbf24"),
-        ocean: new THREE.Color("#4a2505"),
-        ring: new THREE.Color("#f59e0b"),
-        pin: new THREE.Color("#fbbf24"),
-        core: new THREE.Color("#140801")
+        land: new THREE.Color("#facc15"),      // Radiant high-voltage amber gold
+        ocean: new THREE.Color("#291202"),     // Deep dark vintage CRT phosphor
+        ring: new THREE.Color("#eab308"),
+        pin: new THREE.Color("#facc15"),
+        core: new THREE.Color("#0d0501")
       }
     };
 
@@ -288,13 +288,12 @@ function initApp() {
     }
     const circleTexture = createCircleTexture();
 
-    const N = 5400;
+    const N = 8400;
     const goldenRatio = (1 + Math.sqrt(5)) / 2;
     const phi = 2 * Math.PI * (1 - 1 / goldenRatio);
 
-    const positions = [];
-    const colors = [];
-    const isLandArray = [];
+    const landPositions = [];
+    const oceanPositions = [];
     const palette = THEME_PALETTES[currentTheme];
 
     for (let i = 0; i < N; i++) {
@@ -305,33 +304,51 @@ function initApp() {
       const x = Math.cos(theta) * radiusAtY;
       const z = Math.sin(theta) * radiusAtY;
 
-      const lat = Math.asin(y) * (180 / Math.PI);
-      const lon = Math.atan2(z, -x) * (180 / Math.PI) - 180;
+      const lat = Math.asin(Math.max(-1, Math.min(1, y))) * (180 / Math.PI);
+      let thetaDeg = Math.atan2(z, -x) * (180 / Math.PI);
+      if (thetaDeg < 0) thetaDeg += 360;
+      const lon = thetaDeg - 180;
 
       const land = isLand(lon, lat);
-      isLandArray.push(land);
 
-      positions.push(x * R, y * R, z * R);
-
-      const c = land ? palette.land : palette.ocean;
-      colors.push(c.r, c.g, c.b);
+      if (land) {
+        // Elevated topographic relief for continents (+0.7 units above sphere surface)
+        const rLand = R + 0.7;
+        landPositions.push(x * rLand, y * rLand, z * rLand);
+      } else {
+        oceanPositions.push(x * R, y * R, z * R);
+      }
     }
 
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    // High-Contrast Continental Landmass Point Cloud (Bold, Glowing, Elevated)
+    const landGeometry = new THREE.BufferGeometry();
+    landGeometry.setAttribute("position", new THREE.Float32BufferAttribute(landPositions, 3));
 
-    const material = new THREE.PointsMaterial({
-      size: 2.8,
-      vertexColors: true,
+    const landMaterial = new THREE.PointsMaterial({
+      size: 3.6,
+      color: palette.land,
       map: circleTexture,
       transparent: true,
       alphaTest: 0.02,
-      opacity: 0.98
+      opacity: 1.0
     });
+    const landPointsMesh = new THREE.Points(landGeometry, landMaterial);
+    globeGroup.add(landPointsMesh);
 
-    const pointsMesh = new THREE.Points(geometry, material);
-    globeGroup.add(pointsMesh);
+    // Subtle Ocean Reference Matrix (Smaller, Dimmer, Recessed)
+    const oceanGeometry = new THREE.BufferGeometry();
+    oceanGeometry.setAttribute("position", new THREE.Float32BufferAttribute(oceanPositions, 3));
+
+    const oceanMaterial = new THREE.PointsMaterial({
+      size: 1.7,
+      color: palette.ocean,
+      map: circleTexture,
+      transparent: true,
+      alphaTest: 0.02,
+      opacity: currentTheme === "light" ? 0.38 : 0.28
+    });
+    const oceanPointsMesh = new THREE.Points(oceanGeometry, oceanMaterial);
+    globeGroup.add(oceanPointsMesh);
 
     // Atmosphere & Solid Curvature Inner Core Sphere (Prevents empty see-through void)
     const coreGeo = new THREE.SphereGeometry(R * 0.985, 48, 48);
@@ -1251,17 +1268,11 @@ function initApp() {
     window.__updateGlobeTheme = function(themeName) {
       currentTheme = themeName;
       const newPalette = THEME_PALETTES[themeName] || THEME_PALETTES.green;
-      const colorAttr = geometry.attributes.color;
-      if (colorAttr) {
-        const arr = colorAttr.array;
-        for (let i = 0; i < N; i++) {
-          const land = isLandArray[i];
-          const c = land ? newPalette.land : newPalette.ocean;
-          arr[i * 3] = c.r;
-          arr[i * 3 + 1] = c.g;
-          arr[i * 3 + 2] = c.b;
-        }
-        colorAttr.needsUpdate = true;
+
+      if (landMaterial) landMaterial.color.copy(newPalette.land);
+      if (oceanMaterial) {
+        oceanMaterial.color.copy(newPalette.ocean);
+        oceanMaterial.opacity = themeName === "light" ? 0.38 : 0.28;
       }
 
       // Main visitor origin node retains its distinct radiant magenta marker

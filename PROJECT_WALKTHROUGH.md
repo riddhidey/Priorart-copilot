@@ -273,9 +273,16 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
      - Updated legend with real-time indicators for Main Node, High (≥90%), Mod (80-89%), Low (<80%), and Registry.
      - Assignee cards in the left HUD display color-coded glowing dots, colored left borders, and exact threat level pills corresponding to their globe nodes.
 
+9. **High-Definition Continental Landmass Highlighting & 3D Topographic Relief**:
+   - **Fixed Longitude Sampling Normalization**: Fixed latitude/longitude inverse formula so that points on the Eastern Hemisphere (Eurasia, Africa, India, China, Japan, Australia) sample the SVG landmask canvas at their exact geographic longitude instead of being clamped to zero.
+   - **Dual Point Cloud Architecture**: Separated the globe into two specialized point systems:
+     - **Continental Landmasses (`landPointsMesh`)**: Dense `3.6px` luminous points elevated radially to `R + 0.7` with `1.0` solid opacity, creating distinct physical topographic relief.
+     - **Ocean Reference Matrix (`oceanPointsMesh`)**: Subtle `1.7px` points at base radius `R` with muted `0.28` opacity, letting continental coastlines boldly stand out.
+   - **Ultra-High Resolution (`8,400` Points)**: Increased Fibonacci sampling density from 5,400 to 8,400 points for razor-sharp continental coastlines and island arcs across all 4 themes.
+
 ---
 
-## 9. How to Run and Test
+## 10. How to Run and Test
 
 ### Local Execution
 ```bash
