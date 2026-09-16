@@ -3383,6 +3383,16 @@ body.broadcast-mode .radar-globe-stage {
   display: flex;
   align-items: center;
   gap: 6px;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 4px;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.legend-item:hover {
+  background: rgba(255, 255, 255, 0.10);
+  transform: translateY(-1px);
 }
 
 .legend-item span {
@@ -3407,8 +3417,8 @@ body.broadcast-mode .radar-globe-stage {
 }
 
 .legend-dot.threat-mod-dot {
-  background: #f59e0b;
-  box-shadow: 0 0 7px #f59e0b;
+  background: #facc15;
+  box-shadow: 0 0 8px #facc15, 0 0 16px rgba(250, 204, 21, 0.6);
 }
 
 .legend-dot.threat-low-dot {
@@ -3456,8 +3466,8 @@ body.broadcast-mode .radar-globe-stage {
 }
 
 [data-theme="light"] .globe-radar-legend .legend-dot.threat-mod-dot {
-  background: #d97706 !important;
-  box-shadow: 0 0 6px rgba(217, 119, 6, 0.7) !important;
+  background: #eab308 !important;
+  box-shadow: 0 0 6px rgba(234, 179, 8, 0.8) !important;
 }
 
 [data-theme="light"] .globe-radar-legend .legend-dot.threat-low-dot {

@@ -904,11 +904,11 @@ function initApp() {
           threatTitle: "Direct Prior-Art Collision"
         };
       }
-      if (sim >= 82) {
+      if (sim >= 80) {
         return {
           levelName: "MOD THREAT",
-          levelColor: new THREE.Color("#f59e0b"),
-          hex: "#f59e0b",
+          levelColor: new THREE.Color("#facc15"),
+          hex: "#facc15",
           badgeClass: "mod",
           threatTitle: "Analogous Domain Prior-Art"
         };
@@ -1054,6 +1054,28 @@ function initApp() {
         .filter(h => h.matchScore > 0)
         .sort((a, b) => b.similarity - a.similarity)
         .slice(0, 4);
+      } else {
+        // Standby baseline: ensures High (Red), Medium (Yellow), and Low (Green) nodes are always rendered on the globe
+        matchedAssignees = [
+          {
+            ...INNOVATION_HUBS_DB[0], // DJI Innovations, Shenzhen, CN (lat 22.54, lon 114.05) -> HIGH THREAT (Red #ef4444)
+            similarity: 94,
+            matchCount: 14,
+            matchScore: 1
+          },
+          {
+            ...INNOVATION_HUBS_DB[1], // Boeing Innovation, Chicago, US (lat 41.87, lon -87.62) -> MOD THREAT (Electric Yellow #facc15)
+            similarity: 86,
+            matchCount: 9,
+            matchScore: 1
+          },
+          {
+            ...INNOVATION_HUBS_DB[2], // Airbus Defence, Toulouse, FR (lat 43.60, lon 1.44) -> LOW THREAT (Emerald Green #10b981)
+            similarity: 78,
+            matchCount: 6,
+            matchScore: 1
+          }
+        ];
       }
 
       // Determine Registries to connect (All connected registries always stay accessible)
@@ -1150,6 +1172,36 @@ function initApp() {
     const mouse = new THREE.Vector2();
     const hoverCard = document.getElementById("globe-node-hover-card");
 
+    function showHubHoverCard(hub) {
+      if (!hub || !hoverCard) return;
+      const levelInfo = hub.levelInfo || getNodeLevelInfo(hub);
+      const flagEl = document.getElementById("hover-node-flag");
+      const titleEl = document.getElementById("hover-node-title");
+      const typeEl = document.getElementById("hover-node-type");
+      const cityEl = document.getElementById("hover-node-city");
+      const matchesEl = document.getElementById("hover-node-matches");
+      const simEl = document.getElementById("hover-node-similarity");
+      const patentEl = document.getElementById("hover-node-patent");
+
+      if (flagEl) flagEl.textContent = hub.flag || "📍";
+      if (titleEl) titleEl.textContent = hub.code || hub.shortName || hub.name;
+      if (typeEl) {
+        typeEl.textContent = levelInfo.levelName;
+        typeEl.style.color = levelInfo.hex;
+        typeEl.style.borderColor = `${levelInfo.hex}55`;
+        typeEl.style.background = `${levelInfo.hex}22`;
+      }
+      if (cityEl) cityEl.textContent = hub.city;
+      if (matchesEl) matchesEl.textContent = hub.matchCount || 12;
+      if (simEl) {
+        simEl.textContent = (hub.similarity || 90) + "%";
+        simEl.style.color = levelInfo.hex;
+      }
+      if (patentEl) patentEl.textContent = `Ref: ${hub.samplePatent || "US10423190B"}`;
+
+      hoverCard.style.display = "flex";
+    }
+
     mount.addEventListener("pointermove", (e) => {
       const rect = mount.getBoundingClientRect();
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -1168,32 +1220,7 @@ function initApp() {
         }
 
         if (hub && hoverCard) {
-          const levelInfo = hub.levelInfo || getNodeLevelInfo(hub);
-          const flagEl = document.getElementById("hover-node-flag");
-          const titleEl = document.getElementById("hover-node-title");
-          const typeEl = document.getElementById("hover-node-type");
-          const cityEl = document.getElementById("hover-node-city");
-          const matchesEl = document.getElementById("hover-node-matches");
-          const simEl = document.getElementById("hover-node-similarity");
-          const patentEl = document.getElementById("hover-node-patent");
-
-          if (flagEl) flagEl.textContent = hub.flag || "📍";
-          if (titleEl) titleEl.textContent = hub.code || hub.shortName || hub.name;
-          if (typeEl) {
-            typeEl.textContent = levelInfo.levelName;
-            typeEl.style.color = levelInfo.hex;
-            typeEl.style.borderColor = `${levelInfo.hex}55`;
-            typeEl.style.background = `${levelInfo.hex}22`;
-          }
-          if (cityEl) cityEl.textContent = hub.city;
-          if (matchesEl) matchesEl.textContent = hub.matchCount || 12;
-          if (simEl) {
-            simEl.textContent = (hub.similarity || 90) + "%";
-            simEl.style.color = levelInfo.hex;
-          }
-          if (patentEl) patentEl.textContent = `Ref: ${hub.samplePatent || "US10423190B"}`;
-
-          hoverCard.style.display = "flex";
+          showHubHoverCard(hub);
         }
       } else if (hoverCard) {
         hoverCard.style.display = "none";
@@ -1331,6 +1358,50 @@ function initApp() {
         }
       });
     }
+
+    // Interactive Click Handlers on Globe Radar Legend Items
+    document.querySelectorAll(".globe-radar-legend .legend-item").forEach(item => {
+      item.addEventListener("click", () => {
+        const type = item.getAttribute("data-focus-type");
+        if (type === "main") {
+          focusCoordinates(visitorCoords.lat, visitorCoords.lon, false);
+          return;
+        }
+        if (type === "mod") {
+          // Focus directly on yellow moderate threat node (e.g. Boeing in Chicago)
+          const modPin = activeHubPins.find(p => p.levelInfo && p.levelInfo.badgeClass === "mod");
+          if (modPin && modPin.hub) {
+            focusCoordinates(modPin.hub.lat, modPin.hub.lon, false);
+            showHubHoverCard(modPin.hub);
+          }
+          return;
+        }
+        if (type === "high") {
+          const highPin = activeHubPins.find(p => p.levelInfo && p.levelInfo.badgeClass === "high");
+          if (highPin && highPin.hub) {
+            focusCoordinates(highPin.hub.lat, highPin.hub.lon, false);
+            showHubHoverCard(highPin.hub);
+          }
+          return;
+        }
+        if (type === "low") {
+          const lowPin = activeHubPins.find(p => p.levelInfo && p.levelInfo.badgeClass === "low");
+          if (lowPin && lowPin.hub) {
+            focusCoordinates(lowPin.hub.lat, lowPin.hub.lon, false);
+            showHubHoverCard(lowPin.hub);
+          }
+          return;
+        }
+        if (type === "registry") {
+          const regPin = activeHubPins.find(p => p.isReg);
+          if (regPin && regPin.hub) {
+            focusCoordinates(regPin.hub.lat, regPin.hub.lon, false);
+            showHubHoverCard(regPin.hub);
+          }
+          return;
+        }
+      });
+    });
 
     // Geolocation Resolution
     async function resolveClientLocation() {
