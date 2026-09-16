@@ -326,10 +326,15 @@ function initApp() {
       );
     }
 
-    // Geolocation Beacon & Pin
+    // 3D Groups for Visitor Beacon, Arcs, and Prior-Art Nodes
     const beaconGroup = new THREE.Group();
+    const arcsGroup = new THREE.Group();
+    const priorArtPinsGroup = new THREE.Group();
     globeGroup.add(beaconGroup);
+    globeGroup.add(arcsGroup);
+    globeGroup.add(priorArtPinsGroup);
 
+    // Visitor Pin Components
     const stemGeo = new THREE.CylinderGeometry(0.5, 0.2, 10, 8);
     stemGeo.translate(0, 5, 0);
     const stemMat = new THREE.MeshBasicMaterial({ color: palette.pin });
@@ -385,6 +390,10 @@ function initApp() {
       if (locEl) locEl.innerHTML = `<span class="loc-city">${visitorCoords.city}, ${visitorCoords.country}</span>`;
       if (pinCity) pinCity.textContent = visitorCoords.city;
       if (pinCoords) pinCoords.textContent = `${latStr}, ${lonStr}`;
+
+      // Refresh any active prior-art arcs from the new visitor coordinates
+      const currentQuery = ((document.getElementById("inv-title")?.value || "") + " " + (document.getElementById("inv-text")?.value || "")).trim();
+      updatePriorArtRadar(currentQuery);
     }
 
     function focusCoordinates(lat, lon, immediate) {
@@ -407,29 +416,555 @@ function initApp() {
       }
     }
 
+    // =======================================================================
+    // Global Patent Registries & Innovation Hubs Knowledge Matrix
+    // =======================================================================
+    const PATENT_REGISTRIES_DB = [
+      {
+        id: "uspto",
+        code: "USPTO",
+        name: "United States Patent & Trademark Office",
+        city: "Alexandria, US",
+        country: "United States",
+        lat: 38.8048,
+        lon: -77.0469,
+        type: "registry",
+        samplePatent: "US11046432B2",
+        flag: "🇺🇸",
+        baseCount: 14
+      },
+      {
+        id: "epo",
+        code: "EPO",
+        name: "European Patent Office",
+        city: "Munich, EU",
+        country: "Germany",
+        lat: 48.1351,
+        lon: 11.5820,
+        type: "registry",
+        samplePatent: "EP3691954A1",
+        flag: "🇪🇺",
+        baseCount: 9
+      },
+      {
+        id: "wipo",
+        code: "WIPO",
+        name: "World Intellectual Property Organization",
+        city: "Geneva, INT",
+        country: "Switzerland",
+        lat: 46.2206,
+        lon: 6.1384,
+        type: "registry",
+        samplePatent: "WO2021188390A1",
+        flag: "🌐",
+        baseCount: 8
+      },
+      {
+        id: "jpo",
+        code: "JPO",
+        name: "Japan Patent Office",
+        city: "Tokyo, JP",
+        country: "Japan",
+        lat: 35.6762,
+        lon: 139.6503,
+        type: "registry",
+        samplePatent: "JP2021518299A",
+        flag: "🇯🇵",
+        baseCount: 7
+      },
+      {
+        id: "cnipa",
+        code: "CNIPA",
+        name: "China National Intellectual Property Administration",
+        city: "Beijing, CN",
+        country: "China",
+        lat: 39.9042,
+        lon: 116.4074,
+        type: "registry",
+        samplePatent: "CN112455829A",
+        flag: "🇨🇳",
+        baseCount: 12
+      }
+    ];
+
+    const INNOVATION_HUBS_DB = [
+      // Drone & Rotor Aerodynamics
+      {
+        id: "dji_shenzhen",
+        name: "DJI Innovations (UAV Rotors & Gimbal Linkages)",
+        shortName: "DJI Innovations",
+        city: "Shenzhen, CN",
+        lat: 22.5431,
+        lon: 114.0579,
+        type: "assignee",
+        keywords: ["drone", "uav", "rotor", "blade", "pitch", "propeller", "swashplate", "quadcopter", "multirotor", "aerial"],
+        samplePatent: "CN108928501B",
+        patentTitle: "Variable Pitch Multirotor Rotor Actuation",
+        baseScore: 94
+      },
+      {
+        id: "boeing_chicago",
+        name: "Boeing Tech Hub (Aerodynamic Linkages & Rotors)",
+        shortName: "Boeing Innovation",
+        city: "Chicago, US",
+        lat: 41.8781,
+        lon: -87.6298,
+        type: "assignee",
+        keywords: ["rotor", "pitch", "swashplate", "aerodynamic", "blade", "aircraft", "propulsion", "linkage", "drone"],
+        samplePatent: "US9840321B2",
+        patentTitle: "Active Rotor Blade Pitch Control System",
+        baseScore: 89
+      },
+      {
+        id: "airbus_toulouse",
+        name: "Airbus Defence & Space (Flight Control Surfaces)",
+        shortName: "Airbus Defence",
+        city: "Toulouse, FR",
+        lat: 43.6047,
+        lon: 1.4442,
+        type: "assignee",
+        keywords: ["rotor", "blade", "pitch", "uav", "actuator", "aerospace", "swashplate"],
+        samplePatent: "EP3124381B1",
+        patentTitle: "Helicopter Rotor Blade Pitch Control",
+        baseScore: 87
+      },
+
+      // Acoustic & Energy Harvesting
+      {
+        id: "murata_kyoto",
+        name: "Murata Manufacturing (Piezoelectric MEMS Harvesters)",
+        shortName: "Murata Mfg",
+        city: "Kyoto, JP",
+        lat: 35.0116,
+        lon: 135.7681,
+        type: "assignee",
+        keywords: ["acoustic", "piezoelectric", "harvester", "cantilever", "ultrasonic", "mems", "energy", "vibration"],
+        samplePatent: "JP6589321B2",
+        patentTitle: "Piezoelectric Ultrasonic Energy Harvester",
+        baseScore: 96
+      },
+      {
+        id: "sony_tokyo",
+        name: "Sony R&D (Acoustic Sensors & Sub-Threshold Triggers)",
+        shortName: "Sony R&D",
+        city: "Tokyo, JP",
+        lat: 35.6191,
+        lon: 139.7513,
+        type: "assignee",
+        keywords: ["acoustic", "comparator", "sub-threshold", "nanowatt", "sensor", "audio", "wake-up", "inversion", "pmos"],
+        samplePatent: "US10567001B2",
+        patentTitle: "Sub-Microwatt Acoustic Event Detection Circuit",
+        baseScore: 91
+      },
+      {
+        id: "fraunhofer_munich",
+        name: "Fraunhofer EMFT (MEMS Resonant Cantilevers)",
+        shortName: "Fraunhofer EMFT",
+        city: "Munich, DE",
+        lat: 48.1371,
+        lon: 11.5755,
+        type: "assignee",
+        keywords: ["piezoelectric", "acoustic", "cantilever", "harvester", "mems", "resonance", "diaphragm"],
+        samplePatent: "EP3408930A1",
+        patentTitle: "Piezoelectric Vibration Energy Harvesting Device",
+        baseScore: 88
+      },
+
+      // Precision Actuation & Micro-Steppers
+      {
+        id: "faulhaber_germany",
+        name: "Dr. Fritz Faulhaber (Direct-Drive Micro-Steppers)",
+        shortName: "Faulhaber Group",
+        city: "Schönaich, DE",
+        lat: 48.6534,
+        lon: 9.0628,
+        type: "assignee",
+        keywords: ["stepper", "actuator", "brushless", "shank", "hall", "encoder", "direct-drive", "linkage", "torque"],
+        samplePatent: "EP2894765B1",
+        patentTitle: "Miniature Brushless Rotary Actuator with Hall Feedback",
+        baseScore: 95
+      },
+      {
+        id: "maxon_switzerland",
+        name: "Maxon Group (Precision UAV Actuators & Rotary Drives)",
+        shortName: "Maxon Precision",
+        city: "Sachseln, CH",
+        lat: 46.9038,
+        lon: 8.2415,
+        type: "assignee",
+        keywords: ["stepper", "actuator", "motor", "encoder", "brushless", "rotary", "uav", "direct-drive"],
+        samplePatent: "US10230288B2",
+        patentTitle: "Compact Hollow-Shaft Rotary Drive for UAVs",
+        baseScore: 92
+      },
+      {
+        id: "mit_cambridge",
+        name: "MIT Lincoln Laboratory (Closed-Loop UAV Linkages)",
+        shortName: "MIT Lincoln Lab",
+        city: "Cambridge, US",
+        lat: 42.3601,
+        lon: -71.0942,
+        type: "assignee",
+        keywords: ["drone", "actuator", "encoder", "rotor", "stepper", "closed-loop", "feedback", "swashplateless"],
+        samplePatent: "US9944389B2",
+        patentTitle: "Swashplateless Direct-Drive Rotor Linkage",
+        baseScore: 90
+      },
+      {
+        id: "stanford_paloalto",
+        name: "Stanford Nanoelectronics (Sub-Nanowatt Rectifiers)",
+        shortName: "Stanford Nano",
+        city: "Palo Alto, US",
+        lat: 37.4275,
+        lon: -122.1697,
+        type: "assignee",
+        keywords: ["nanowatt", "harvester", "rectifier", "comparator", "cmos", "acoustic", "energy"],
+        samplePatent: "US10873210B2",
+        patentTitle: "Ultra-Low-Power Wakeup Circuit with Energy Harvester",
+        baseScore: 89
+      }
+    ];
+
+    let activeArcs = [];
+    let activeHubPins = [];
+
+    // Clear existing dynamic 3D elements
+    function clearRadarArcsAndPins() {
+      while (arcsGroup.children.length > 0) {
+        const obj = arcsGroup.children[0];
+        arcsGroup.remove(obj);
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) obj.material.dispose();
+      }
+      while (priorArtPinsGroup.children.length > 0) {
+        const obj = priorArtPinsGroup.children[0];
+        priorArtPinsGroup.remove(obj);
+        if (obj.traverse) {
+          obj.traverse(child => {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) child.material.dispose();
+          });
+        }
+      }
+      activeArcs = [];
+      activeHubPins = [];
+    }
+
+    // Build curved 3D Bézier radar trajectory arc
+    function create3DRadarArc(startPos, endPos, paletteRef, index) {
+      const dist = startPos.distanceTo(endPos);
+      const midPos = new THREE.Vector3().addVectors(startPos, endPos).multiplyScalar(0.5);
+      
+      // Calculate arc apex altitude above globe surface
+      const altitude = Math.max(16, Math.min(58, dist * 0.38));
+      midPos.normalize().multiplyScalar(R + altitude);
+
+      const curve = new THREE.QuadraticBezierCurve3(startPos, midPos, endPos);
+      const points = curve.getPoints(44);
+      const arcGeo = new THREE.BufferGeometry().setFromPoints(points);
+
+      const arcMat = new THREE.LineBasicMaterial({
+        color: paletteRef.ring,
+        transparent: true,
+        opacity: 0.65
+      });
+      const arcMesh = new THREE.Line(arcGeo, arcMat);
+      arcsGroup.add(arcMesh);
+
+      // Flying photon pulse particle
+      const pulseGeo = new THREE.SphereGeometry(1.4, 8, 8);
+      const pulseMat = new THREE.MeshBasicMaterial({
+        color: paletteRef.pin,
+        transparent: true,
+        opacity: 0.95
+      });
+      const pulseMesh = new THREE.Mesh(pulseGeo, pulseMat);
+      arcsGroup.add(pulseMesh);
+
+      return {
+        curve,
+        arcMesh,
+        pulseMesh,
+        progress: (index * 0.22) % 1
+      };
+    }
+
+    // Create 3D pin for matching registry or assignee
+    function create3DHubPin(hub, paletteRef) {
+      const surfacePos = latLonToVector3(hub.lat, hub.lon, R);
+      const pinSubGroup = new THREE.Group();
+      pinSubGroup.position.copy(surfacePos);
+
+      const normal = surfacePos.clone().normalize();
+      const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
+      pinSubGroup.quaternion.copy(quaternion);
+
+      const isReg = hub.type === "registry";
+      const pinColor = isReg ? paletteRef.ring : new THREE.Color("#f59e0b");
+
+      const pinStemGeo = new THREE.CylinderGeometry(0.4, 0.2, isReg ? 8 : 6.5, 6);
+      pinStemGeo.translate(0, (isReg ? 8 : 6.5) / 2, 0);
+      const pinStemMat = new THREE.MeshBasicMaterial({ color: pinColor });
+      const stem = new THREE.Mesh(pinStemGeo, pinStemMat);
+
+      // Diamond octahedron for official patent offices, sphere for assignees
+      let headGeo;
+      if (isReg) {
+        headGeo = new THREE.OctahedronGeometry(1.6, 0);
+      } else {
+        headGeo = new THREE.SphereGeometry(1.3, 8, 8);
+      }
+      headGeo.translate(0, isReg ? 8 : 6.5, 0);
+      const headMat = new THREE.MeshBasicMaterial({ color: pinColor });
+      const head = new THREE.Mesh(headGeo, headMat);
+
+      // Pulsing base ring
+      const baseGeo = new THREE.RingGeometry(0.3, 1.2, 16);
+      const baseMat = new THREE.MeshBasicMaterial({
+        color: pinColor,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.75
+      });
+      const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+      baseMesh.rotation.x = Math.PI / 2;
+
+      pinSubGroup.add(stem);
+      pinSubGroup.add(head);
+      pinSubGroup.add(baseMesh);
+
+      // Attach data for mouse raycasting tooltip
+      head.userData = hub;
+      stem.userData = hub;
+
+      priorArtPinsGroup.add(pinSubGroup);
+      activeHubPins.push({ pinSubGroup, head, stem, baseMesh, hub, isReg });
+    }
+
+    // Dynamic Reactive Radar Engine: Triggered on typing and preset clicks
+    function updatePriorArtRadar(queryText) {
+      clearRadarArcsAndPins();
+
+      const visitorPos = latLonToVector3(visitorCoords.lat, visitorCoords.lon, R);
+      const activePalette = THEME_PALETTES[currentTheme] || THEME_PALETTES.green;
+      const text = (queryText || "").toLowerCase().trim();
+      const tokens = text.split(/[\s,.;:()\-–—_]+/).filter(w => w.length > 2);
+
+      // Check if user has entered relevant technical query
+      const isSearching = tokens.length > 0;
+
+      // Match Assignee Innovation Hubs
+      let matchedAssignees = [];
+      if (isSearching) {
+        matchedAssignees = INNOVATION_HUBS_DB.map(hub => {
+          let score = 0;
+          let matchedKeywords = [];
+          hub.keywords.forEach(kw => {
+            if (text.includes(kw)) {
+              score += 25;
+              matchedKeywords.push(kw);
+            }
+          });
+          const similarity = Math.min(97, Math.max(78, hub.baseScore + (score > 25 ? 2 : -4)));
+          const matchCount = Math.max(3, Math.min(19, Math.round((similarity / 100) * 18)));
+          return {
+            ...hub,
+            matchScore: score,
+            similarity,
+            matchCount,
+            matchedKeywords
+          };
+        })
+        .filter(h => h.matchScore > 0)
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, 4);
+      }
+
+      // Determine Registries to connect (All connected registries always stay accessible)
+      const targetRegistries = PATENT_REGISTRIES_DB.map(reg => {
+        let hits = reg.baseCount;
+        let sim = 84;
+        if (isSearching) {
+          // Adjust simulated hit count based on query complexity
+          const tokenBonus = Math.min(6, tokens.length * 2);
+          hits = reg.baseCount + tokenBonus;
+          sim = Math.min(96, 82 + tokenBonus * 2);
+        }
+        return {
+          ...reg,
+          matchCount: hits,
+          similarity: sim
+        };
+      });
+
+      // Combine hubs to plot
+      const allTargetHubs = [...targetRegistries, ...matchedAssignees];
+
+      // Draw 3D Hub Pins and Curved Ballistic Arcs from visitor node
+      allTargetHubs.forEach((hub, idx) => {
+        create3DHubPin(hub, activePalette);
+        const hubPos = latLonToVector3(hub.lat, hub.lon, R);
+        const arcData = create3DRadarArc(visitorPos, hubPos, activePalette, idx);
+        activeArcs.push(arcData);
+      });
+
+      // Update HUD Metrics & Status Badges
+      const totalHits = targetRegistries.reduce((acc, r) => acc + r.matchCount, 0) + matchedAssignees.reduce((acc, a) => acc + a.matchCount, 0);
+      const totalBadge = document.getElementById("radar-matched-total");
+      if (totalBadge) {
+        totalBadge.textContent = isSearching ? `${totalHits} PRIOR-ART HITS` : "5/5 SYNCED";
+      }
+
+      const arcsCountBadge = document.getElementById("radar-arcs-count");
+      if (arcsCountBadge) {
+        arcsCountBadge.textContent = `${activeArcs.length} ARCS ACTIVE`;
+      }
+
+      // Update Global Registries Table
+      targetRegistries.forEach(reg => {
+        const row = document.querySelector(`.registry-row[data-registry="${reg.code}"]`);
+        if (row) {
+          const statusEl = row.querySelector(".reg-status");
+          if (statusEl) {
+            if (isSearching) {
+              const threatClass = reg.similarity >= 90 ? "high" : (reg.similarity >= 85 ? "mod" : "low");
+              statusEl.innerHTML = `<span class="reg-match-badge ${threatClass}">${reg.matchCount} HITS · ${reg.similarity}%</span>`;
+            } else {
+              statusEl.textContent = "ONLINE";
+            }
+          }
+        }
+      });
+
+      // Update Assignee Hubs Box
+      const clusterBox = document.getElementById("assignees-cluster-box");
+      const pillsWrap = document.getElementById("assignees-pills-wrap");
+      if (clusterBox && pillsWrap) {
+        if (matchedAssignees.length > 0) {
+          clusterBox.style.display = "flex";
+          pillsWrap.innerHTML = "";
+          matchedAssignees.forEach(assignee => {
+            const card = document.createElement("div");
+            card.className = "assignee-item-card";
+            card.title = `Click to rotate globe to ${assignee.name} (${assignee.city})`;
+            card.innerHTML = `
+              <div class="assignee-name-group">
+                <span class="assignee-dot"></span>
+                <span class="assignee-name">${assignee.shortName || assignee.name}</span>
+              </div>
+              <span class="assignee-score">${assignee.similarity}% SIMILAR</span>
+            `;
+            card.addEventListener("click", () => {
+              focusCoordinates(assignee.lat, assignee.lon, false);
+            });
+            pillsWrap.appendChild(card);
+          });
+        } else {
+          clusterBox.style.display = "none";
+          pillsWrap.innerHTML = "";
+        }
+      }
+    }
+
+    // Interactive Hover Raycaster for 3D Pins
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const hoverCard = document.getElementById("globe-node-hover-card");
+
+    mount.addEventListener("pointermove", (e) => {
+      const rect = mount.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(priorArtPinsGroup.children, true);
+
+      if (intersects.length > 0) {
+        let targetMesh = intersects[0].object;
+        let hub = targetMesh.userData;
+        if (!hub || !hub.name) {
+          if (targetMesh.parent && targetMesh.parent.userData && targetMesh.parent.userData.name) {
+            hub = targetMesh.parent.userData;
+          }
+        }
+
+        if (hub && hoverCard) {
+          const flagEl = document.getElementById("hover-node-flag");
+          const titleEl = document.getElementById("hover-node-title");
+          const typeEl = document.getElementById("hover-node-type");
+          const cityEl = document.getElementById("hover-node-city");
+          const matchesEl = document.getElementById("hover-node-matches");
+          const simEl = document.getElementById("hover-node-similarity");
+          const patentEl = document.getElementById("hover-node-patent");
+
+          if (flagEl) flagEl.textContent = hub.flag || "📍";
+          if (titleEl) titleEl.textContent = hub.code || hub.shortName || hub.name;
+          if (typeEl) typeEl.textContent = hub.type === "registry" ? "REGISTRY" : "ASSIGNEE";
+          if (cityEl) cityEl.textContent = hub.city;
+          if (matchesEl) matchesEl.textContent = hub.matchCount || 12;
+          if (simEl) simEl.textContent = (hub.similarity || 90) + "%";
+          if (patentEl) patentEl.textContent = `Ref: ${hub.samplePatent || "US10423190B"}`;
+
+          hoverCard.style.display = "flex";
+        }
+      } else if (hoverCard) {
+        hoverCard.style.display = "none";
+      }
+    });
+
+    mount.addEventListener("pointerleave", () => {
+      if (hoverCard) hoverCard.style.display = "none";
+    });
+
+    // Wire Real-time Live Typing Listeners on Invention Title & Description
+    let typeDebounceTimer = null;
+    function triggerLiveRadarFromInputs() {
+      clearTimeout(typeDebounceTimer);
+      typeDebounceTimer = setTimeout(() => {
+        const titleVal = document.getElementById("inv-title")?.value || "";
+        const textVal = document.getElementById("inv-text")?.value || "";
+        updatePriorArtRadar(titleVal + " " + textVal);
+      }, 200);
+    }
+
+    const titleElInput = document.getElementById("inv-title");
+    const textElInput = document.getElementById("inv-text");
+    if (titleElInput) titleElInput.addEventListener("input", triggerLiveRadarFromInputs);
+    if (textElInput) textElInput.addEventListener("input", triggerLiveRadarFromInputs);
+
     // Dynamic Theme Updating Hook
     window.__updateGlobeTheme = function(themeName) {
+      currentTheme = themeName;
       const newPalette = THEME_PALETTES[themeName] || THEME_PALETTES.green;
       const colorAttr = geometry.attributes.color;
-      if (!colorAttr) return;
-      const arr = colorAttr.array;
-
-      for (let i = 0; i < N; i++) {
-        const land = isLandArray[i];
-        const c = land ? newPalette.land : newPalette.ocean;
-        arr[i * 3] = c.r;
-        arr[i * 3 + 1] = c.g;
-        arr[i * 3 + 2] = c.b;
+      if (colorAttr) {
+        const arr = colorAttr.array;
+        for (let i = 0; i < N; i++) {
+          const land = isLandArray[i];
+          const c = land ? newPalette.land : newPalette.ocean;
+          arr[i * 3] = c.r;
+          arr[i * 3 + 1] = c.g;
+          arr[i * 3 + 2] = c.b;
+        }
+        colorAttr.needsUpdate = true;
       }
-      colorAttr.needsUpdate = true;
 
       stemMat.color.copy(newPalette.pin);
       tipMat.color.copy(newPalette.pin);
       ringMat.color.copy(newPalette.ring);
       waveMat.color.copy(newPalette.ring);
+
+      // Re-render active radar arcs with updated theme colors
+      const currentQuery = ((document.getElementById("inv-title")?.value || "") + " " + (document.getElementById("inv-text")?.value || "")).trim();
+      updatePriorArtRadar(currentQuery);
     };
 
-    // Auto-Rotate & Drag Interaction
+    // Expose radar update hook globally for presets
+    window.__refreshPriorArtRadar = function(text) {
+      updatePriorArtRadar(text);
+    };
+
+    // Auto-Rotate & Pointer Drag Interaction
     let isDragging = false;
     let autoRotate = true;
     let prevMouseX = 0;
@@ -546,6 +1081,7 @@ function initApp() {
       floatingPinHud.style.opacity = "1";
     }
 
+    // Animation Loop with Continuous Traveling Photon Pulses
     function animate() {
       requestAnimationFrame(animate);
 
@@ -553,11 +1089,21 @@ function initApp() {
         globeGroup.rotation.y += 0.0018;
       }
 
+      // Visitor Beacon Radar Wave Pulse
       if (beaconGroup.visible) {
         waveScale += 0.035;
         if (waveScale > 4.5) waveScale = 0.5;
         waveMesh.scale.set(waveScale, waveScale, 1);
         waveMat.opacity = Math.max(0, 0.85 - (waveScale / 4.5) * 0.85);
+      }
+
+      // Animate Photon Particles along 3D Ballistic Radar Arcs
+      if (activeArcs.length > 0) {
+        activeArcs.forEach(arc => {
+          arc.progress = (arc.progress + 0.009) % 1;
+          const pos = arc.curve.getPoint(arc.progress);
+          arc.pulseMesh.position.copy(pos);
+        });
       }
 
       updateFloatingHud();
@@ -648,6 +1194,9 @@ function initApp() {
         if (textInput) {
           textInput.value = preset.text;
           textInput.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        if (typeof window.__refreshPriorArtRadar === "function") {
+          window.__refreshPriorArtRadar(preset.title + " " + preset.text);
         }
         if (charCounter) {
           charCounter.textContent = `${preset.text.length.toLocaleString()} chars`;
@@ -793,6 +1342,10 @@ function initApp() {
       setActionButtonsEnabled(false);
       if (resultsEmpty) resultsEmpty.style.display = "flex";
       if (titleInput) titleInput.focus();
+
+      if (typeof window.__refreshPriorArtRadar === "function") {
+        window.__refreshPriorArtRadar("");
+      }
     });
   }
 

@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/static/style.css?v=23.0">
+  <link rel="stylesheet" href="/static/style.css?v=24.0">
 </head>
 <body>
 
@@ -231,39 +231,48 @@
           <div class="hud-card registries-card">
             <div class="hud-card-header">
               <span class="hud-tag">CONNECTED PATENT REGISTRIES</span>
-              <span class="registry-count">5/5 SYNCED</span>
+              <span class="registry-count" id="radar-matched-total">5/5 SYNCED</span>
             </div>
-            <div class="registries-grid">
-              <div class="registry-row">
+            <div class="registries-grid" id="registries-grid-container">
+              <div class="registry-row" data-registry="USPTO">
                 <span class="reg-dot active"></span>
                 <span class="reg-code">USPTO</span>
                 <span class="reg-loc">Alexandria, US</span>
-                <span class="reg-status">ONLINE</span>
+                <span class="reg-status" id="reg-status-uspto">ONLINE</span>
               </div>
-              <div class="registry-row">
+              <div class="registry-row" data-registry="EPO">
                 <span class="reg-dot active"></span>
                 <span class="reg-code">EPO</span>
                 <span class="reg-loc">Munich, EU</span>
-                <span class="reg-status">ONLINE</span>
+                <span class="reg-status" id="reg-status-epo">ONLINE</span>
               </div>
-              <div class="registry-row">
+              <div class="registry-row" data-registry="WIPO">
                 <span class="reg-dot active"></span>
                 <span class="reg-code">WIPO</span>
                 <span class="reg-loc">Geneva, INT</span>
-                <span class="reg-status">ONLINE</span>
+                <span class="reg-status" id="reg-status-wipo">ONLINE</span>
               </div>
-              <div class="registry-row">
+              <div class="registry-row" data-registry="JPO">
                 <span class="reg-dot active"></span>
                 <span class="reg-code">JPO</span>
                 <span class="reg-loc">Tokyo, JP</span>
-                <span class="reg-status">ONLINE</span>
+                <span class="reg-status" id="reg-status-jpo">ONLINE</span>
               </div>
-              <div class="registry-row">
+              <div class="registry-row" data-registry="CNIPA">
                 <span class="reg-dot active"></span>
                 <span class="reg-code">CNIPA</span>
                 <span class="reg-loc">Beijing, CN</span>
-                <span class="reg-status">ONLINE</span>
+                <span class="reg-status" id="reg-status-cnipa">ONLINE</span>
               </div>
+            </div>
+
+            <!-- Top Matched Assignees / Innovation Hubs Box -->
+            <div class="assignees-cluster-box" id="assignees-cluster-box" style="display: none;">
+              <div class="cluster-box-header">
+                <span class="hud-tag">MATCHED ASSIGNEE HUBS</span>
+                <span class="cluster-live-tag">LIVE ARCS</span>
+              </div>
+              <div class="assignees-pills-wrap" id="assignees-pills-wrap"></div>
             </div>
           </div>
 
@@ -278,8 +287,8 @@
               <span class="metric-num">23.44° TILT</span>
             </div>
             <div class="hud-micro-metric">
-              <span class="metric-lbl">LATENCY</span>
-              <span class="metric-num">< 300 MS</span>
+              <span class="metric-lbl">RADAR ARCS</span>
+              <span class="metric-num" id="radar-arcs-count">STANDBY</span>
             </div>
           </div>
         </div>
@@ -312,10 +321,34 @@
             </div>
           </div>
 
+          <!-- Dynamic Prior-Art Node Hover Card -->
+          <div class="globe-node-hover-card" id="globe-node-hover-card" style="display: none;">
+            <div class="hover-card-header">
+              <span class="hover-card-flag" id="hover-node-flag">🌐</span>
+              <span class="hover-card-title" id="hover-node-title">USPTO</span>
+              <span class="hover-card-type" id="hover-node-type">REGISTRY</span>
+            </div>
+            <div class="hover-card-city" id="hover-node-city">Alexandria, US</div>
+            <div class="hover-card-stats">
+              <span class="hover-stat-item"><strong id="hover-node-matches">14</strong> Matches</span>
+              <span class="hover-stat-divider">·</span>
+              <span class="hover-stat-item text-accent"><strong id="hover-node-similarity">94%</strong> Similarity</span>
+            </div>
+            <div class="hover-card-patent" id="hover-node-patent">Ref: US11046432B2</div>
+          </div>
+
+          <!-- Interactive Radar Legend -->
+          <div class="globe-radar-legend">
+            <div class="legend-item"><span class="legend-dot client-dot"></span><span>Client</span></div>
+            <div class="legend-item"><span class="legend-dot registry-dot"></span><span>Patent Office</span></div>
+            <div class="legend-item"><span class="legend-dot assignee-dot"></span><span>Prior-Art Hub</span></div>
+            <div class="legend-item"><span class="legend-line"></span><span>Radar Trajectory</span></div>
+          </div>
+
           <!-- Interactive Drag Hint -->
           <div class="globe-drag-hint">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
-            <span>DRAG TO ROTATE · SCROLL TO ZOOM</span>
+            <span>TYPE TITLE/DESCRIPTION TO TRIGGER 3D PRIOR-ART ARCS</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
           </div>
 
@@ -658,7 +691,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-  <script src="/static/world_land_data.js?v=23.0"></script>
-  <script src="/static/app.js?v=23.0"></script>
+  <script src="/static/world_land_data.js?v=24.0"></script>
+  <script src="/static/app.js?v=24.0"></script>
 </body>
 </html>

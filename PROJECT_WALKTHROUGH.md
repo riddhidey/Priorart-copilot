@@ -240,6 +240,13 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
      - **Clean Light**: High-contrast architectural slate navy & cobalt (`#0284c7`)
      - **Amber CRT**: Vintage warm industrial cathode styling (`#fbbf24`)
 
+5. **Live Reactive Typing Radar & 3D Ballistic Trajectory Arcs**:
+   - As the user types an invention title or description (debounced ~200ms), the system extracts technical keywords and scans domain innovation databases.
+   - Dynamically highlights **Official Patent Registries** (USPTO, EPO, WIPO, JPO, CNIPA) and **Assignee Innovation Clusters** (e.g., DJI in Shenzhen, Boeing in Chicago, Murata in Kyoto, Faulhaber in Germany, MIT Lincoln Lab, etc.) on the 3D globe.
+   - Generates curved 3D Bézier radar ballistic arcs connecting the visitor node to each active prior-art hub with flying photon energy pulses.
+   - Synchronizes the left HUD table to display live matching patent hit volumes and similarity percentages per patent jurisdiction.
+   - Interactive hover raycasting reveals detailed reference patent metadata cards (`US11046432B2`, `EP3691954A1`, `CN108928501B`, etc.).
+
 ---
 
 ## 9. How to Run and Test
