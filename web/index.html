@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/static/style.css?v=43.0">
+  <link rel="stylesheet" href="/static/style.css?v=44.0">
 </head>
 <body>
 
@@ -737,6 +737,14 @@
         <span>Built by <strong class="author-name">Riddhi Dey</strong></span>
       </div>
       <div class="footer-right">
+        <button type="button" id="btn-about-modal" class="footer-about-btn" title="Learn how PriorArt Copilot & Multi-Agent AI works">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>About Model & Architecture</span>
+        </button>
         <a href="https://github.com/riddhidey/Priorart-copilot" target="_blank" rel="noopener noreferrer" class="footer-github-link">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
           <span>GitHub / Priorart-copilot</span>
@@ -745,12 +753,167 @@
     </footer>
   </div>
 
+  <!-- High-Tech About Model & System Architecture Modal Overlay ("Hover Page") -->
+  <div id="about-model-modal" class="about-modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="about-modal-title">
+    <div class="about-modal-backdrop" id="about-modal-backdrop"></div>
+    <div class="about-modal-dialog">
+      <!-- Reticle corner brackets -->
+      <span class="about-modal-bracket top-left">┌</span>
+      <span class="about-modal-bracket top-right">┐</span>
+      <span class="about-modal-bracket bottom-left">└</span>
+      <span class="about-modal-bracket bottom-right">┘</span>
+
+      <!-- Modal Header -->
+      <div class="about-modal-header">
+        <div class="about-modal-title-wrap">
+          <span class="about-modal-status-dot"></span>
+          <div>
+            <h3 class="about-modal-title" id="about-modal-title">SYS // ABOUT PRIORART COPILOT & AI ARCHITECTURE</h3>
+            <span class="about-modal-subtitle">Autonomous Multi-Agent Patentability & Prior-Art Collision Intelligence</span>
+          </div>
+        </div>
+        <button type="button" class="about-modal-close-btn" id="btn-close-about-modal" title="Close Dialog (Esc)" aria-label="Close dialog">
+          <span>✕</span>
+          <span class="about-close-key">ESC</span>
+        </button>
+      </div>
+
+      <!-- Modal Scrollable Body -->
+      <div class="about-modal-body">
+        
+        <!-- Section 1: Executive Mission -->
+        <section class="about-modal-section">
+          <div class="about-section-header">
+            <span class="about-section-badge">01 / PURPOSE</span>
+            <h4>What This Website & Intelligence Platform Does</h4>
+          </div>
+          <p class="about-desc-text">
+            <strong>PriorArt Copilot</strong> is a production-grade, multi-agent AI research workstation that solves the most costly bottleneck in patent prosecution: <em>preliminary patentability screening and prior-art collision detection</em>.
+          </p>
+          <p class="about-desc-text">
+            Filing invalid patent applications costs law firms and enterprises millions in rejection fees and wasted prosecution cycles. PriorArt Copilot automatically deconstructs invention disclosures into discrete claim elements, queries global patent registries across 5 major jurisdictions, tests for <strong>35 U.S.C. § 102 (Novelty)</strong> direct anticipation and <strong>35 U.S.C. § 103 (Obviousness)</strong> combinations, and synthesizes audit-ready legal examination memos with strict verbatim citation traceability.
+          </p>
+        </section>
+
+        <!-- Section 2: Multi-Agent Architecture -->
+        <section class="about-modal-section">
+          <div class="about-section-header">
+            <span class="about-section-badge">02 / AGENT PIPELINE</span>
+            <h4>Autonomous Multi-Agent Neural Pipeline (How It Works)</h4>
+          </div>
+          <div class="about-agents-grid">
+            
+            <div class="about-agent-card">
+              <div class="about-agent-num">AGENT 01</div>
+              <div class="about-agent-title">Claim Element Deconstructor</div>
+              <p class="about-agent-desc">
+                Extracts and normalizes the invention disclosure into independent, non-overlapping claim elements, categorizing each into physical limitations, functional steps, and measurable tolerances.
+              </p>
+              <div class="about-agent-tag">LangGraph · Gemini 2.5 Flash</div>
+            </div>
+
+            <div class="about-agent-card">
+              <div class="about-agent-num">AGENT 02</div>
+              <div class="about-agent-title">Multi-Jurisdiction Prior-Art Mesh</div>
+              <p class="about-agent-desc">
+                Dispatches targeted search queries across 5 official registries (USPTO, EPO, WIPO, JPO, CNIPA) combining dense semantic vector embeddings and sparse BM25 keyword matching to prevent blindspots.
+              </p>
+              <div class="about-agent-tag">Hybrid RAG · 5 Global Repos</div>
+            </div>
+
+            <div class="about-agent-card">
+              <div class="about-agent-num">AGENT 03</div>
+              <div class="about-agent-title">Element-by-Element Citation Reasoner</div>
+              <p class="about-agent-desc">
+                Performs strict § 102 anticipation and § 103 obviousness mapping. Enforces strict zero-hallucination policies by demanding exact verbatim citations, column/paragraph numbers, and relevancy rationale.
+              </p>
+              <div class="about-agent-tag">Strict Traceability · § 102 / § 103</div>
+            </div>
+
+            <div class="about-agent-card">
+              <div class="about-agent-num">AGENT 04</div>
+              <div class="about-agent-title">Patentability Synthesizer & Memo Generator</div>
+              <p class="about-agent-desc">
+                Aggregates overlap matrices, computes overall threat scores (High, Mod, Low), drafts strategic prosecution recommendations, design-around pathways, and renders print-safe vector PDF reports.
+              </p>
+              <div class="about-agent-tag">Audit-Ready Memo · PDF Export</div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Section 3: 3D Telemetry Radar Hero -->
+        <section class="about-modal-section">
+          <div class="about-section-header">
+            <span class="about-section-badge">03 / 3D TELEMETRY</span>
+            <h4>Real-Time Geolocation & 3D Point-Cloud Radar</h4>
+          </div>
+          <p class="about-desc-text">
+            The interactive 3D WebGL sphere (~8,400 Fibonacci vertices) projects Earth's continental topology and triangulates the client node in real-time. As inventions are analyzed, ballistic trajectory arcs bridge the user's origin to target patent assignee hubs (DJI Shenzhen, Boeing Chicago, Sony Tokyo, Airbus Toulouse, Fraunhofer Munich) with traveling photon pulses illustrating global citation collisions.
+          </p>
+        </section>
+
+        <!-- Section 4: Specifications Grid -->
+        <section class="about-modal-section">
+          <div class="about-section-header">
+            <span class="about-section-badge">04 / SPECIFICATIONS</span>
+            <h4>Technical Architecture & Engine Stack</h4>
+          </div>
+          <div class="about-specs-grid">
+            <div class="about-spec-item">
+              <span class="spec-label">LLM REASONING ENGINE</span>
+              <span class="spec-value">Google Gemini 2.5 Flash / 1.5 Pro</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">ORCHESTRATION</span>
+              <span class="spec-value">LangGraph StateGraph / PipelineState</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">RETRIEVAL PARADIGM</span>
+              <span class="spec-value">Hybrid Dense Vector + BM25 Sparse Mesh</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">SUPPORTED REGISTRIES</span>
+              <span class="spec-value">USPTO (US), EPO (EU), WIPO (INT), JPO (JP), CNIPA (CN)</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">3D VISUALIZATION</span>
+              <span class="spec-value">Three.js WebGL + GSAP 3 Motion Engine</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">CONFIDENTIALITY</span>
+              <span class="spec-value">Ephemeral In-Memory Processing (Zero Retention)</span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="about-modal-footer">
+        <div class="about-footer-info">
+          <span class="about-footer-dot"></span>
+          <span>PriorArt Copilot v2.4 · Multi-Agent Patent Intelligence Workstation</span>
+        </div>
+        <div class="about-footer-actions">
+          <a href="https://github.com/riddhidey/Priorart-copilot" target="_blank" rel="noopener noreferrer" class="about-footer-link">
+            GitHub Repository
+          </a>
+          <button type="button" class="btn-primary-about" id="btn-close-about-modal-bottom">
+            Dismiss
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Pinned CDN Dependencies: Three.js (3D WebGL), GSAP (Industrial Motion), PDF Gen, & Compression -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-  <script src="/static/world_land_data.js?v=43.0"></script>
-  <script src="/static/app.js?v=43.0"></script>
+  <script src="/static/world_land_data.js?v=44.0"></script>
+  <script src="/static/app.js?v=44.0"></script>
 </body>
 </html>

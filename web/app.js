@@ -3625,6 +3625,65 @@ function initApp() {
       draw();
     }
   }
+
+  // ==========================================
+  // ABOUT MODEL & SYSTEM ARCHITECTURE MODAL
+  // ==========================================
+  const aboutModal = document.getElementById("about-model-modal");
+  const btnOpenAbout = document.getElementById("btn-about-modal");
+  const btnCloseAbout = document.getElementById("btn-close-about-modal");
+  const btnCloseAboutBottom = document.getElementById("btn-close-about-modal-bottom");
+  const aboutBackdrop = document.getElementById("about-modal-backdrop");
+
+  function openAboutModal() {
+    if (aboutModal) {
+      aboutModal.classList.add("active");
+      aboutModal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      if (typeof showIndustrialToast === "function") {
+        showIndustrialToast("System Architecture & Model Specs Loaded", 2200);
+      }
+    }
+  }
+
+  function closeAboutModal() {
+    if (aboutModal) {
+      aboutModal.classList.remove("active");
+      aboutModal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+  }
+
+  if (btnOpenAbout) {
+    btnOpenAbout.addEventListener("click", (e) => {
+      e.preventDefault();
+      openAboutModal();
+    });
+  }
+
+  if (btnCloseAbout) {
+    btnCloseAbout.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeAboutModal();
+    });
+  }
+
+  if (btnCloseAboutBottom) {
+    btnCloseAboutBottom.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeAboutModal();
+    });
+  }
+
+  if (aboutBackdrop) {
+    aboutBackdrop.addEventListener("click", closeAboutModal);
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && aboutModal && aboutModal.classList.contains("active")) {
+      closeAboutModal();
+    }
+  });
 }
 
 // Ensure execution whether DOM is already interactive/complete or still loading

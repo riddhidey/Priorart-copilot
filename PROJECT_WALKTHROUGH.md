@@ -343,6 +343,14 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
       - The 3D marker pulses its crystal pinhead and billboard tag, triggers the hover inspection card with patent details, and pops an industrial notification toast (e.g. `LOCATING PATENT [JP7791759B2] ON GLOBE · TOKYO, JAPAN (JPO)`).
     - **Master Index of Verified Citations Integration**:
       - Each citation card features a dedicated `[📍 DOC_ID  3D GLOBE ↗]` button for instantaneous one-click spatial inspection.
+  - **About Model & Architecture Modal ("Hover Page")**:
+    - Accessible via the `About Model & Architecture` trigger button in the bottom workspace footer.
+    - Displays a comprehensive tactical system overview modal with reticle corner brackets:
+      - **Mission & Legal Screening Purpose**: § 102 anticipation and § 103 obviousness triage, preliminary clearance workflow, and zero-hallucination verification.
+      - **Autonomous Multi-Agent Neural Pipeline**: Detailed element decomposition (Agent 1), multi-jurisdiction prior-art mesh (Agent 2), § 102/103 citation reasoning (Agent 3), and audit-ready patentability synthesis (Agent 4).
+      - **3D Telemetry Radar Engine**: Mathematical overview of the ~8,400 Fibonacci vertex WebGL globe, real-time client triangulation, and ballistic photon arcs.
+      - **Technical Specifications Grid**: Gemini 2.5 Flash / 1.5 Pro reasoning, LangGraph orchestration, hybrid dense+BM25 retrieval, and zero-retention ephemeral privacy.
+      - **Full Dismissal Controls**: Close reticle `[✕ ESC]`, backdrop click, bottom `Dismiss` button, and physical `Escape` key listener.
 
 ---
 
