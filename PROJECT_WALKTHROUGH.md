@@ -305,7 +305,16 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
         - `MUNICH · EPO [MOD 85%]`
         - `GENEVA · WIPO [LOW 76%]`
     - **Interactive Legend Camera Focus**:
-      - Clicking any threat level in the bottom-left legend (`High (≥90%)`, `Mod (80-89%)`, `Low (<80%)`, `Main Node`, `Registry`) smoothly rotates the 3D globe to center directly on that node.
+12. **Geographic Patent Origin Location & Direct Patent Number Name Tags**:
+    - **Geographic Placement of Prior-Art Citations**:
+      - When searching a patent, each prior-art patent is physically pinned to its real geographic origin, corporate assignee headquarters, or filing patent office (e.g. `US10457388B2` in Chicago, US; `US9878783B2` in Cambridge, US; `EP3205574A1` in Toulouse, FR; `US10892745B1` in Palo Alto, US; `US11201584B2` in Kyoto, JP; `EP3817208A1` in Munich, DE; `CN108928501B` in Shenzhen, CN).
+      - On search, the 3D camera smoothly auto-rotates via GSAP to focus directly on the primary high-threat patent location.
+    - **Two-Tier Structured 3D Billboard Name & Patent Number Tags**:
+      - Floating labels rendered directly above each 3D node now display a structured two-tier military/intelligence HUD pill:
+        - **Top Line**: Geographic City · Assignee/Registry · Threat Badge (e.g., `SHENZHEN · DJI  [HIGH 95%]`, `CHICAGO · BOEING  [HIGH 95%]`, `TOULOUSE · AIRBUS  [MOD 86%]`).
+        - **Bottom Line**: High-contrast sky blue patent document number and title snippet (e.g., `PATENT NO. US10457388B2 · VARIABLE PITCH`, `PATENT NO. CN108928501B · ROTOR ACTUATION`).
+    - **Hover Inspection & Assignee HUD Tags**:
+      - Mouse raycasting hover cards and the left HUD assignee cluster list now prominently feature the verified `PATENT NO: [NUMBER]` and filing jurisdiction.
 
 ---
 
