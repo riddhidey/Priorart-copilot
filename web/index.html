@@ -781,25 +781,25 @@
       <!-- Modal Scrollable Body -->
       <div class="about-modal-body">
         
-        <!-- Section 1: Executive Mission -->
+        <!-- Section 1: Executive Mission & Purpose -->
         <section class="about-modal-section">
           <div class="about-section-header">
             <span class="about-section-badge">01 / PURPOSE</span>
             <h4>What This Website & Intelligence Platform Does</h4>
           </div>
           <p class="about-desc-text">
-            <strong>PriorArt Copilot</strong> is a production-grade, multi-agent AI research workstation that solves the most costly bottleneck in patent prosecution: <em>preliminary patentability screening and prior-art collision detection</em>.
+            <strong>PriorArt Copilot</strong> is an enterprise-grade, autonomous multi-agent AI workstation designed to eliminate the most expensive and time-consuming bottleneck in intellectual property: <em>preliminary patentability screening, novelty clearance, and prior-art collision detection</em>.
           </p>
           <p class="about-desc-text">
-            Filing invalid patent applications costs law firms and enterprises millions in rejection fees and wasted prosecution cycles. PriorArt Copilot automatically deconstructs invention disclosures into discrete claim elements, queries global patent registries across 5 major jurisdictions, tests for <strong>35 U.S.C. § 102 (Novelty)</strong> direct anticipation and <strong>35 U.S.C. § 103 (Obviousness)</strong> combinations, and synthesizes audit-ready legal examination memos with strict verbatim citation traceability.
+            Filing invalid patent applications costs inventors, enterprises, and patent attorneys thousands in official examination rejection fees, office actions, and wasted prosecution cycles. PriorArt Copilot automatically deconstructs invention disclosures into discrete claim elements, queries global patent registries across 5 major jurisdictions (USPTO, EPO, WIPO, JPO, CNIPA) alongside peer-reviewed academic literature, evaluates direct anticipation under <strong>35 U.S.C. § 102 (Novelty)</strong> and combinational obviousness under <strong>35 U.S.C. § 103 (Inventive Step)</strong>, and synthesizes audit-ready legal examination memos with 100% verified verbatim citations.
           </p>
         </section>
 
-        <!-- Section 2: Multi-Agent Architecture -->
+        <!-- Section 2: Multi-Agent Neural Pipeline -->
         <section class="about-modal-section">
           <div class="about-section-header">
             <span class="about-section-badge">02 / AGENT PIPELINE</span>
-            <h4>Autonomous Multi-Agent Neural Pipeline (How It Works)</h4>
+            <h4>Autonomous 4-Agent Neural Workflow (How It Works)</h4>
           </div>
           <div class="about-agents-grid">
             
@@ -807,36 +807,36 @@
               <div class="about-agent-num">AGENT 01</div>
               <div class="about-agent-title">Claim Element Deconstructor</div>
               <p class="about-agent-desc">
-                Extracts and normalizes the invention disclosure into independent, non-overlapping claim elements, categorizing each into physical limitations, functional steps, and measurable tolerances.
+                Deconstructs raw technical prose into discrete, non-overlapping claim elements. Classifies physical structural limitations, functional operations, and measurable tolerances. Assigns candidate IPC/CPC classification codes and powers the interactive Claim Review step.
               </p>
-              <div class="about-agent-tag">LangGraph · Gemini 2.5 Flash</div>
+              <div class="about-agent-tag">LangGraph · disclosure_parser.py · Gemini 2.5</div>
             </div>
 
             <div class="about-agent-card">
               <div class="about-agent-num">AGENT 02</div>
               <div class="about-agent-title">Multi-Jurisdiction Prior-Art Mesh</div>
               <p class="about-agent-desc">
-                Dispatches targeted search queries across 5 official registries (USPTO, EPO, WIPO, JPO, CNIPA) combining dense semantic vector embeddings and sparse BM25 keyword matching to prevent blindspots.
+                Performs domain-specific technical patent lexicon expansion (synonyms) and dispatches targeted parallel queries per claim element across Google Patents, EPO Open Patent Services (OPS), and Semantic Scholar academic non-patent literature (NPL).
               </p>
-              <div class="about-agent-tag">Hybrid RAG · 5 Global Repos</div>
+              <div class="about-agent-tag">Hybrid RAG · retrieval_agent.py · BM25 + Dense</div>
             </div>
 
             <div class="about-agent-card">
               <div class="about-agent-num">AGENT 03</div>
-              <div class="about-agent-title">Element-by-Element Citation Reasoner</div>
+              <div class="about-agent-title">Novelty Clustering & Threat Reasoner</div>
               <p class="about-agent-desc">
-                Performs strict § 102 anticipation and § 103 obviousness mapping. Enforces strict zero-hallucination policies by demanding exact verbatim citations, column/paragraph numbers, and relevancy rationale.
+                Aligns discovered prior-art candidate texts against each individual claim element. Computes fine-grained semantic overlap, classifies statutory risk tiers (High § 102, Moderate § 103, Low/Safe), and isolates the inventor's defensible Novelty Gaps.
               </p>
-              <div class="about-agent-tag">Strict Traceability · § 102 / § 103</div>
+              <div class="about-agent-tag">novelty_clustering.py · 35 U.S.C. § 102 / § 103</div>
             </div>
 
             <div class="about-agent-card">
               <div class="about-agent-num">AGENT 04</div>
               <div class="about-agent-title">Patentability Synthesizer & Memo Generator</div>
               <p class="about-agent-desc">
-                Aggregates overlap matrices, computes overall threat scores (High, Mod, Low), drafts strategic prosecution recommendations, design-around pathways, and renders print-safe vector PDF reports.
+                Assembles the interactive 2D Threat Matrix Heatmap, enforces 100% citation authenticity (demanding exact verbatim quotes and publication numbers), formulates strategic claim drafting recommendations, and renders vector PDF / Markdown clearance reports.
               </p>
-              <div class="about-agent-tag">Audit-Ready Memo · PDF Export</div>
+              <div class="about-agent-tag">report_writer.py · Zero-Hallucination · PDF Export</div>
             </div>
 
           </div>
@@ -846,43 +846,90 @@
         <section class="about-modal-section">
           <div class="about-section-header">
             <span class="about-section-badge">03 / 3D TELEMETRY</span>
-            <h4>Real-Time Geolocation & 3D Point-Cloud Radar</h4>
+            <h4>Global Patent Intelligence Radar & 3D Point-Cloud Stage</h4>
           </div>
           <p class="about-desc-text">
-            The interactive 3D WebGL sphere (~8,400 Fibonacci vertices) projects Earth's continental topology and triangulates the client node in real-time. As inventions are analyzed, ballistic trajectory arcs bridge the user's origin to target patent assignee hubs (DJI Shenzhen, Boeing Chicago, Sony Tokyo, Airbus Toulouse, Fraunhofer Munich) with traveling photon pulses illustrating global citation collisions.
+            The top radar stage is an interactive <strong>Three.js WebGL point cloud</strong> (4,200 elevated continental landmass particles with recessed ocean relief) operating on an astronomical 23.44° axial tilt:
           </p>
+          <div class="about-specs-grid">
+            <div class="about-spec-item">
+              <span class="spec-label">WORLD COUNTRY TAGS</span>
+              <span class="spec-value">32 sovereign jurisdictions tagged with luminous white surface beacons & [ CODE · NAME ] badges (including India at 22.5° N, 78.0° E)</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">AUTOMATIC 0.9x BOOT FOCUS</span>
+              <span class="spec-value">Initializes facing India and the Asia-Pacific innovation corridor at 0.9x overview zoom with smooth camera navigation</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">CLIENT NODE TRIANGULATION</span>
+              <span class="spec-value">Real-time IP geolocation telemetry (e.g. Bhubaneswar, India) with radiant magenta beacon & dual concentric pulse rings</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">3D BALLISTIC RADAR ARCS</span>
+              <span class="spec-value">Curved Bézier trajectories with traveling photon pulses connecting client node to patent registries & global assignee hubs</span>
+            </div>
+          </div>
         </section>
 
-        <!-- Section 4: Specifications Grid -->
+        <!-- Section 4: Statutory Legal Framework -->
         <section class="about-modal-section">
           <div class="about-section-header">
-            <span class="about-section-badge">04 / SPECIFICATIONS</span>
+            <span class="about-section-badge">04 / STATUTORY STANDARDS</span>
+            <h4>Patent Law Evaluation Framework & 2D Threat Matrix</h4>
+          </div>
+          <p class="about-desc-text">
+            Every discovered reference is rigorously examined against standard patent examination doctrines:
+          </p>
+          <div class="about-specs-grid">
+            <div class="about-spec-item" style="border-left: 3px solid #ef4444;">
+              <span class="spec-label" style="color: #ef4444;">35 U.S.C. § 102 · ANTICIPATION (HIGH THREAT &ge;90%)</span>
+              <span class="spec-value">A single existing reference discloses all technical limitations of the claimed element. Fatal novelty bar requiring design-around.</span>
+            </div>
+            <div class="about-spec-item" style="border-left: 3px solid #facc15;">
+              <span class="spec-label" style="color: #facc15;">35 U.S.C. § 103 · OBVIOUSNESS (MODERATE THREAT 80-89%)</span>
+              <span class="spec-value">Analogous art in related domains that an examiner could combine. Requires demonstrating unexpected results or secondary considerations.</span>
+            </div>
+            <div class="about-spec-item" style="border-left: 3px solid #10b981;">
+              <span class="spec-label" style="color: #10b981;">NOVELTY GAP · PATENTABLE TERRITORY (LOW RISK &lt;80%)</span>
+              <span class="spec-value">Claim elements completely unencumbered by discovered prior art. Forms the primary defensible basis for valid, enforceable patent claims.</span>
+            </div>
+            <div class="about-spec-item" style="border-left: 3px solid #0ea5e9;">
+              <span class="spec-label" style="color: #0ea5e9;">ZERO-HALLUCINATION VERIFICATION</span>
+              <span class="spec-value">100% citation authenticity verification: citations must match verified verbatim text and link to official patent office records.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 5: Specifications Grid -->
+        <section class="about-modal-section">
+          <div class="about-section-header">
+            <span class="about-section-badge">05 / SPECIFICATIONS</span>
             <h4>Technical Architecture & Engine Stack</h4>
           </div>
           <div class="about-specs-grid">
             <div class="about-spec-item">
-              <span class="spec-label">LLM REASONING ENGINE</span>
-              <span class="spec-value">Google Gemini 2.5 Flash / 1.5 Pro</span>
+              <span class="spec-label">BACKEND API</span>
+              <span class="spec-value">FastAPI + ASGI Uvicorn (Streaming & No-Cache Enforced)</span>
             </div>
             <div class="about-spec-item">
-              <span class="spec-label">ORCHESTRATION</span>
-              <span class="spec-value">LangGraph StateGraph / PipelineState</span>
+              <span class="spec-label">LLM ENGINE</span>
+              <span class="spec-value">Google Gemini 2.5 Flash / Gemini 1.5 Pro</span>
             </div>
             <div class="about-spec-item">
-              <span class="spec-label">RETRIEVAL PARADIGM</span>
-              <span class="spec-value">Hybrid Dense Vector + BM25 Sparse Mesh</span>
+              <span class="spec-label">AGENT ORCHESTRATION</span>
+              <span class="spec-value">LangGraph StateGraph + Pydantic v2 Type Contracts</span>
             </div>
             <div class="about-spec-item">
-              <span class="spec-label">SUPPORTED REGISTRIES</span>
-              <span class="spec-value">USPTO (US), EPO (EU), WIPO (INT), JPO (JP), CNIPA (CN)</span>
+              <span class="spec-label">3D WEBGL GRAPHICS</span>
+              <span class="spec-value">Three.js (r128) + GSAP 3 Motion Engine</span>
             </div>
             <div class="about-spec-item">
-              <span class="spec-label">3D VISUALIZATION</span>
-              <span class="spec-value">Three.js WebGL + GSAP 3 Motion Engine</span>
+              <span class="spec-label">PATENT DATA CONNECTORS</span>
+              <span class="spec-value">Google Patents, EPO OPS, Semantic Scholar, Local Index</span>
             </div>
             <div class="about-spec-item">
-              <span class="spec-label">CONFIDENTIALITY</span>
-              <span class="spec-value">Ephemeral In-Memory Processing (Zero Retention)</span>
+              <span class="spec-label">SECURITY & PRIVACY</span>
+              <span class="spec-value">100% Ephemeral In-Memory Processing (Zero Data Retention)</span>
             </div>
           </div>
         </section>
@@ -913,7 +960,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-  <script src="/static/world_land_data.js?v=51.0"></script>
-  <script src="/static/app.js?v=51.0"></script>
+  <script src="/static/world_land_data.js?v=52.0"></script>
+  <script src="/static/app.js?v=52.0"></script>
 </body>
 </html>
