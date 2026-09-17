@@ -877,19 +877,37 @@ a:hover {
   background: var(--accent-subtle);
 }
 
-#btn-about-modal-top {
-  border-color: var(--accent-border-subtle, rgba(74, 222, 128, 0.35));
-  color: var(--text-primary);
-}
-
-#btn-about-modal-top svg {
+#btn-about-modal,
+#btn-about-modal-top,
+.btn-about-highlight {
+  border: 1px solid var(--accent-border, rgba(134, 239, 172, 0.45));
   color: var(--accent);
+  background: var(--accent-subtle, rgba(134, 239, 172, 0.08));
+  font-weight: 600;
+  box-shadow: 0 0 10px var(--accent-glow, rgba(134, 239, 172, 0.15));
 }
 
-#btn-about-modal-top:hover {
+#btn-about-modal svg,
+#btn-about-modal-top svg,
+.btn-about-highlight svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+#btn-about-modal:hover,
+#btn-about-modal-top:hover,
+.btn-about-highlight:hover {
   border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-subtle);
+  color: #000000;
+  background: var(--accent);
+  box-shadow: 0 0 18px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+#btn-about-modal:hover svg,
+#btn-about-modal-top:hover svg,
+.btn-about-highlight:hover svg {
+  color: #000000;
 }
 
 .engine-badge {

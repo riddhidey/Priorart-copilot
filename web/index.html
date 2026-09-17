@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/static/style.css?v=47.0">
+  <link rel="stylesheet" href="/static/style.css?v=54.0">
 </head>
 <body>
 
@@ -167,15 +167,6 @@
         </div>
 
         <div class="header-actions">
-          <button type="button" id="btn-about-modal-top" class="header-action-btn btn-open-about" title="About Model & Multi-Agent AI Architecture">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-            <span>About Model</span>
-          </button>
-
           <button id="btn-broadcast-mode" class="header-action-btn" title="Toggle Broadcast / Fullscreen Sizing">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -187,6 +178,15 @@
             <span class="pulse-dot"></span>
             <span class="engine-text">Gemini Engine Ready</span>
           </div>
+
+          <button type="button" id="btn-about-modal" class="header-action-btn btn-open-about btn-about-highlight" title="About Model & Multi-Agent AI Architecture">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>About Model & Architecture</span>
+          </button>
         </div>
       </div>
     </header>
@@ -746,14 +746,6 @@
         <span>Built by <strong class="author-name">Riddhi Dey</strong></span>
       </div>
       <div class="footer-right">
-        <button type="button" id="btn-about-modal" class="footer-about-btn" title="Learn how PriorArt Copilot & Multi-Agent AI works">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-          </svg>
-          <span>About Model & Architecture</span>
-        </button>
         <a href="https://github.com/riddhidey/Priorart-copilot" target="_blank" rel="noopener noreferrer" class="footer-github-link">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
           <span>GitHub / Priorart-copilot</span>
@@ -969,7 +961,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-  <script src="/static/world_land_data.js?v=53.0"></script>
-  <script src="/static/app.js?v=53.0"></script>
+  <script src="/static/world_land_data.js?v=54.0"></script>
+  <script src="/static/app.js?v=54.0"></script>
 </body>
 </html>
