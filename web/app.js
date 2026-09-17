@@ -358,6 +358,9 @@ function initApp() {
 
     const globeGroup = new THREE.Group();
     globeGroup.rotation.z = 0.22; // ~23.44 deg axial tilt
+    // Center globe directly on India & Asian patent jurisdictions immediately on boot
+    globeGroup.rotation.y = -((78.0 + 90) * (Math.PI / 180)); // ~ -2.932 rad (brings 78°E facing the camera!)
+    globeGroup.rotation.x = Math.max(-0.80, Math.min(0.80, (22.5 * (Math.PI / 180)) - 0.105)); // ~ 0.28 rad
     scene.add(globeGroup);
 
     function createCircleTexture() {
@@ -779,16 +782,16 @@ function initApp() {
       const font = isContinent
         ? "bold 26px 'Geist Mono', monospace"
         : (isCountry
-            ? "600 17px 'Geist Mono', monospace"
+            ? "bold 21px 'Geist Mono', monospace"
             : "600 21px 'Geist Mono', monospace");
       ctx.font = font;
       const textMetrics = ctx.measureText(line1);
       const textWidth = Math.ceil(textMetrics.width);
 
-      const padX = isContinent ? 16 : (isCountry ? 9 : 11);
-      const padY = isContinent ? 7 : (isCountry ? 4 : 5);
+      const padX = isContinent ? 16 : (isCountry ? 11 : 11);
+      const padY = isContinent ? 7 : (isCountry ? 5 : 5);
       const w = textWidth + padX * 2;
-      const h = (isContinent ? 30 : (isCountry ? 19 : 25)) + padY * 2;
+      const h = (isContinent ? 30 : (isCountry ? 21 : 25)) + padY * 2;
 
       canvas.width = w * 2;
       canvas.height = h * 2;
@@ -796,14 +799,14 @@ function initApp() {
 
       // Pill Background
       ctx.fillStyle = bgColor;
-      drawCanvasRoundRect(ctx, 0, 0, w, h, isCountry ? 4 : 6);
+      drawCanvasRoundRect(ctx, 0, 0, w, h, isCountry ? 5 : 6);
       ctx.fill();
 
       // Pill Border
       if (borderColor) {
         ctx.strokeStyle = borderColor;
-        ctx.lineWidth = isCountry ? 1.2 : 1.5;
-        drawCanvasRoundRect(ctx, 0, 0, w, h, isCountry ? 4 : 6);
+        ctx.lineWidth = isCountry ? 1.4 : 1.5;
+        drawCanvasRoundRect(ctx, 0, 0, w, h, isCountry ? 5 : 6);
         ctx.stroke();
       }
 
@@ -822,7 +825,7 @@ function initApp() {
         depthTest: false
       });
       const sprite = new THREE.Sprite(spriteMat);
-      const factor = isContinent ? 0.088 : (isCountry ? 0.058 : 0.076);
+      const factor = isContinent ? 0.088 : (isCountry ? 0.080 : 0.076);
       sprite.scale.set(w * factor * scale, h * factor * scale, 1);
       return sprite;
     }
@@ -874,19 +877,27 @@ function initApp() {
     buildContinentLabels(currentTheme);
 
     // =========================================================================
+    // =========================================================================
     // World Countries & Jurisdictions Database (Map Globe Exploration)
     // =========================================================================
     const COUNTRIES_DB = [
+      // Asia & Middle East (India primary target)
+      { code: "IN", name: "India", flag: "🇮🇳", lat: 22.5, lon: 78.0 },
+      { code: "JP", name: "Japan", flag: "🇯🇵", lat: 36.2, lon: 138.2 },
+      { code: "CN", name: "China", flag: "🇨🇳", lat: 35.8, lon: 104.1 },
+      { code: "KR", name: "South Korea", flag: "🇰🇷", lat: 35.9, lon: 127.7 },
+      { code: "IL", name: "Israel", flag: "🇮🇱", lat: 31.0, lon: 34.8 },
+      { code: "SG", name: "Singapore", flag: "🇸🇬", lat: 1.35, lon: 103.8 },
+      { code: "SA", name: "Saudi Arabia", flag: "🇸🇦", lat: 23.8, lon: 45.0 },
+      { code: "AE", name: "UAE", flag: "🇦🇪", lat: 23.4, lon: 53.8 },
+      { code: "ID", name: "Indonesia", flag: "🇮🇩", lat: -0.78, lon: 113.9 },
+      { code: "TR", name: "Turkey", flag: "🇹🇷", lat: 38.9, lon: 35.2 },
+      { code: "RU", name: "Russia", flag: "🇷🇺", lat: 61.5, lon: 95.0 },
+
       // North America
       { code: "US", name: "United States", flag: "🇺🇸", lat: 38.5, lon: -97.0 },
       { code: "CA", name: "Canada", flag: "🇨🇦", lat: 56.1, lon: -106.3 },
       { code: "MX", name: "Mexico", flag: "🇲🇽", lat: 23.6, lon: -102.5 },
-
-      // South America
-      { code: "BR", name: "Brazil", flag: "🇧🇷", lat: -14.2, lon: -51.9 },
-      { code: "AR", name: "Argentina", flag: "🇦🇷", lat: -38.4, lon: -63.6 },
-      { code: "CL", name: "Chile", flag: "🇨🇱", lat: -35.6, lon: -71.5 },
-      { code: "CO", name: "Colombia", flag: "🇨🇴", lat: 4.5, lon: -73.2 },
 
       // Europe
       { code: "GB", name: "United Kingdom", flag: "🇬🇧", lat: 54.0, lon: -2.5 },
@@ -900,18 +911,11 @@ function initApp() {
       { code: "PL", name: "Poland", flag: "🇵🇱", lat: 51.9, lon: 19.1 },
       { code: "NO", name: "Norway", flag: "🇳🇴", lat: 60.4, lon: 8.4 },
 
-      // Asia & Middle East
-      { code: "JP", name: "Japan", flag: "🇯🇵", lat: 36.2, lon: 138.2 },
-      { code: "CN", name: "China", flag: "🇨🇳", lat: 35.8, lon: 104.1 },
-      { code: "IN", name: "India", flag: "🇮🇳", lat: 20.5, lon: 78.9 },
-      { code: "KR", name: "South Korea", flag: "🇰🇷", lat: 35.9, lon: 127.7 },
-      { code: "IL", name: "Israel", flag: "🇮🇱", lat: 31.0, lon: 34.8 },
-      { code: "SG", name: "Singapore", flag: "🇸🇬", lat: 1.35, lon: 103.8 },
-      { code: "SA", name: "Saudi Arabia", flag: "🇸🇦", lat: 23.8, lon: 45.0 },
-      { code: "AE", name: "UAE", flag: "🇦🇪", lat: 23.4, lon: 53.8 },
-      { code: "ID", name: "Indonesia", flag: "🇮🇩", lat: -0.78, lon: 113.9 },
-      { code: "TR", name: "Turkey", flag: "🇹🇷", lat: 38.9, lon: 35.2 },
-      { code: "RU", name: "Russia", flag: "🇷🇺", lat: 61.5, lon: 95.0 },
+      // South America
+      { code: "BR", name: "Brazil", flag: "🇧🇷", lat: -14.2, lon: -51.9 },
+      { code: "AR", name: "Argentina", flag: "🇦🇷", lat: -38.4, lon: -63.6 },
+      { code: "CL", name: "Chile", flag: "🇨🇱", lat: -35.6, lon: -71.5 },
+      { code: "CO", name: "Colombia", flag: "🇨🇴", lat: 4.5, lon: -73.2 },
 
       // Africa
       { code: "ZA", name: "South Africa", flag: "🇿🇦", lat: -30.5, lon: 22.9 },
@@ -930,46 +934,52 @@ function initApp() {
       while (countriesLabelsGroup.children.length > 0) {
         const obj = countriesLabelsGroup.children[0];
         countriesLabelsGroup.remove(obj);
-        if (obj.material) {
-          if (obj.material.map) obj.material.map.dispose();
-          obj.material.dispose();
+        if (obj.traverse) {
+          obj.traverse(child => {
+            if (child.material) {
+              if (child.material.map) child.material.map.dispose();
+              child.material.dispose();
+            }
+            if (child.geometry) child.geometry.dispose();
+          });
         }
-        if (obj.geometry) obj.geometry.dispose();
       }
       countrySprites = [];
 
       const isLight = themeName === "light";
       const isAmber = themeName === "amber";
       const isGreen = themeName === "green";
-      const textColor = isLight ? "#0f172a" : (isAmber ? "#fef08a" : (isGreen ? "#dcfce7" : "#e0f2fe"));
-      const bgColor = isLight ? "rgba(255, 255, 255, 0.94)" : "rgba(4, 9, 20, 0.82)";
-      const borderColor = isLight ? "rgba(2, 132, 199, 0.45)" : (isAmber ? "rgba(250, 204, 21, 0.4)" : (isGreen ? "rgba(74, 222, 128, 0.4)" : "rgba(56, 189, 248, 0.4)"));
+      const defaultTextColor = isLight ? "#0f172a" : (isAmber ? "#fef08a" : (isGreen ? "#dcfce7" : "#e0f2fe"));
+      const defaultBgColor = isLight ? "rgba(255, 255, 255, 0.94)" : "rgba(4, 9, 20, 0.86)";
+      const defaultBorderColor = isLight ? "rgba(2, 132, 199, 0.55)" : (isAmber ? "rgba(250, 204, 21, 0.5)" : (isGreen ? "rgba(74, 222, 128, 0.5)" : "rgba(56, 189, 248, 0.5)"));
       const pinColor = isLight ? "#0284c7" : (isAmber ? "#facc15" : (isGreen ? "#4ade80" : "#38bdf8"));
 
-      const pinGeo = new THREE.SphereGeometry(0.8, 12, 12);
-      const pinMat = new THREE.MeshBasicMaterial({
-        color: new THREE.Color(pinColor),
-        transparent: true,
-        opacity: 0.85
-      });
+      const pinGeo = new THREE.SphereGeometry(1.0, 12, 12);
 
       COUNTRIES_DB.forEach(c => {
-        const surfacePos = latLonToVector3(c.lat, c.lon, R + 0.4);
-        const labelPos = latLonToVector3(c.lat, c.lon, R + 1.8);
+        const isIndia = c.code === "IN";
+        const surfacePos = latLonToVector3(c.lat, c.lon, R + 1.1);
+        const labelPos = latLonToVector3(c.lat, c.lon, R + 3.4);
 
-        // Small glowing beacon anchor dot on globe surface
-        const pinMesh = new THREE.Mesh(pinGeo, pinMat);
+        // Dedicated independent material per pin mesh (prevents opacity bleeding between countries)
+        const pinMeshMat = new THREE.MeshBasicMaterial({
+          color: new THREE.Color(isIndia ? (isLight ? "#0284c7" : "#38bdf8") : pinColor),
+          transparent: true,
+          opacity: 0.90
+        });
+        const pinMesh = new THREE.Mesh(pinGeo, pinMeshMat);
         pinMesh.position.copy(surfacePos);
         pinMesh.userData = c;
         countriesLabelsGroup.add(pinMesh);
 
-        // Tactical country label badge
-        const sprite = create3DTextBadge(`${c.flag} ${c.name}`, {
-          textColor,
-          bgColor,
-          borderColor,
+        // Windows-safe crisp tactical typography [ CODE · NAME ] (eliminates directWrite emoji glyph corruption)
+        const badgeLabel = `[ ${c.code} · ${c.name.toUpperCase()} ]`;
+        const sprite = create3DTextBadge(badgeLabel, {
+          textColor: isIndia ? (isLight ? "#0284c7" : "#38bdf8") : defaultTextColor,
+          bgColor: isIndia ? (isLight ? "rgba(238, 248, 255, 0.96)" : "rgba(4, 18, 36, 0.92)") : defaultBgColor,
+          borderColor: isIndia ? (isLight ? "#0284c7" : "#38bdf8") : defaultBorderColor,
           isCountry: true,
-          scale: 1.0
+          scale: isIndia ? 1.20 : 1.0
         });
         sprite.position.copy(labelPos);
         sprite.userData = c;
@@ -2226,7 +2236,13 @@ function initApp() {
         document.querySelectorAll(".globe-radar-legend .legend-item").forEach(el => el.classList.remove("active"));
         item.classList.add("active");
 
-        if (focusType === "main") {
+        if (focusType === "india") {
+          pauseAutoRotate(9000);
+          focusCoordinates(22.5, 78.0, false);
+          if (typeof showIndustrialToast === "function") {
+            showIndustrialToast("TARGETING JURISDICTION: [IN · INDIA]", 2600);
+          }
+        } else if (focusType === "main") {
           focusMainVisitorNode();
         } else if (focusType === "high") {
           const matching = activeHubPins.filter(p => p.levelInfo && p.levelInfo.badgeClass === "high");
@@ -2424,6 +2440,17 @@ function initApp() {
     updateZoomUI();
 
     // Buttons
+    const btnFocusIndia = document.getElementById("btn-focus-india");
+    if (btnFocusIndia) {
+      btnFocusIndia.addEventListener("click", () => {
+        pauseAutoRotate(9000);
+        focusCoordinates(22.5, 78.0, false);
+        if (typeof showIndustrialToast === "function") {
+          showIndustrialToast("TARGETING JURISDICTION: [IN · INDIA]", 2600);
+        }
+      });
+    }
+
     const btnFocus = document.getElementById("btn-focus-visitor");
     if (btnFocus) {
       btnFocus.addEventListener("click", () => {
@@ -2500,7 +2527,7 @@ function initApp() {
             pauseAutoRotate(9000);
             focusCoordinates(cData.lat, cData.lon, false);
             if (typeof showIndustrialToast === "function") {
-              showIndustrialToast(`TARGETING JURISDICTION: ${cData.flag} ${cData.name} (${cData.code})`, 2600);
+              showIndustrialToast(`TARGETING JURISDICTION: [${cData.code} · ${cData.name.toUpperCase()}]`, 2600);
             }
           }
         }
@@ -2537,6 +2564,7 @@ function initApp() {
         placeVisitorBeacon(20.2961, 85.8245, "Client Node", "Regional");
         if (pingEl) pingEl.textContent = "18 ms";
         if (window.__updatePreloaderGeo) window.__updatePreloaderGeo("GEO: CLIENT NODE TRIANGULATED (AUTO)");
+        setTimeout(() => focusCoordinates(20.2961, 85.8245, false), 800);
       }
     }
     resolveClientLocation();
@@ -2638,12 +2666,12 @@ function initApp() {
           const normal = tempPos.clone().normalize();
           const toCam = camPos.clone().sub(tempPos).normalize();
           const dot = normal.dot(toCam);
-          if (dot > 0.15) {
+          if (dot > 0.08) {
             item.sprite.visible = true;
-            item.sprite.material.opacity = Math.min(1.0, (dot - 0.15) * 3.5);
+            item.sprite.material.opacity = Math.min(1.0, (dot - 0.08) * 3.8);
             if (item.pin) {
               item.pin.visible = true;
-              item.pin.material.opacity = Math.min(0.85, (dot - 0.15) * 3.0);
+              item.pin.material.opacity = Math.min(0.90, (dot - 0.08) * 3.5);
             }
           } else {
             item.sprite.visible = false;
