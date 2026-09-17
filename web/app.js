@@ -2236,13 +2236,7 @@ function initApp() {
         document.querySelectorAll(".globe-radar-legend .legend-item").forEach(el => el.classList.remove("active"));
         item.classList.add("active");
 
-        if (focusType === "india") {
-          pauseAutoRotate(9000);
-          focusCoordinates(22.5, 78.0, false);
-          if (typeof showIndustrialToast === "function") {
-            showIndustrialToast("TARGETING JURISDICTION: [IN · INDIA]", 2600);
-          }
-        } else if (focusType === "main") {
+        if (focusType === "main") {
           focusMainVisitorNode();
         } else if (focusType === "high") {
           const matching = activeHubPins.filter(p => p.levelInfo && p.levelInfo.badgeClass === "high");
@@ -2440,17 +2434,6 @@ function initApp() {
     updateZoomUI();
 
     // Buttons
-    const btnFocusIndia = document.getElementById("btn-focus-india");
-    if (btnFocusIndia) {
-      btnFocusIndia.addEventListener("click", () => {
-        pauseAutoRotate(9000);
-        focusCoordinates(22.5, 78.0, false);
-        if (typeof showIndustrialToast === "function") {
-          showIndustrialToast("TARGETING JURISDICTION: [IN · INDIA]", 2600);
-        }
-      });
-    }
-
     const btnFocus = document.getElementById("btn-focus-visitor");
     if (btnFocus) {
       btnFocus.addEventListener("click", () => {
