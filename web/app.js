@@ -3848,12 +3848,12 @@ function initApp() {
     }
   }
 
-  if (btnOpenAbout) {
-    btnOpenAbout.addEventListener("click", (e) => {
+  document.querySelectorAll("#btn-about-modal, #btn-about-modal-top, .btn-open-about, .footer-about-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
       e.preventDefault();
       openAboutModal();
     });
-  }
+  });
 
   if (btnCloseAbout) {
     btnCloseAbout.addEventListener("click", (e) => {

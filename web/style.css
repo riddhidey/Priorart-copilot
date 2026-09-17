@@ -730,12 +730,19 @@ a:hover {
 
   .header-actions {
     width: 100%;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
-  .header-action-btn,
+  .header-action-btn {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 130px;
+    justify-content: center;
+  }
+
   .engine-badge {
+    flex: 1 1 100%;
     width: 100%;
     justify-content: center;
   }
@@ -865,6 +872,21 @@ a:hover {
 }
 
 .header-action-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-subtle);
+}
+
+#btn-about-modal-top {
+  border-color: var(--accent-border-subtle, rgba(74, 222, 128, 0.35));
+  color: var(--text-primary);
+}
+
+#btn-about-modal-top svg {
+  color: var(--accent);
+}
+
+#btn-about-modal-top:hover {
   border-color: var(--accent);
   color: var(--accent);
   background: var(--accent-subtle);
