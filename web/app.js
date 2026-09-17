@@ -349,7 +349,8 @@ function initApp() {
     }
 
     let currentFittedZ = getFittedDistance(width / height);
-    camera.position.set(0, 6, currentFittedZ);
+    // Initialize globe zoom at 0.9x magnification on site load
+    camera.position.set(0, 6, currentFittedZ / 0.9);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -2305,6 +2306,8 @@ function initApp() {
     const btnZoomOut = document.getElementById("btn-globe-zoom-out");
     const btnZoomReset = document.getElementById("btn-globe-zoom-reset");
 
+    let hasUserAdjustedZoom = false;
+
     function getZoomRange() {
       const minZ = Math.max(130, currentFittedZ * 0.5); // closest zoom (~2.0x magnification)
       const maxZ = currentFittedZ * 2.2;               // farthest zoom (~0.45x overview)
@@ -2331,6 +2334,7 @@ function initApp() {
       zoomControlsEl.addEventListener("wheel", (e) => {
         e.preventDefault();
         e.stopPropagation();
+        hasUserAdjustedZoom = true;
         const { minZ, maxZ } = getZoomRange();
         const step = (maxZ - minZ) * 0.1 * Math.sign(e.deltaY);
         const targetZ = Math.max(minZ, Math.min(maxZ, camera.position.z + step));
@@ -2352,6 +2356,7 @@ function initApp() {
     // Smooth dragging on vertical range slider
     if (zoomSlider) {
       zoomSlider.addEventListener("input", (e) => {
+        hasUserAdjustedZoom = true;
         const { minZ, maxZ } = getZoomRange();
         const val = parseFloat(e.target.value);
         const targetZ = maxZ - (val / 100) * (maxZ - minZ);
@@ -2367,6 +2372,7 @@ function initApp() {
     // Step-by-step Zoom In (+)
     if (btnZoomIn) {
       btnZoomIn.addEventListener("click", () => {
+        hasUserAdjustedZoom = true;
         const { minZ, maxZ } = getZoomRange();
         const step = (maxZ - minZ) * 0.16;
         const targetZ = Math.max(minZ, camera.position.z - step);
@@ -2388,6 +2394,7 @@ function initApp() {
     // Step-by-step Zoom Out (-)
     if (btnZoomOut) {
       btnZoomOut.addEventListener("click", () => {
+        hasUserAdjustedZoom = true;
         const { minZ, maxZ } = getZoomRange();
         const step = (maxZ - minZ) * 0.16;
         const targetZ = Math.min(maxZ, camera.position.z + step);
@@ -2406,19 +2413,21 @@ function initApp() {
       });
     }
 
-    // Reset Zoom (1.0x fitted view)
+    // Reset Zoom (0.9x default overview)
     if (btnZoomReset) {
       btnZoomReset.addEventListener("click", () => {
+        hasUserAdjustedZoom = false;
+        const targetZ = currentFittedZ / 0.9;
         if (window.gsap) {
           gsap.killTweensOf(camera.position);
           gsap.to(camera.position, {
-            z: currentFittedZ,
+            z: targetZ,
             duration: 0.38,
             ease: "power2.out",
             onUpdate: updateZoomUI
           });
         } else {
-          camera.position.z = currentFittedZ;
+          camera.position.z = targetZ;
           updateZoomUI();
         }
       });
@@ -2702,7 +2711,9 @@ function initApp() {
       const aspect = w / h;
       camera.aspect = aspect;
       currentFittedZ = getFittedDistance(aspect);
-      camera.position.z = currentFittedZ;
+      if (!hasUserAdjustedZoom) {
+        camera.position.z = currentFittedZ / 0.9;
+      }
       camera.position.y = 6;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
