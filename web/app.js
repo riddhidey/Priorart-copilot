@@ -654,10 +654,12 @@ function initApp() {
     const arcsGroup = new THREE.Group();
     const priorArtPinsGroup = new THREE.Group();
     const continentsLabelsGroup = new THREE.Group();
+    const countriesLabelsGroup = new THREE.Group();
     globeGroup.add(beaconGroup);
     globeGroup.add(arcsGroup);
     globeGroup.add(priorArtPinsGroup);
     globeGroup.add(continentsLabelsGroup);
+    globeGroup.add(countriesLabelsGroup);
 
     // Helper to draw smooth rounded rectangle on canvas
     function drawCanvasRoundRect(ctx, x, y, width, height, radius) {
@@ -681,6 +683,7 @@ function initApp() {
       bgColor = "rgba(6, 11, 20, 0.86)",
       borderColor = "rgba(255, 255, 255, 0.35)",
       isContinent = false,
+      isCountry = false,
       scale = 1.0
     } = {}) {
       const canvas = document.createElement("canvas");
@@ -772,18 +775,20 @@ function initApp() {
         return sprite;
       }
 
-      // Single line handling (for continents and visitor origin)
+      // Single line handling (for continents, countries, and visitor origin)
       const font = isContinent
         ? "bold 26px 'Geist Mono', monospace"
-        : "600 21px 'Geist Mono', monospace";
+        : (isCountry
+            ? "600 17px 'Geist Mono', monospace"
+            : "600 21px 'Geist Mono', monospace");
       ctx.font = font;
       const textMetrics = ctx.measureText(line1);
       const textWidth = Math.ceil(textMetrics.width);
 
-      const padX = isContinent ? 16 : 11;
-      const padY = isContinent ? 7 : 5;
+      const padX = isContinent ? 16 : (isCountry ? 9 : 11);
+      const padY = isContinent ? 7 : (isCountry ? 4 : 5);
       const w = textWidth + padX * 2;
-      const h = (isContinent ? 30 : 25) + padY * 2;
+      const h = (isContinent ? 30 : (isCountry ? 19 : 25)) + padY * 2;
 
       canvas.width = w * 2;
       canvas.height = h * 2;
@@ -791,14 +796,14 @@ function initApp() {
 
       // Pill Background
       ctx.fillStyle = bgColor;
-      drawCanvasRoundRect(ctx, 0, 0, w, h, 6);
+      drawCanvasRoundRect(ctx, 0, 0, w, h, isCountry ? 4 : 6);
       ctx.fill();
 
       // Pill Border
       if (borderColor) {
         ctx.strokeStyle = borderColor;
-        ctx.lineWidth = 1.5;
-        drawCanvasRoundRect(ctx, 0, 0, w, h, 6);
+        ctx.lineWidth = isCountry ? 1.2 : 1.5;
+        drawCanvasRoundRect(ctx, 0, 0, w, h, isCountry ? 4 : 6);
         ctx.stroke();
       }
 
@@ -817,7 +822,7 @@ function initApp() {
         depthTest: false
       });
       const sprite = new THREE.Sprite(spriteMat);
-      const factor = isContinent ? 0.088 : 0.076;
+      const factor = isContinent ? 0.088 : (isCountry ? 0.058 : 0.076);
       sprite.scale.set(w * factor * scale, h * factor * scale, 1);
       return sprite;
     }
@@ -867,6 +872,113 @@ function initApp() {
       });
     }
     buildContinentLabels(currentTheme);
+
+    // =========================================================================
+    // World Countries & Jurisdictions Database (Map Globe Exploration)
+    // =========================================================================
+    const COUNTRIES_DB = [
+      // North America
+      { code: "US", name: "United States", flag: "🇺🇸", lat: 38.5, lon: -97.0 },
+      { code: "CA", name: "Canada", flag: "🇨🇦", lat: 56.1, lon: -106.3 },
+      { code: "MX", name: "Mexico", flag: "🇲🇽", lat: 23.6, lon: -102.5 },
+
+      // South America
+      { code: "BR", name: "Brazil", flag: "🇧🇷", lat: -14.2, lon: -51.9 },
+      { code: "AR", name: "Argentina", flag: "🇦🇷", lat: -38.4, lon: -63.6 },
+      { code: "CL", name: "Chile", flag: "🇨🇱", lat: -35.6, lon: -71.5 },
+      { code: "CO", name: "Colombia", flag: "🇨🇴", lat: 4.5, lon: -73.2 },
+
+      // Europe
+      { code: "GB", name: "United Kingdom", flag: "🇬🇧", lat: 54.0, lon: -2.5 },
+      { code: "DE", name: "Germany", flag: "🇩🇪", lat: 51.1, lon: 10.4 },
+      { code: "FR", name: "France", flag: "🇫🇷", lat: 46.2, lon: 2.2 },
+      { code: "IT", name: "Italy", flag: "🇮🇹", lat: 42.5, lon: 12.5 },
+      { code: "ES", name: "Spain", flag: "🇪🇸", lat: 40.4, lon: -3.7 },
+      { code: "SE", name: "Sweden", flag: "🇸🇪", lat: 60.1, lon: 18.6 },
+      { code: "CH", name: "Switzerland", flag: "🇨🇭", lat: 46.8, lon: 8.2 },
+      { code: "NL", name: "Netherlands", flag: "🇳🇱", lat: 52.1, lon: 5.2 },
+      { code: "PL", name: "Poland", flag: "🇵🇱", lat: 51.9, lon: 19.1 },
+      { code: "NO", name: "Norway", flag: "🇳🇴", lat: 60.4, lon: 8.4 },
+
+      // Asia & Middle East
+      { code: "JP", name: "Japan", flag: "🇯🇵", lat: 36.2, lon: 138.2 },
+      { code: "CN", name: "China", flag: "🇨🇳", lat: 35.8, lon: 104.1 },
+      { code: "IN", name: "India", flag: "🇮🇳", lat: 20.5, lon: 78.9 },
+      { code: "KR", name: "South Korea", flag: "🇰🇷", lat: 35.9, lon: 127.7 },
+      { code: "IL", name: "Israel", flag: "🇮🇱", lat: 31.0, lon: 34.8 },
+      { code: "SG", name: "Singapore", flag: "🇸🇬", lat: 1.35, lon: 103.8 },
+      { code: "SA", name: "Saudi Arabia", flag: "🇸🇦", lat: 23.8, lon: 45.0 },
+      { code: "AE", name: "UAE", flag: "🇦🇪", lat: 23.4, lon: 53.8 },
+      { code: "ID", name: "Indonesia", flag: "🇮🇩", lat: -0.78, lon: 113.9 },
+      { code: "TR", name: "Turkey", flag: "🇹🇷", lat: 38.9, lon: 35.2 },
+      { code: "RU", name: "Russia", flag: "🇷🇺", lat: 61.5, lon: 95.0 },
+
+      // Africa
+      { code: "ZA", name: "South Africa", flag: "🇿🇦", lat: -30.5, lon: 22.9 },
+      { code: "EG", name: "Egypt", flag: "🇪🇬", lat: 26.8, lon: 30.8 },
+      { code: "NG", name: "Nigeria", flag: "🇳🇬", lat: 9.0, lon: 8.6 },
+      { code: "KE", name: "Kenya", flag: "🇰🇪", lat: -0.02, lon: 37.9 },
+
+      // Oceania
+      { code: "AU", name: "Australia", flag: "🇦🇺", lat: -25.2, lon: 133.7 },
+      { code: "NZ", name: "New Zealand", flag: "🇳🇿", lat: -40.9, lon: 174.8 }
+    ];
+
+    let countrySprites = [];
+
+    function buildCountryLabels(themeName) {
+      while (countriesLabelsGroup.children.length > 0) {
+        const obj = countriesLabelsGroup.children[0];
+        countriesLabelsGroup.remove(obj);
+        if (obj.material) {
+          if (obj.material.map) obj.material.map.dispose();
+          obj.material.dispose();
+        }
+        if (obj.geometry) obj.geometry.dispose();
+      }
+      countrySprites = [];
+
+      const isLight = themeName === "light";
+      const isAmber = themeName === "amber";
+      const isGreen = themeName === "green";
+      const textColor = isLight ? "#0f172a" : (isAmber ? "#fef08a" : (isGreen ? "#dcfce7" : "#e0f2fe"));
+      const bgColor = isLight ? "rgba(255, 255, 255, 0.94)" : "rgba(4, 9, 20, 0.82)";
+      const borderColor = isLight ? "rgba(2, 132, 199, 0.45)" : (isAmber ? "rgba(250, 204, 21, 0.4)" : (isGreen ? "rgba(74, 222, 128, 0.4)" : "rgba(56, 189, 248, 0.4)"));
+      const pinColor = isLight ? "#0284c7" : (isAmber ? "#facc15" : (isGreen ? "#4ade80" : "#38bdf8"));
+
+      const pinGeo = new THREE.SphereGeometry(0.8, 12, 12);
+      const pinMat = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(pinColor),
+        transparent: true,
+        opacity: 0.85
+      });
+
+      COUNTRIES_DB.forEach(c => {
+        const surfacePos = latLonToVector3(c.lat, c.lon, R + 0.4);
+        const labelPos = latLonToVector3(c.lat, c.lon, R + 1.8);
+
+        // Small glowing beacon anchor dot on globe surface
+        const pinMesh = new THREE.Mesh(pinGeo, pinMat);
+        pinMesh.position.copy(surfacePos);
+        pinMesh.userData = c;
+        countriesLabelsGroup.add(pinMesh);
+
+        // Tactical country label badge
+        const sprite = create3DTextBadge(`${c.flag} ${c.name}`, {
+          textColor,
+          bgColor,
+          borderColor,
+          isCountry: true,
+          scale: 1.0
+        });
+        sprite.position.copy(labelPos);
+        sprite.userData = c;
+        countriesLabelsGroup.add(sprite);
+
+        countrySprites.push({ sprite, pin: pinMesh, pos: surfacePos, country: c });
+      });
+    }
+    buildCountryLabels(currentTheme);
 
     // Distinct Main Origin / Telemetry Node Marker (Radiant Magenta)
     const MAIN_NODE_COLOR = new THREE.Color("#d946ef");
@@ -1902,8 +2014,17 @@ function initApp() {
         if (hub && hoverCard) {
           showHubHoverCard(hub);
         }
-      } else if (hoverCard) {
-        hoverCard.style.display = "none";
+        mount.style.cursor = "pointer";
+      } else {
+        const countryIntersects = raycaster.intersectObjects(countriesLabelsGroup.children, true);
+        if (countryIntersects.length > 0) {
+          mount.style.cursor = "pointer";
+        } else {
+          mount.style.cursor = isDragging ? "grabbing" : "grab";
+        }
+        if (hoverCard) {
+          hoverCard.style.display = "none";
+        }
       }
     });
 
@@ -1956,6 +2077,7 @@ function initApp() {
       if (sweepFanMat) sweepFanMat.color.copy(newPalette.ring);
 
       buildContinentLabels(themeName);
+      buildCountryLabels(themeName);
       updateVisitorLabel(visitorCoords.city || "Client Node");
 
       // Re-render active radar arcs with updated theme colors
@@ -2363,6 +2485,25 @@ function initApp() {
             });
           }
         }
+      } else {
+        const countryIntersects = raycaster.intersectObjects(countriesLabelsGroup.children, true);
+        if (countryIntersects.length > 0) {
+          let targetObj = countryIntersects[0].object;
+          let cData = targetObj.userData;
+          if (!cData || !cData.name) {
+            if (targetObj.parent && targetObj.parent.userData && targetObj.parent.userData.name) {
+              cData = targetObj.parent.userData;
+            }
+          }
+
+          if (cData && cData.name) {
+            pauseAutoRotate(9000);
+            focusCoordinates(cData.lat, cData.lon, false);
+            if (typeof showIndustrialToast === "function") {
+              showIndustrialToast(`TARGETING JURISDICTION: ${cData.flag} ${cData.name} (${cData.code})`, 2600);
+            }
+          }
+        }
       }
     });
 
@@ -2486,6 +2627,27 @@ function initApp() {
             item.sprite.material.opacity = Math.min(1.0, (dot - 0.12) * 3.5);
           } else {
             item.sprite.visible = false;
+          }
+        });
+      }
+
+      if (countrySprites && countrySprites.length > 0) {
+        countrySprites.forEach(item => {
+          if (!item.sprite) return;
+          item.sprite.getWorldPosition(tempPos);
+          const normal = tempPos.clone().normalize();
+          const toCam = camPos.clone().sub(tempPos).normalize();
+          const dot = normal.dot(toCam);
+          if (dot > 0.15) {
+            item.sprite.visible = true;
+            item.sprite.material.opacity = Math.min(1.0, (dot - 0.15) * 3.5);
+            if (item.pin) {
+              item.pin.visible = true;
+              item.pin.material.opacity = Math.min(0.85, (dot - 0.15) * 3.0);
+            }
+          } else {
+            item.sprite.visible = false;
+            if (item.pin) item.pin.visible = false;
           }
         });
       }

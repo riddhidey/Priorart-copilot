@@ -351,11 +351,19 @@ Inspired by precision industrial telemetry and the WeEvolveIT landing experience
       - **3D Telemetry Radar Engine**: Mathematical overview of the ~8,400 Fibonacci vertex WebGL globe, real-time client triangulation, and ballistic photon arcs.
       - **Technical Specifications Grid**: Gemini 2.5 Flash / 1.5 Pro reasoning, LangGraph orchestration, hybrid dense+BM25 retrieval, and zero-retention ephemeral privacy.
       - **Full Dismissal Controls**: Close reticle `[✕ ESC]`, backdrop click, bottom `Dismiss` button, and physical `Escape` key listener.
+  - **3D World Countries & Jurisdictions Layer on Globe**:
+    - Embedded dynamic topological database of global innovation nations (United States, Japan, Germany, China, South Korea, United Kingdom, France, India, Australia, Brazil, Canada, Switzerland, Israel, Sweden, Singapore, etc.).
+    - Each country features:
+      - A glowing surface beacon anchor dot precisely geolocated on the 3D landmass.
+      - A tactical cyber billboard badge displaying national flag emoji + country name.
+      - Dynamic backside occlusion fading (`dot > 0.15`) ensuring clean, clutter-free perspective rendering as the globe rotates.
+      - Interactive raycasting: clicking any country smoothly centers the camera on that jurisdiction and triggers an industrial notification toast.
+      - Real-time palette harmonization across all 4 themes (`Green`, `Dark`, `Light`, `Amber`).
   - **Mobile-Optimized Radar HUD & Stage**:
     - Complete decluttering on mobile screens (`<= 768px` and `<= 420px`):
       - Desktop compass markers (`N/S/E/W`) and wide drag hint banner are cleanly hidden to prevent visual obstruction of the 3D globe.
       - Threat level legend pill is horizontally scrollable and docked at the top margin without clipping.
-      - Vertical zoom scroll bar is resized compactly (`80px` slider) and docked safely on the right edge.
+      - Vertical zoom scroll bar is resized compactly (`75px` track) and docked safely on the right edge.
       - Redundant secondary telemetry string is hidden, leaving a crisp single live telemetry pill in the bottom-left corner with zero element collisions.
       - Radar header action controls transform into a clean 2x2 grid deck for touch interaction.
 
