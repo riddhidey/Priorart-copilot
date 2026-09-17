@@ -2632,12 +2632,30 @@ a:hover {
   transform: translateY(-1px);
 }
 
+.about-agent-num-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .about-agent-num {
   font-family: var(--font-mono, 'Geist Mono', monospace);
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.12em;
   color: var(--accent);
+}
+
+.about-agent-role-pill {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-heading, var(--accent));
+  background: var(--accent-subtle);
+  border: 1px solid var(--border-theme);
+  padding: 1px 7px;
+  border-radius: 4px;
 }
 
 .about-agent-title {
