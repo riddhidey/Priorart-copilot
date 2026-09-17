@@ -947,23 +947,20 @@ function initApp() {
       countrySprites = [];
 
       const isLight = themeName === "light";
-      const isAmber = themeName === "amber";
-      const isGreen = themeName === "green";
-      const defaultTextColor = isLight ? "#0f172a" : (isAmber ? "#fef08a" : (isGreen ? "#dcfce7" : "#e0f2fe"));
-      const defaultBgColor = isLight ? "rgba(255, 255, 255, 0.94)" : "rgba(4, 9, 20, 0.86)";
-      const defaultBorderColor = isLight ? "rgba(2, 132, 199, 0.55)" : (isAmber ? "rgba(250, 204, 21, 0.5)" : (isGreen ? "rgba(74, 222, 128, 0.5)" : "rgba(56, 189, 248, 0.5)"));
-      const pinColor = isLight ? "#0284c7" : (isAmber ? "#facc15" : (isGreen ? "#4ade80" : "#38bdf8"));
+      const textColor = isLight ? "#0f172a" : "#ffffff";
+      const bgColor = isLight ? "rgba(255, 255, 255, 0.94)" : "rgba(4, 9, 20, 0.88)";
+      const borderColor = isLight ? "rgba(15, 23, 42, 0.45)" : "rgba(255, 255, 255, 0.70)";
+      const pinColor = isLight ? "#0f172a" : "#ffffff";
 
       const pinGeo = new THREE.SphereGeometry(1.0, 12, 12);
 
       COUNTRIES_DB.forEach(c => {
-        const isIndia = c.code === "IN";
         const surfacePos = latLonToVector3(c.lat, c.lon, R + 1.1);
         const labelPos = latLonToVector3(c.lat, c.lon, R + 3.4);
 
         // Dedicated independent material per pin mesh (prevents opacity bleeding between countries)
         const pinMeshMat = new THREE.MeshBasicMaterial({
-          color: new THREE.Color(isIndia ? (isLight ? "#0284c7" : "#38bdf8") : pinColor),
+          color: new THREE.Color(pinColor),
           transparent: true,
           opacity: 0.90
         });
@@ -972,14 +969,14 @@ function initApp() {
         pinMesh.userData = c;
         countriesLabelsGroup.add(pinMesh);
 
-        // Windows-safe crisp tactical typography [ CODE · NAME ] (eliminates directWrite emoji glyph corruption)
+        // Windows-safe crisp white tactical typography [ CODE · NAME ]
         const badgeLabel = `[ ${c.code} · ${c.name.toUpperCase()} ]`;
         const sprite = create3DTextBadge(badgeLabel, {
-          textColor: isIndia ? (isLight ? "#0284c7" : "#38bdf8") : defaultTextColor,
-          bgColor: isIndia ? (isLight ? "rgba(238, 248, 255, 0.96)" : "rgba(4, 18, 36, 0.92)") : defaultBgColor,
-          borderColor: isIndia ? (isLight ? "#0284c7" : "#38bdf8") : defaultBorderColor,
+          textColor,
+          bgColor,
+          borderColor,
           isCountry: true,
-          scale: isIndia ? 1.20 : 1.0
+          scale: 1.0
         });
         sprite.position.copy(labelPos);
         sprite.userData = c;
