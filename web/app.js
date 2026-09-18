@@ -52,6 +52,157 @@ function initApp() {
       .replace(/"/g, "&quot;");
   }
 
+  // Canonical Global State for Finalized Screening Threat Matrix
+  let currentThreatMatrix = null;
+
+  // =========================================================================
+  // Canonical Statutory Risk & Similarity Classification Contract
+  // Single shared utility consumed by both Screening Copilot & Global Radar
+  // Statutory standard: High (>=90%), Mod (80-89%), Low (<80%)
+  // =========================================================================
+  const RiskClassifier = {
+    HIGH_MIN: 90,
+    MOD_MIN: 80,
+    COLORS: {
+      HIGH: "#ef4444",
+      MOD: "#facc15",
+      LOW: "#10b981",
+      REGISTRY: "#0ea5e9"
+    },
+    normalizeThreat(threat) {
+      if (!threat) return "LOW";
+      const t = String(threat).toUpperCase().trim();
+      if (t.includes("HIGH")) return "HIGH";
+      if (t.includes("MOD") || t.includes("MEDIUM")) return "MOD";
+      return "LOW";
+    },
+    classify(scoreOrPct, explicitThreat) {
+      let pct = typeof scoreOrPct === "number" ? scoreOrPct : parseFloat(scoreOrPct);
+      if (isNaN(pct) || pct === null) pct = null;
+      else if (pct <= 1.0 && pct > 0) pct = Math.round(pct * 100);
+      else if (pct !== null) pct = Math.round(pct);
+
+      const normThreat = explicitThreat ? this.normalizeThreat(explicitThreat) : null;
+      let finalThreat = "LOW";
+      let finalPct = 72;
+
+      // Statutory ground truth: percentage strictly dictates the threat tier and color
+      if (pct !== null) {
+        if (pct < this.MOD_MIN) {
+          // Strictly below 80% -> ALWAYS LOW THREAT (Green #10b981)
+          finalThreat = "LOW";
+          finalPct = Math.max(15, Math.min(this.MOD_MIN - 1, pct));
+        } else if (pct >= this.HIGH_MIN) {
+          // Strictly 90% and above -> ALWAYS HIGH THREAT (Red #ef4444)
+          finalThreat = "HIGH";
+          finalPct = Math.min(98, Math.max(this.HIGH_MIN, pct));
+        } else {
+          // Strictly 80% to 89% -> ALWAYS MOD THREAT (Yellow #facc15)
+          finalThreat = "MOD";
+          finalPct = Math.max(this.MOD_MIN, Math.min(this.HIGH_MIN - 1, pct));
+        }
+      } else if (normThreat) {
+        if (normThreat === "HIGH") {
+          finalThreat = "HIGH";
+          finalPct = 94;
+        } else if (normThreat === "MOD") {
+          finalThreat = "MOD";
+          finalPct = 84;
+        } else {
+          finalThreat = "LOW";
+          finalPct = 72;
+        }
+      }
+
+      const threatLower = finalThreat.toLowerCase();
+      return {
+        threat: finalThreat,
+        threatLower: threatLower,
+        percentage: finalPct,
+        hex: this.COLORS[finalThreat] || this.COLORS.LOW,
+        badgeClass: threatLower,
+        levelName: `${finalThreat} THREAT`,
+        threatTitle: finalThreat === "HIGH" 
+          ? "Direct Prior-Art Collision (35 U.S.C. § 102)"
+          : (finalThreat === "MOD" 
+              ? "Analogous Domain Art (35 U.S.C. § 103)"
+              : "Distant Prior-Art Reference")
+      };
+    },
+    // Canonical resolver from finalized patent object or doc_id against screening results
+    resolvePatentRisk(doc, threatMatrixRef) {
+      if (!doc) return this.classify(74, "LOW");
+      const matrix = threatMatrixRef || currentThreatMatrix;
+      const docId = (doc.doc_id || doc.code || doc.samplePatent || "").toUpperCase().trim();
+      const cleanSimpleId = docId.replace(/[^A-Z0-9]/g, "");
+
+      let highestThreat = null;
+      let maxRank = 0; // 3 = HIGH, 2 = MOD, 1 = LOW
+
+      // Check rows in threatMatrix if available
+      if (matrix && matrix.rows && matrix.rows.length > 0) {
+        matrix.rows.forEach(r => {
+          if (r.threats) {
+            // Check direct key match or normalized key match
+            let foundThreat = r.threats[docId];
+            if (!foundThreat && cleanSimpleId) {
+              for (const k in r.threats) {
+                if (k.replace(/[^A-Z0-9]/g, "") === cleanSimpleId) {
+                  foundThreat = r.threats[k];
+                  break;
+                }
+              }
+            }
+            if (foundThreat) {
+              const norm = this.normalizeThreat(foundThreat);
+              if (norm === "HIGH" && maxRank < 3) { maxRank = 3; highestThreat = "HIGH"; }
+              else if (norm === "MOD" && maxRank < 2) { maxRank = 2; highestThreat = "MOD"; }
+              else if (norm === "LOW" && maxRank < 1) { maxRank = 1; highestThreat = "LOW"; }
+            }
+          }
+        });
+      }
+
+      // Check matching document object in threat_matrix.documents
+      let matrixDoc = null;
+      if (matrix && matrix.documents && matrix.documents.length > 0) {
+        matrixDoc = matrix.documents.find(d => {
+          const did = (d.doc_id || "").toUpperCase().trim();
+          return did === docId || (cleanSimpleId && did.replace(/[^A-Z0-9]/g, "") === cleanSimpleId);
+        });
+        if (matrixDoc) {
+          if (!highestThreat && matrixDoc.threat_level) {
+            highestThreat = this.normalizeThreat(matrixDoc.threat_level);
+          }
+        }
+      }
+
+      // Check explicit threat on doc argument itself
+      if (!highestThreat && doc.threat_level) {
+        highestThreat = this.normalizeThreat(doc.threat_level);
+      } else if (!highestThreat && doc.threatLevel) {
+        highestThreat = this.normalizeThreat(doc.threatLevel);
+      }
+
+      const rawScore = (matrixDoc && matrixDoc.similarity !== undefined) 
+        ? matrixDoc.similarity 
+        : (doc.similarity !== undefined ? doc.similarity : (doc.score !== undefined ? doc.score : null));
+
+      return this.classify(rawScore, highestThreat || "LOW");
+    }
+  };
+
+  // Runtime Regression Check: Verifies exact label & tier consistency between surfaces
+  function assertUIRiskConsistency(patentId, panelThreat, globeThreat, panelPct, globePct) {
+    const normPanel = RiskClassifier.normalizeThreat(panelThreat);
+    const normGlobe = RiskClassifier.normalizeThreat(globeThreat);
+    if (normPanel !== normGlobe) {
+      const errMsg = `[FATAL RISK MISMATCH] Patent ${patentId}: Panel="${normPanel}" (${panelPct}%) vs Globe="${normGlobe}" (${globePct}%). Surfaces must be 100% consistent.`;
+      console.error(errMsg);
+      throw new Error(errMsg);
+    }
+  }
+
   // Industrial Toast Telemetry Notification System
   function showIndustrialToast(msg, duration = 3400) {
     let container = document.getElementById("industrial-toast-container");
@@ -1453,67 +1604,80 @@ function initApp() {
       if (!docId) return null;
       const cleanId = docId.toUpperCase().trim();
 
-      // 1. Direct match with existing active 3D pins on globe
+      // 1. Direct match with existing active non-registry 3D pins on globe
       if (activeHubPins.length > 0) {
         const pin = activeHubPins.find(p => {
+          if (p.isReg) return false;
           const sample = (p.hub && (p.hub.samplePatent || p.hub.doc_id || "")).toUpperCase();
-          return sample === cleanId || cleanId.includes(sample) || sample.includes(cleanId);
+          return sample === cleanId || (sample.length >= 6 && (cleanId.includes(sample) || sample.includes(cleanId)));
         });
         if (pin) return { hub: pin.hub, pinObj: pin };
       }
 
-      // 2. Direct match with known curated Innovation Hubs
-      const hubMatch = INNOVATION_HUBS_DB.find(h => {
+      // 2. Direct exact patent ID match with known curated Innovation Hubs
+      const exactHubMatch = INNOVATION_HUBS_DB.find(h => {
         const sample = (h.samplePatent || "").toUpperCase();
-        return sample === cleanId || (docTitle && h.keywords && h.keywords.some(k => docTitle.toLowerCase().includes(k)));
+        return sample === cleanId;
       });
-      if (hubMatch) return { hub: { ...hubMatch } };
+      if (exactHubMatch) {
+        return {
+          hub: {
+            ...exactHubMatch,
+            samplePatent: cleanId,
+            patentTitle: docTitle || exactHubMatch.patentTitle
+          }
+        };
+      }
 
       // 3. Multi-Hub Regional Jitter Clusters for high-density jurisdictions
+      // 3. Multi-Hub Regional Jitter Clusters for high-density jurisdictions
       const JAPAN_CLUSTERS = [
-        { city: "Tokyo, JP", name: "Tokyo · JPO Patent Hub", lat: 35.6762, lon: 139.6503, flag: "🇯🇵" },
-        { city: "Kyoto, JP", name: "Kyoto · Precision Tech Hub", lat: 35.0116, lon: 135.7681, flag: "🇯🇵" },
-        { city: "Yokohama, JP", name: "Yokohama · Advanced R&D", lat: 35.4437, lon: 139.6380, flag: "🇯🇵" },
-        { city: "Nagoya, JP", name: "Nagoya · Robotics Cluster", lat: 35.1815, lon: 136.9066, flag: "🇯🇵" },
-        { city: "Osaka, JP", name: "Osaka · Electronics Innovation", lat: 34.6937, lon: 135.5023, flag: "🇯🇵" }
+        { city: "Tokyo, JP", name: "Tokyo Bay Advanced Tech Cluster", shortName: "Tokyo Bay R&D", lat: 35.6191, lon: 139.7513, flag: "🇯🇵" },
+        { city: "Kyoto, JP", name: "Kyoto Precision Electronics Hub", shortName: "Kyoto Precision", lat: 35.0116, lon: 135.7681, flag: "🇯🇵" },
+        { city: "Yokohama, JP", name: "Yokohama Microelectronics Lab", shortName: "Yokohama Tech", lat: 35.4437, lon: 139.6380, flag: "🇯🇵" },
+        { city: "Nagoya, JP", name: "Nagoya Mechatronics Valley", shortName: "Nagoya Robotics", lat: 35.1815, lon: 136.9066, flag: "🇯🇵" },
+        { city: "Osaka, JP", name: "Osaka Semiconductor Innovation", shortName: "Osaka Semi", lat: 34.6937, lon: 135.5023, flag: "🇯🇵" }
       ];
 
       const US_CLUSTERS = [
-        { city: "Alexandria, US", name: "Alexandria · USPTO HQ", lat: 38.8048, lon: -77.0469, flag: "🇺🇸" },
-        { city: "Chicago, US", name: "Chicago · Aerospace Hub", lat: 41.8781, lon: -87.6298, flag: "🇺🇸" },
-        { city: "Palo Alto, US", name: "Silicon Valley · Tech Cluster", lat: 37.4419, lon: -122.1430, flag: "🇺🇸" },
-        { city: "Cambridge, US", name: "Cambridge · MIT Research Hub", lat: 42.3601, lon: -71.0942, flag: "🇺🇸" },
-        { city: "Seattle, US", name: "Seattle · Autonomous Tech", lat: 47.6062, lon: -122.3321, flag: "🇺🇸" },
-        { city: "Austin, US", name: "Austin · Semiconductors Hub", lat: 30.2672, lon: -97.7431, flag: "🇺🇸" }
+        { city: "San Jose, US", name: "Silicon Valley Tech Center", shortName: "Silicon Valley R&D", lat: 37.3382, lon: -121.8863, flag: "🇺🇸" },
+        { city: "Chicago, US", name: "Midwest Aerospace Innovation", shortName: "Chicago Aero", lat: 41.8781, lon: -87.6298, flag: "🇺🇸" },
+        { city: "Cambridge, US", name: "MIT Kendall Innovation Corridor", shortName: "Cambridge Tech", lat: 42.3601, lon: -71.0942, flag: "🇺🇸" },
+        { city: "Austin, US", name: "Austin Semiconductor Valley", shortName: "Austin Semi", lat: 30.2672, lon: -97.7431, flag: "🇺🇸" },
+        { city: "Seattle, US", name: "Pacific Northwest AI Cluster", shortName: "Seattle Tech", lat: 47.6062, lon: -122.3321, flag: "🇺🇸" },
+        { city: "San Diego, US", name: "Southern California Wireless Hub", shortName: "San Diego R&D", lat: 32.7157, lon: -117.1611, flag: "🇺🇸" }
       ];
 
       const EUROPE_CLUSTERS = [
-        { city: "Munich, EU", name: "Munich · EPO Patent Office", lat: 48.1351, lon: 11.5820, flag: "🇪🇺" },
-        { city: "Toulouse, FR", name: "Toulouse · Aerospace Cluster", lat: 43.6047, lon: 1.4442, flag: "🇫🇷" },
-        { city: "London, GB", name: "London · UKIPO Tech Corridor", lat: 51.5074, lon: -0.1278, flag: "🇬🇧" },
-        { city: "Geneva, INT", name: "Geneva · WIPO Bureau", lat: 46.2206, lon: 6.1384, flag: "🌐" },
-        { city: "Berlin, DE", name: "Berlin · Fraunhofer Innovation", lat: 52.5200, lon: 13.4050, flag: "🇩🇪" }
+        { city: "Munich, DE", name: "Bavarian Advanced Systems Hub", shortName: "Munich R&D", lat: 48.1750, lon: 11.5950, flag: "🇩🇪" },
+        { city: "Toulouse, FR", name: "Toulouse Aerospace Campus", shortName: "Toulouse Aero", lat: 43.6047, lon: 1.4442, flag: "🇫🇷" },
+        { city: "Cambridge, GB", name: "Cambridge Silicon Fen Corridor", shortName: "Cambridge R&D", lat: 52.2053, lon: 0.1218, flag: "🇬🇧" },
+        { city: "Eindhoven, NL", name: "Eindhoven High Tech Campus", shortName: "Eindhoven Semi", lat: 51.4116, lon: 5.4597, flag: "🇳🇱" },
+        { city: "Berlin, DE", name: "Berlin Digital Innovation Center", shortName: "Berlin Tech", lat: 52.5200, lon: 13.4050, flag: "🇩🇪" }
       ];
 
       const CHINA_CLUSTERS = [
-        { city: "Beijing, CN", name: "Beijing · CNIPA Patent Office", lat: 39.9042, lon: 116.4074, flag: "🇨🇳" },
-        { city: "Shenzhen, CN", name: "Shenzhen · Hardware Corridor", lat: 22.5431, lon: 114.0579, flag: "🇨🇳" },
-        { city: "Shanghai, CN", name: "Shanghai · Semiconductor Hub", lat: 31.2304, lon: 121.4737, flag: "🇨🇳" }
+        { city: "Shenzhen, CN", name: "Shenzhen Hardware Innovation Corridor", shortName: "Shenzhen R&D", lat: 22.5431, lon: 114.0579, flag: "🇨🇳" },
+        { city: "Beijing, CN", name: "Zhongguancun Integrated Tech Cluster", shortName: "Zhongguancun Tech", lat: 39.9830, lon: 116.3150, flag: "🇨🇳" },
+        { city: "Shanghai, CN", name: "Zhangjiang Semiconductor Hub", shortName: "Zhangjiang Semi", lat: 31.2010, lon: 121.6020, flag: "🇨🇳" },
+        { city: "Hangzhou, CN", name: "Hangzhou Digital Economy Hub", shortName: "Hangzhou Cloud", lat: 30.2741, lon: 120.1551, flag: "🇨🇳" },
+        { city: "Guangzhou, CN", name: "Guangzhou Science City", shortName: "Guangzhou Tech", lat: 23.1670, lon: 113.4410, flag: "🇨🇳" }
       ];
 
       let clusterList = null;
       if (cleanId.startsWith("JP")) clusterList = JAPAN_CLUSTERS;
       else if (cleanId.startsWith("US")) clusterList = US_CLUSTERS;
-      else if (cleanId.startsWith("EP") || cleanId.startsWith("DE") || cleanId.startsWith("FR") || cleanId.startsWith("GB")) clusterList = EUROPE_CLUSTERS;
+      else if (cleanId.startsWith("EP") || cleanId.startsWith("DE") || cleanId.startsWith("FR") || cleanId.startsWith("GB") || cleanId.startsWith("NL") || cleanId.startsWith("SE")) clusterList = EUROPE_CLUSTERS;
       else if (cleanId.startsWith("CN")) clusterList = CHINA_CLUSTERS;
       else if (cleanId.startsWith("KR")) {
         clusterList = [
-          { city: "Daejeon, KR", name: "Daejeon · KIPO Patent Office", lat: 36.3504, lon: 127.3845, flag: "🇰🇷" },
-          { city: "Seoul, KR", name: "Seoul · Tech Valley", lat: 37.5665, lon: 126.9780, flag: "🇰🇷" }
+          { city: "Pangyo, KR", name: "Pangyo Techno Valley", shortName: "Pangyo Tech", lat: 37.4000, lon: 127.1050, flag: "🇰🇷" },
+          { city: "Daejeon, KR", name: "Daedeok Innopolis Cluster", shortName: "Daedeok R&D", lat: 36.3750, lon: 127.3650, flag: "🇰🇷" },
+          { city: "Seoul, KR", name: "Seoul Digital Innovation", shortName: "Seoul Valley", lat: 37.5665, lon: 126.9780, flag: "🇰🇷" }
         ];
       } else if (cleanId.startsWith("WO")) {
         clusterList = [
-          { city: "Geneva, INT", name: "Geneva · WIPO International Bureau", lat: 46.2206, lon: 6.1384, flag: "🌐" }
+          { city: "Geneva, INT", name: "Geneva International Tech Center", shortName: "Geneva Tech", lat: 46.2044, lon: 6.1432, flag: "🌐" }
         ];
       }
 
@@ -1524,7 +1688,7 @@ function initApp() {
             id: `hub_${cleanId.toLowerCase()}`,
             code: cleanId,
             name: item.name,
-            shortName: item.name.split('·')[0].trim(),
+            shortName: item.shortName || item.name.split('·')[0].trim(),
             city: item.city,
             lat: item.lat,
             lon: item.lon,
@@ -1576,71 +1740,30 @@ function initApp() {
       activeHubPins = [];
     }
 
-    // Threat & Priority Level Determination
+    // Threat & Priority Level Determination — Unified via RiskClassifier Contract
     function getNodeLevelInfo(hub) {
-      // If an explicit threatLevel is passed (e.g. from screening or search), honor it
-      if (hub.threatLevel === "HIGH" || hub.threatLevel === "HIGH THREAT") {
+      // Official Registry always gets OFFICIAL REGISTRY styling
+      if (hub.type === "registry") {
         return {
-          levelName: "HIGH THREAT",
-          levelColor: new THREE.Color("#ef4444"),
-          hex: "#ef4444",
-          badgeClass: "high",
-          threatTitle: "Direct Prior-Art Collision (35 U.S.C. § 102)"
-        };
-      }
-      if (hub.threatLevel === "MOD" || hub.threatLevel === "MOD THREAT" || hub.threatLevel === "MEDIUM") {
-        return {
-          levelName: "MOD THREAT",
-          levelColor: new THREE.Color("#facc15"),
-          hex: "#facc15",
-          badgeClass: "mod",
-          threatTitle: "Analogous Domain Art (35 U.S.C. § 103)"
-        };
-      }
-      if (hub.threatLevel === "LOW" || hub.threatLevel === "LOW THREAT") {
-        return {
-          levelName: "LOW THREAT",
-          levelColor: new THREE.Color("#10b981"),
-          hex: "#10b981",
-          badgeClass: "low",
-          threatTitle: "Distant Prior-Art Reference"
-        };
-      }
-      // Official Registry without active search threat
-      if (hub.type === "registry" && !hub.isSearchThreat) {
-        return {
+          threat: "REGISTRY",
           levelName: "OFFICIAL REGISTRY",
-          levelColor: new THREE.Color("#0ea5e9"),
-          hex: "#0ea5e9",
+          levelColor: new THREE.Color(RiskClassifier.COLORS.REGISTRY),
+          hex: RiskClassifier.COLORS.REGISTRY,
           badgeClass: "registry",
           threatTitle: "Connected Patent Registry"
         };
       }
-      const sim = hub.similarity || 85;
-      if (sim >= 90) {
-        return {
-          levelName: "HIGH THREAT",
-          levelColor: new THREE.Color("#ef4444"),
-          hex: "#ef4444",
-          badgeClass: "high",
-          threatTitle: "Direct Prior-Art Collision (35 U.S.C. § 102)"
-        };
-      }
-      if (sim >= 80) {
-        return {
-          levelName: "MOD THREAT",
-          levelColor: new THREE.Color("#facc15"),
-          hex: "#facc15",
-          badgeClass: "mod",
-          threatTitle: "Analogous Domain Art (35 U.S.C. § 103)"
-        };
-      }
+
+      const risk = RiskClassifier.resolvePatentRisk(hub, currentThreatMatrix);
       return {
-        levelName: "LOW THREAT",
-        levelColor: new THREE.Color("#10b981"),
-        hex: "#10b981",
-        badgeClass: "low",
-        threatTitle: "Distant Prior-Art Reference"
+        threat: risk.threat,
+        levelName: risk.levelName,
+        levelColor: new THREE.Color(risk.hex),
+        hex: risk.hex,
+        badgeClass: risk.badgeClass,
+        threatTitle: risk.threatTitle,
+        similarity: risk.percentage,
+        percentage: risk.percentage
       };
     }
 
@@ -1737,24 +1860,26 @@ function initApp() {
 
       // Mention place and assignee / registry name on 3D node badge with explicit HIGH, MOD, LOW threat and PATENT NO.
       const cityName = (hub.city ? hub.city.split(',')[0] : hub.name).trim().toUpperCase();
-      const entityCode = hub.code || hub.shortName || (hub.name.split(' ')[0]);
+      const entityCode = hub.shortName || (hub.name.split(' ')[0]);
       let threatTag = "";
       if (levelInfo.badgeClass === "high") {
-        threatTag = ` [HIGH ${hub.similarity || 94}%]`;
+        threatTag = ` [HIGH ${levelInfo.percentage}%]`;
       } else if (levelInfo.badgeClass === "mod") {
-        threatTag = ` [MOD ${hub.similarity || 85}%]`;
+        threatTag = ` [MOD ${levelInfo.percentage}%]`;
       } else if (levelInfo.badgeClass === "low") {
-        threatTag = ` [LOW ${hub.similarity || 76}%]`;
+        threatTag = ` [LOW ${levelInfo.percentage}%]`;
       } else {
         threatTag = " [REGISTRY]";
       }
+      hub.similarity = levelInfo.percentage;
+      hub.threatLevel = levelInfo.threat;
       
       const patNum = hub.samplePatent || hub.doc_id || "US10423190B";
       const patTitleSnippet = hub.patentTitle ? ` · ${hub.patentTitle.length > 22 ? hub.patentTitle.substring(0, 20) + '...' : hub.patentTitle}` : "";
 
       const badgePayload = {
-        title: `${cityName} · ${entityCode}${threatTag}`,
-        subtitle: `PATENT NO. ${patNum}${patTitleSnippet}`
+        title: isReg ? `${hub.name} · [REGISTRY]` : `${cityName} · ${patNum}${threatTag}`,
+        subtitle: isReg ? `OFFICIAL JURISDICTION REGISTRY` : `${entityCode}${patTitleSnippet}`
       };
 
       const isLight = currentTheme === "light";
@@ -1769,7 +1894,7 @@ function initApp() {
       pinSubGroup.add(labelSprite);
 
       priorArtPinsGroup.add(pinSubGroup);
-      activeHubPins.push({ pinSubGroup, head, stem, baseMesh, hub, isReg, levelInfo, labelSprite });
+      activeHubPins.push({ pinSubGroup, head, stem, baseMesh, hub, isReg, levelInfo, labelSprite, pinHeight });
     }
 
     // Dynamic Reactive Radar Engine: Triggered on typing, preset clicks, and screening results
@@ -1781,37 +1906,28 @@ function initApp() {
       const text = (queryText || "").toLowerCase().trim();
       const tokens = text.split(/[\s,.;:()\-–—_]+/).filter(w => w.length > 2);
 
+      const activeMatrix = screeningThreatMatrix || currentThreatMatrix;
       // Check if user has entered relevant technical query or screening completed
-      const isSearching = tokens.length > 0 || Boolean(screeningThreatMatrix);
+      const isSearching = tokens.length > 0 || Boolean(activeMatrix);
 
       let matchedAssignees = [];
-      if (screeningThreatMatrix && screeningThreatMatrix.documents && screeningThreatMatrix.documents.length > 0) {
-        // Direct Mapping from Screening Threat Matrix to 3D Globe Nodes
-        matchedAssignees = screeningThreatMatrix.documents.map((doc, dIdx) => {
-          let highestThreat = "MOD";
-          if (screeningThreatMatrix.rows && screeningThreatMatrix.rows.length > 0) {
-            screeningThreatMatrix.rows.forEach(r => {
-              const t = (r.threats && r.threats[doc.doc_id] ? r.threats[doc.doc_id] : "").toLowerCase();
-              if (t === "high") highestThreat = "HIGH";
-              else if (t === "moderate" || t === "medium") {
-                if (highestThreat !== "HIGH") highestThreat = "MOD";
-              } else if (t === "low") {
-                if (highestThreat !== "HIGH" && highestThreat !== "MOD") highestThreat = "LOW";
-              }
-            });
-          }
-
+      if (activeMatrix && activeMatrix.documents && activeMatrix.documents.length > 0) {
+        // Direct Mapping from Screening Threat Matrix to 3D Globe Nodes via Canonical RiskClassifier
+        matchedAssignees = activeMatrix.documents.map((doc, dIdx) => {
+          const risk = RiskClassifier.resolvePatentRisk(doc, activeMatrix);
           const resolved = resolvePatentLocation(doc.doc_id, doc.title, dIdx);
-          const sim = highestThreat === "HIGH" ? 95 : (highestThreat === "MOD" ? 86 : 76);
-          return {
+          const node = {
             ...resolved.hub,
             samplePatent: doc.doc_id,
+            code: doc.doc_id,
             patentTitle: doc.title || resolved.hub.patentTitle || "Discovered Prior-Art Reference",
-            threatLevel: highestThreat,
-            similarity: sim,
-            matchCount: highestThreat === "HIGH" ? 18 : (highestThreat === "MOD" ? 10 : 6),
-            matchScore: highestThreat === "HIGH" ? 3 : (highestThreat === "MOD" ? 2 : 1)
+            threatLevel: risk.threat,
+            similarity: risk.percentage,
+            matchCount: doc.match_count || (risk.threat === "HIGH" ? 18 : (risk.threat === "MOD" ? 10 : 6)),
+            matchScore: risk.threat === "HIGH" ? 3 : (risk.threat === "MOD" ? 2 : 1)
           };
+          assertUIRiskConsistency(doc.doc_id, risk.threat, node.threatLevel, risk.percentage, node.similarity);
+          return node;
         });
 
         // Focus primary high threat patent on the globe
@@ -1954,32 +2070,18 @@ function initApp() {
       }
 
       // Determine Registries to connect:
-      // When searching, patent offices also reflect citation examination threat levels!
       const targetRegistries = PATENT_REGISTRIES_DB.map((reg, idx) => {
         let hits = reg.baseCount;
-        let sim = 84;
+        let sim = 95;
         let threatLevel = undefined;
         let isSearchThreat = false;
-        if (isSearching) {
-          isSearchThreat = true;
+        if (activeMatrix && activeMatrix.documents && activeMatrix.documents.length > 0) {
+          const jurisCode = reg.code === "USPTO" ? "US" : (reg.code === "EPO" ? "EP" : (reg.code === "CNIPA" ? "CN" : (reg.code === "JPO" ? "JP" : "WO")));
+          const matchDocs = activeMatrix.documents.filter(d => (d.doc_id || "").toUpperCase().startsWith(jurisCode));
+          hits = matchDocs.length > 0 ? matchDocs.length * 3 : reg.baseCount;
+        } else if (isSearching) {
           const tokenBonus = Math.min(6, tokens.length * 2);
           hits = reg.baseCount + tokenBonus;
-          if (idx === 0) { // USPTO: Primary search jurisdiction
-            sim = Math.min(96, 92 + (tokenBonus % 4));
-            threatLevel = "HIGH";
-          } else if (idx === 1) { // EPO: Secondary European examination
-            sim = 85 + (tokenBonus % 3);
-            threatLevel = "MOD";
-          } else if (idx === 2) { // WIPO: International clearance reference
-            sim = 76 + (tokenBonus % 3);
-            threatLevel = "LOW";
-          } else if (idx === 3) { // JPO: Asian prior-art index
-            sim = 83;
-            threatLevel = "MOD";
-          } else { // CNIPA: High-volume prior art collision
-            sim = 90;
-            threatLevel = "HIGH";
-          }
         }
         return {
           ...reg,
@@ -1999,6 +2101,7 @@ function initApp() {
         const hubPos = latLonToVector3(hub.lat, hub.lon, R);
         const levelInfo = getNodeLevelInfo(hub);
         const arcData = create3DRadarArc(visitorPos, hubPos, activePalette, idx, levelInfo);
+        arcData.targetHub = hub;
         activeArcs.push(arcData);
       });
 
@@ -2020,9 +2123,16 @@ function initApp() {
         if (row) {
           const statusEl = row.querySelector(".reg-status");
           if (statusEl) {
-            if (isSearching) {
-              const threatClass = reg.similarity >= 90 ? "high" : (reg.similarity >= 80 ? "mod" : "low");
-              statusEl.innerHTML = `<span class="reg-match-badge ${threatClass}">${reg.matchCount} HITS · ${reg.similarity}%</span>`;
+            if (activeMatrix && activeMatrix.documents && activeMatrix.documents.length > 0) {
+              const jurisCode = reg.code === "USPTO" ? "US" : (reg.code === "EPO" ? "EP" : (reg.code === "CNIPA" ? "CN" : (reg.code === "JPO" ? "JP" : "WO")));
+              const matchCount = activeMatrix.documents.filter(d => (d.doc_id || "").toUpperCase().startsWith(jurisCode)).length;
+              if (matchCount > 0) {
+                statusEl.innerHTML = `<span class="reg-match-badge" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4);">${matchCount} DOCS · ONLINE</span>`;
+              } else {
+                statusEl.textContent = "ONLINE";
+              }
+            } else if (isSearching) {
+              statusEl.innerHTML = `<span class="reg-match-badge" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4);">${reg.matchCount} HITS · ONLINE</span>`;
             } else {
               statusEl.textContent = "ONLINE";
             }
@@ -2074,7 +2184,7 @@ function initApp() {
 
     function showHubHoverCard(hub) {
       if (!hub || !hoverCard) return;
-      const levelInfo = hub.levelInfo || getNodeLevelInfo(hub);
+      const levelInfo = getNodeLevelInfo(hub);
       const flagEl = document.getElementById("hover-node-flag");
       const titleEl = document.getElementById("hover-node-title");
       const typeEl = document.getElementById("hover-node-type");
@@ -2083,7 +2193,9 @@ function initApp() {
       const simEl = document.getElementById("hover-node-similarity");
       const patentEl = document.getElementById("hover-node-patent");
 
-      if (flagEl) flagEl.textContent = hub.flag || "📍";
+      const isReg = hub.type === "registry";
+
+      if (flagEl) flagEl.textContent = hub.flag || (isReg ? "🏛️" : "📍");
       if (titleEl) titleEl.textContent = hub.code || hub.shortName || hub.name;
       if (typeEl) {
         typeEl.textContent = levelInfo.levelName;
@@ -2092,15 +2204,19 @@ function initApp() {
         typeEl.style.background = `${levelInfo.hex}22`;
       }
       if (cityEl) cityEl.textContent = hub.city;
-      if (matchesEl) matchesEl.textContent = hub.matchCount || 12;
+      if (matchesEl) matchesEl.textContent = hub.matchCount || (isReg ? "ONLINE" : 8);
       if (simEl) {
-        simEl.textContent = (hub.similarity || 90) + "%";
+        simEl.textContent = isReg ? "100%" : `${levelInfo.percentage}%`;
         simEl.style.color = levelInfo.hex;
       }
       if (patentEl) {
-        const patNo = hub.samplePatent || hub.doc_id || "US10423190B";
-        const patTitle = hub.patentTitle ? `<div style="font-size: 0.70rem; color: var(--text-secondary); margin-top: 2px;">${hub.patentTitle}</div>` : "";
-        patentEl.innerHTML = `<strong>PATENT NO:</strong> <span style="color: var(--accent); font-family: var(--font-mono); font-weight: 700;">${patNo}</span>${patTitle}`;
+        if (isReg) {
+          patentEl.innerHTML = `<strong>JURISDICTION REGISTRY:</strong> <span style="color: ${levelInfo.hex}; font-family: var(--font-mono); font-weight: 700;">${hub.name}</span>`;
+        } else {
+          const patNo = hub.samplePatent || hub.doc_id || "US10423190B";
+          const patTitle = hub.patentTitle ? `<div style="font-size: 0.70rem; color: var(--text-secondary); margin-top: 2px;">${hub.patentTitle}</div>` : "";
+          patentEl.innerHTML = `<strong>PATENT NO:</strong> <span style="color: ${levelInfo.hex}; font-family: var(--font-mono); font-weight: 700;">${patNo}</span>${patTitle}`;
+        }
       }
 
       hoverCard.style.display = "flex";
@@ -2253,32 +2369,76 @@ function initApp() {
         radarHero.scrollIntoView({ behavior: "smooth", block: "start" });
       }
 
-      // 3. Search for matching pin in activeHubPins
-      let matchedPin = activeHubPins.find(p => {
-        const sample = (p.hub && (p.hub.samplePatent || p.hub.doc_id || "")).toUpperCase();
-        return sample === cleanPatId || cleanPatId.includes(sample) || sample.includes(cleanPatId);
-      });
-
-      // If not exact match, search by country registry code
-      if (!matchedPin) {
-        if (cleanPatId.startsWith("JP")) {
-          matchedPin = activeHubPins.find(p => p.hub && (p.hub.code === "JPO" || (p.hub.city && p.hub.city.includes("JP"))));
-        } else if (cleanPatId.startsWith("US")) {
-          matchedPin = activeHubPins.find(p => p.hub && (p.hub.code === "USPTO" || (p.hub.city && p.hub.city.includes("US"))));
-        } else if (cleanPatId.startsWith("EP") || cleanPatId.startsWith("DE")) {
-          matchedPin = activeHubPins.find(p => p.hub && (p.hub.code === "EPO" || (p.hub.city && (p.hub.city.includes("EU") || p.hub.city.includes("DE")))));
-        } else if (cleanPatId.startsWith("CN")) {
-          matchedPin = activeHubPins.find(p => p.hub && (p.hub.code === "CNIPA" || (p.hub.city && p.hub.city.includes("CN"))));
-        } else if (cleanPatId.startsWith("WO")) {
-          matchedPin = activeHubPins.find(p => p.hub && p.hub.code === "WIPO");
-        }
-      }
+      // 3. Search for matching non-registry pin in activeHubPins
+      let matchedPin = activeHubPins.find(p => !p.isReg && p.hub && (
+        (p.hub.samplePatent && p.hub.samplePatent.toUpperCase().includes(cleanPatId)) ||
+        (cleanPatId.includes((p.hub.samplePatent || "").toUpperCase())) ||
+        (p.hub.code && p.hub.code.toUpperCase() === cleanPatId)
+      ));
 
       // 4. If matched pin exists, update and focus
       if (matchedPin) {
         matchedPin.hub.samplePatent = cleanPatId;
-        if (threatLevel) matchedPin.hub.threatLevel = threatLevel.toUpperCase();
+        const risk = RiskClassifier.resolvePatentRisk({
+          doc_id: cleanPatId,
+          samplePatent: cleanPatId,
+          threatLevel: threatLevel || matchedPin.hub.threatLevel,
+          threat_level: threatLevel || matchedPin.hub.threatLevel,
+          similarity: matchedPin.hub.similarity
+        }, currentThreatMatrix);
+
+        matchedPin.hub.threatLevel = risk.threat;
+        matchedPin.hub.similarity = risk.percentage;
         if (extraTitle && !matchedPin.hub.patentTitle) matchedPin.hub.patentTitle = extraTitle;
+
+        // Recompute levelInfo and update 3D pinhead & stem material colors
+        const levelInfo = getNodeLevelInfo(matchedPin.hub);
+        matchedPin.levelInfo = levelInfo;
+        matchedPin.hub.levelInfo = levelInfo;
+        assertUIRiskConsistency(cleanPatId, risk.threat, levelInfo.threat, risk.percentage, levelInfo.percentage);
+
+        if (matchedPin.head && matchedPin.head.material) matchedPin.head.material.color.copy(levelInfo.levelColor);
+        if (matchedPin.stem && matchedPin.stem.material) matchedPin.stem.material.color.copy(levelInfo.levelColor);
+        if (matchedPin.baseMesh && matchedPin.baseMesh.material) matchedPin.baseMesh.material.color.copy(levelInfo.levelColor);
+
+        // Also recolor connected arcs and photon pulses
+        activeArcs.forEach(arc => {
+          if (arc.targetHub && (arc.targetHub.samplePatent === cleanPatId || arc.targetHub.code === cleanPatId)) {
+            if (arc.arcMesh && arc.arcMesh.material) arc.arcMesh.material.color.copy(levelInfo.levelColor);
+            if (arc.pulseMesh && arc.pulseMesh.material) arc.pulseMesh.material.color.copy(levelInfo.levelColor);
+          }
+        });
+
+        // Refresh labelSprite badge text and border
+        if (matchedPin.labelSprite && matchedPin.pinSubGroup) {
+          matchedPin.pinSubGroup.remove(matchedPin.labelSprite);
+          if (matchedPin.labelSprite.material && matchedPin.labelSprite.material.map) {
+            matchedPin.labelSprite.material.map.dispose();
+          }
+          if (matchedPin.labelSprite.material) matchedPin.labelSprite.material.dispose();
+
+          const cityName = (matchedPin.hub.city ? matchedPin.hub.city.split(',')[0] : matchedPin.hub.name).trim().toUpperCase();
+          const entityCode = matchedPin.hub.shortName || (matchedPin.hub.name.split(' ')[0]);
+          let threatTag = ` [${levelInfo.threat} ${levelInfo.percentage}%]`;
+          const patTitleSnippet = matchedPin.hub.patentTitle ? ` · ${matchedPin.hub.patentTitle.length > 22 ? matchedPin.hub.patentTitle.substring(0, 20) + '...' : matchedPin.hub.patentTitle}` : "";
+
+          const isLight = currentTheme === "light";
+          const newSprite = create3DTextBadge({
+            title: `${cityName} · ${cleanPatId}${threatTag}`,
+            subtitle: `${entityCode}${patTitleSnippet}`
+          }, {
+            textColor: levelInfo.hex,
+            subTextColor: isLight ? "#0369a1" : "#38bdf8",
+            bgColor: isLight ? "rgba(255, 255, 255, 0.96)" : "rgba(4, 9, 18, 0.92)",
+            borderColor: `${levelInfo.hex}dd`,
+            scale: 0.95
+          });
+          const pHeight = matchedPin.pinHeight || 7.0;
+          newSprite.position.set(0, pHeight + 4.8, 0);
+          matchedPin.pinSubGroup.add(newSprite);
+          matchedPin.labelSprite = newSprite;
+        }
+
         highlightAndFocusNode(matchedPin);
         showIndustrialToast(`LOCATING PATENT [${cleanPatId}] ON GLOBE · ${matchedPin.hub.city.toUpperCase()}`);
         return;
@@ -2289,11 +2449,26 @@ function initApp() {
       if (resolved && resolved.hub) {
         const hub = { ...resolved.hub };
         hub.samplePatent = cleanPatId;
-        if (threatLevel) hub.threatLevel = threatLevel.toUpperCase();
+        const risk = RiskClassifier.resolvePatentRisk({
+          doc_id: cleanPatId,
+          samplePatent: cleanPatId,
+          threatLevel: threatLevel || hub.threatLevel,
+          threat_level: threatLevel || hub.threatLevel,
+          similarity: hub.similarity
+        }, currentThreatMatrix);
+
+        hub.threatLevel = risk.threat;
+        hub.similarity = risk.percentage;
         if (extraTitle) hub.patentTitle = extraTitle;
 
         create3DHubPin(hub, THEME_PALETTES[currentTheme] || THEME_PALETTES.green);
         const newPin = activeHubPins[activeHubPins.length - 1];
+        const hubPos = latLonToVector3(hub.lat, hub.lon, R);
+        const levelInfo = getNodeLevelInfo(hub);
+        assertUIRiskConsistency(cleanPatId, risk.threat, levelInfo.threat, risk.percentage, levelInfo.percentage);
+        const arcData = create3DRadarArc(visitorPos, hubPos, THEME_PALETTES[currentTheme] || THEME_PALETTES.green, activeArcs.length, levelInfo);
+        arcData.targetHub = hub;
+        activeArcs.push(arcData);
         if (newPin) {
           highlightAndFocusNode(newPin);
         } else {
@@ -2341,25 +2516,31 @@ function initApp() {
         if (focusType === "main") {
           focusMainVisitorNode();
         } else if (focusType === "high") {
-          const matching = activeHubPins.filter(p => p.levelInfo && p.levelInfo.badgeClass === "high");
+          const matching = activeHubPins.filter(p => !p.isReg && p.levelInfo && p.levelInfo.badgeClass === "high");
           if (matching.length > 0) {
             const target = matching[legendCycleIndices.high % matching.length];
             legendCycleIndices.high++;
             highlightAndFocusNode(target);
+          } else if (typeof showIndustrialToast === "function") {
+            showIndustrialToast("NO HIGH THREAT CITATIONS DETECTED");
           }
         } else if (focusType === "mod") {
-          const matching = activeHubPins.filter(p => p.levelInfo && p.levelInfo.badgeClass === "mod");
+          const matching = activeHubPins.filter(p => !p.isReg && p.levelInfo && p.levelInfo.badgeClass === "mod");
           if (matching.length > 0) {
             const target = matching[legendCycleIndices.mod % matching.length];
             legendCycleIndices.mod++;
             highlightAndFocusNode(target);
+          } else if (typeof showIndustrialToast === "function") {
+            showIndustrialToast("NO MOD THREAT CITATIONS DETECTED");
           }
         } else if (focusType === "low") {
-          const matching = activeHubPins.filter(p => p.levelInfo && p.levelInfo.badgeClass === "low");
+          const matching = activeHubPins.filter(p => !p.isReg && p.levelInfo && p.levelInfo.badgeClass === "low");
           if (matching.length > 0) {
             const target = matching[legendCycleIndices.low % matching.length];
             legendCycleIndices.low++;
             highlightAndFocusNode(target);
+          } else if (typeof showIndustrialToast === "function") {
+            showIndustrialToast("NO LOW THREAT CITATIONS DETECTED");
           }
         } else if (focusType === "registry") {
           const matching = activeHubPins.filter(p => p.isReg);
@@ -3123,7 +3304,6 @@ function initApp() {
   ];
 
   let currentReportData = null;
-  let currentThreatMatrix = null;
   let parsedDisclosureData = null;
 
   // Character counter
@@ -3424,11 +3604,15 @@ function initApp() {
       if (threatMatrix && threatMatrix.documents && threatMatrix.documents.length > 0) {
         let tableHtml = `<table class="matrix-table"><thead><tr><th>Claim Element</th>`;
         threatMatrix.documents.forEach(doc => {
+          const risk = RiskClassifier.resolvePatentRisk(doc, threatMatrix);
+          const docThreat = risk.threat;
+          const threatLower = risk.badgeClass;
           tableHtml += `
             <th class="matrix-patent-th">
-              <button type="button" class="matrix-patent-btn" data-patent-id="${escapeHtml(doc.doc_id)}" data-patent-title="${escapeHtml(doc.title || '')}" title="Click to locate ${escapeHtml(doc.doc_id)} on 3D Globe">
-                <span class="matrix-btn-pin">📍</span>
-                <span class="matrix-pat-code">${escapeHtml(doc.doc_id)}</span>
+              <button type="button" class="matrix-patent-btn threat-${threatLower}" data-patent-id="${escapeHtml(doc.doc_id)}" data-threat="${escapeHtml(docThreat)}" data-patent-title="${escapeHtml(doc.title || '')}" title="Click to locate ${escapeHtml(doc.doc_id)} [${escapeHtml(docThreat)}] on 3D Globe">
+                <span class="matrix-threat-dot ${threatLower}"></span>
+                <span class="matrix-pat-code ${threatLower}">${escapeHtml(doc.doc_id)}</span>
+                <span class="matrix-header-threat-badge ${threatLower}">${escapeHtml(docThreat)}</span>
                 <span class="matrix-btn-target-tag">GLOBE ↗</span>
               </button>
             </th>
@@ -3439,18 +3623,13 @@ function initApp() {
         threatMatrix.rows.forEach(r => {
           tableHtml += `<tr><td><strong>[${r.element_id}]</strong> ${escapeHtml(r.element_title)}</td>`;
           threatMatrix.documents.forEach(doc => {
-            const rawThreat = (r.threats[doc.doc_id] || "none").toLowerCase();
+            const normThreat = RiskClassifier.normalizeThreat(r.threats && r.threats[doc.doc_id]);
             let threatBadge = "—";
             let threatClass = "safe";
-            if (rawThreat === "high") {
-              threatBadge = "HIGH";
-              threatClass = "high";
-            } else if (rawThreat === "moderate" || rawThreat === "medium") {
-              threatBadge = "MOD";
-              threatClass = "moderate";
-            } else if (rawThreat === "low") {
-              threatBadge = "LOW";
-              threatClass = "low";
+            if (normThreat) {
+              const classified = RiskClassifier.classify(null, normThreat);
+              threatBadge = classified.threat;
+              threatClass = classified.badgeClass;
             }
             tableHtml += `
               <td>
@@ -3470,7 +3649,7 @@ function initApp() {
           btn.addEventListener("click", (e) => {
             e.stopPropagation();
             const patId = btn.getAttribute("data-patent-id");
-            const threat = btn.getAttribute("data-threat") || "HIGH";
+            const threat = btn.getAttribute("data-threat") || "LOW";
             const extra = btn.getAttribute("data-element") || btn.getAttribute("data-patent-title") || "";
             if (patId && typeof window.__locatePatentOnGlobe === "function") {
               window.__locatePatentOnGlobe(patId, threat, extra);
@@ -3514,14 +3693,19 @@ function initApp() {
 
       if (report.all_citations && report.all_citations.length > 0) {
         report.all_citations.forEach(cit => {
+          const risk = RiskClassifier.resolvePatentRisk(cit, currentThreatMatrix);
+          const citThreat = risk.threat;
+          const threatLower = risk.badgeClass;
+          assertUIRiskConsistency(cit.doc_id, risk.threat, citThreat, risk.percentage, risk.percentage);
           const item = document.createElement("div");
           item.className = "citation-item";
           item.innerHTML = `
             <div class="citation-header">
               <span class="citation-title"><strong>[${cit.citation_id}]</strong> ${escapeHtml(cit.title)}</span>
-              <button type="button" class="citation-globe-btn" data-patent-id="${escapeHtml(cit.doc_id)}" title="Locate ${escapeHtml(cit.doc_id)} on 3D Globe">
-                <span class="matrix-btn-pin">📍</span>
-                <span class="citation-doc-id">${escapeHtml(cit.doc_id)}</span>
+              <button type="button" class="citation-globe-btn threat-${threatLower}" data-patent-id="${escapeHtml(cit.doc_id)}" data-threat="${escapeHtml(citThreat)}" title="Locate ${escapeHtml(cit.doc_id)} [${escapeHtml(citThreat)}] on 3D Globe">
+                <span class="citation-threat-dot ${threatLower}"></span>
+                <span class="citation-doc-id ${threatLower}">${escapeHtml(cit.doc_id)}</span>
+                <span class="matrix-header-threat-badge ${threatLower}">${escapeHtml(citThreat)}</span>
                 <span class="citation-globe-tag">3D GLOBE ↗</span>
               </button>
             </div>
@@ -3536,7 +3720,7 @@ function initApp() {
             locateBtn.addEventListener("click", (e) => {
               e.stopPropagation();
               if (typeof window.__locatePatentOnGlobe === "function") {
-                window.__locatePatentOnGlobe(cit.doc_id, "HIGH", cit.title);
+                window.__locatePatentOnGlobe(cit.doc_id, citThreat, cit.title);
               }
             });
           }

@@ -162,6 +162,74 @@ async def parse_elements_only(req: ScreenRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def _build_threat_matrix(claim_elements, retrieval_output, clustering_output):
+    from schemas.risk import classify_risk_score, normalize_threat_level
+
+    all_docs = {}
+    for el_res in retrieval_output.element_results.values():
+        for c in el_res.candidates:
+            all_docs[c.doc_id] = c.title
+
+    tier_ranks = {"HIGH": 3, "MOD": 2, "LOW": 1}
+    doc_stats = {}
+    for el_id, cluster in clustering_output.element_clusters.items():
+        for art in cluster.ranked_prior_art:
+            raw_score = float(getattr(art, "novelty_risk_score", 0.5) or 0.5)
+            raw_lvl = getattr(art, "threat_level", "low") or "low"
+
+            lvl, score_pct = classify_risk_score(score=raw_score, raw_threat_level=raw_lvl)
+
+            existing = doc_stats.get(art.doc_id)
+            if not existing:
+                doc_stats[art.doc_id] = {
+                    "threat_level": lvl,
+                    "similarity": score_pct,
+                    "matches": 1
+                }
+            else:
+                doc_stats[art.doc_id]["matches"] += 1
+                curr_rank = tier_ranks.get(existing["threat_level"], 1)
+                new_rank = tier_ranks.get(lvl, 1)
+                if new_rank > curr_rank:
+                    doc_stats[art.doc_id]["threat_level"] = lvl
+                    doc_stats[art.doc_id]["similarity"] = max(existing["similarity"], score_pct)
+                elif new_rank == curr_rank:
+                    doc_stats[art.doc_id]["similarity"] = max(existing["similarity"], score_pct)
+
+    docs_payload = []
+    for d_id, d_title in all_docs.items():
+        stats = doc_stats.get(d_id, {})
+        lvl = stats.get("threat_level", "LOW")
+        sim = stats.get("similarity", 72)
+        docs_payload.append({
+            "doc_id": d_id,
+            "title": d_title,
+            "threat_level": lvl,
+            "similarity": sim,
+            "match_count": stats.get("matches", 1)
+        })
+
+    matrix_rows = []
+    for el in claim_elements:
+        cluster = clustering_output.element_clusters.get(el.element_id)
+        doc_threats = {}
+        if cluster:
+            for art in cluster.ranked_prior_art:
+                art_lvl, _ = classify_risk_score(score=art.novelty_risk_score, raw_threat_level=art.threat_level)
+                doc_threats[art.doc_id] = art_lvl
+        matrix_rows.append({
+            "element_id": el.element_id,
+            "element_title": el.title,
+            "overall_risk": cluster.overall_element_risk if cluster else "low",
+            "threats": doc_threats
+        })
+
+    return {
+        "documents": docs_payload,
+        "rows": matrix_rows
+    }
+
+
 @app.post("/api/screen-elements")
 async def screen_from_elements(req: ScreenElementsRequest):
     from schemas.disclosure import ParsedDisclosure, ClaimElement
@@ -186,22 +254,7 @@ async def screen_from_elements(req: ScreenElementsRequest):
         clust_out = clustering.cluster_and_score(parsed, ret_out)
         rep_out = report_writer.generate_report(parsed, ret_out, clust_out)
 
-        # Build 2D Threat Matrix
-        all_docs = {}
-        for el_res in ret_out.element_results.values():
-            for c in el_res.candidates:
-                all_docs[c.doc_id] = c.title
-
-        matrix_rows = []
-        for el in parsed.claim_elements:
-            cluster = clust_out.element_clusters.get(el.element_id)
-            doc_threats = {art.doc_id: art.threat_level for art in cluster.ranked_prior_art} if cluster else {}
-            matrix_rows.append({
-                "element_id": el.element_id,
-                "element_title": el.title,
-                "overall_risk": cluster.overall_element_risk if cluster else "low",
-                "threats": doc_threats
-            })
+        threat_matrix = _build_threat_matrix(parsed.claim_elements, ret_out, clust_out)
 
         return {
             "status": "success",
@@ -209,10 +262,7 @@ async def screen_from_elements(req: ScreenElementsRequest):
             "retrieval_output": ret_out.model_dump(),
             "clustering_output": clust_out.model_dump(),
             "report": rep_out.model_dump(),
-            "threat_matrix": {
-                "documents": [{"doc_id": d_id, "title": d_title} for d_id, d_title in all_docs.items()],
-                "rows": matrix_rows
-            }
+            "threat_matrix": threat_matrix
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -235,22 +285,11 @@ async def screen_invention(req: ScreenRequest):
     if state.errors:
         raise HTTPException(status_code=500, detail="; ".join(state.errors))
 
-    # Build 2D Threat Matrix
-    all_docs = {}
-    for el_res in state.retrieval_output.element_results.values():
-        for c in el_res.candidates:
-            all_docs[c.doc_id] = c.title
-
-    matrix_rows = []
-    for el in state.parsed_disclosure.claim_elements:
-        cluster = state.clustering_output.element_clusters.get(el.element_id)
-        doc_threats = {art.doc_id: art.threat_level for art in cluster.ranked_prior_art} if cluster else {}
-        matrix_rows.append({
-            "element_id": el.element_id,
-            "element_title": el.title,
-            "overall_risk": cluster.overall_element_risk if cluster else "low",
-            "threats": doc_threats
-        })
+    threat_matrix = _build_threat_matrix(
+        state.parsed_disclosure.claim_elements,
+        state.retrieval_output,
+        state.clustering_output
+    )
 
     return {
         "status": "success",
@@ -258,10 +297,7 @@ async def screen_invention(req: ScreenRequest):
         "retrieval_output": state.retrieval_output.model_dump(),
         "clustering_output": state.clustering_output.model_dump(),
         "report": state.final_report.model_dump(),
-        "threat_matrix": {
-            "documents": [{"doc_id": d_id, "title": d_title} for d_id, d_title in all_docs.items()],
-            "rows": matrix_rows
-        }
+        "threat_matrix": threat_matrix
     }
 
 

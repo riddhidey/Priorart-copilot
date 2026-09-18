@@ -1684,6 +1684,7 @@ a:hover {
   border: 1px solid rgba(239, 68, 68, 0.45) !important;
 }
 
+.risk-badge.mod,
 .risk-badge.moderate, .risk-badge.medium {
   background: rgba(251, 191, 36, 0.14) !important;
   color: #fbbf24 !important;
@@ -1808,6 +1809,7 @@ a:hover {
   border: 1px solid rgba(239, 68, 68, 0.45) !important;
 }
 
+.matrix-cell-badge.mod,
 .matrix-cell-badge.moderate,
 .matrix-cell-badge.medium {
   background: rgba(251, 191, 36, 0.14) !important;
@@ -1853,6 +1855,110 @@ a:hover {
 
 .matrix-patent-btn:active {
   transform: translateY(0);
+}
+
+/* Threat-Colored Patent Buttons in Threat Matrix Header */
+.matrix-patent-btn.threat-low {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.38);
+  color: #10b981;
+}
+.matrix-patent-btn.threat-low:hover {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: #10b981;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.45);
+}
+
+.matrix-patent-btn.threat-mod {
+  background: rgba(250, 204, 21, 0.08);
+  border-color: rgba(250, 204, 21, 0.38);
+  color: #facc15;
+}
+.matrix-patent-btn.threat-mod:hover {
+  background: rgba(250, 204, 21, 0.22);
+  border-color: #facc15;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.45);
+}
+
+.matrix-patent-btn.threat-high {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.38);
+  color: #ef4444;
+}
+.matrix-patent-btn.threat-high:hover {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.45);
+}
+
+/* Patent Code text coloring */
+.matrix-pat-code.low, .citation-doc-id.low {
+  color: #10b981;
+  font-weight: 700;
+}
+.matrix-pat-code.mod, .citation-doc-id.mod {
+  color: #facc15;
+  font-weight: 700;
+}
+.matrix-pat-code.high, .citation-doc-id.high {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* Threat dot indicators */
+.matrix-threat-dot, .citation-threat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.matrix-threat-dot.low, .citation-threat-dot.low {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+.matrix-threat-dot.mod, .citation-threat-dot.mod {
+  background: #facc15;
+  box-shadow: 0 0 8px #facc15;
+}
+.matrix-threat-dot.high, .citation-threat-dot.high {
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+.matrix-patent-btn:hover .matrix-threat-dot,
+.citation-globe-btn:hover .citation-threat-dot {
+  transform: scale(1.35);
+  box-shadow: 0 0 12px currentColor;
+}
+
+/* Threat badge in header */
+.matrix-header-threat-badge {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+.matrix-header-threat-badge.low {
+  background: rgba(16, 185, 129, 0.18);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.45);
+}
+.matrix-header-threat-badge.mod {
+  background: rgba(250, 204, 21, 0.18);
+  color: #facc15;
+  border: 1px solid rgba(250, 204, 21, 0.45);
+}
+.matrix-header-threat-badge.high {
+  background: rgba(239, 68, 68, 0.18);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.45);
 }
 
 .matrix-btn-pin {
@@ -1917,6 +2023,39 @@ a:hover {
   color: #000000;
   box-shadow: 0 0 12px var(--accent-glow);
   transform: translateY(-1px);
+}
+
+.citation-globe-btn.threat-low {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.06);
+}
+.citation-globe-btn.threat-low:hover {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: #10b981;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
+}
+
+.citation-globe-btn.threat-mod {
+  border-color: rgba(250, 204, 21, 0.4);
+  background: rgba(250, 204, 21, 0.06);
+}
+.citation-globe-btn.threat-mod:hover {
+  background: rgba(250, 204, 21, 0.22);
+  border-color: #facc15;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(250, 204, 21, 0.4);
+}
+
+.citation-globe-btn.threat-high {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.06);
+}
+.citation-globe-btn.threat-high:hover {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.4);
 }
 
 .citation-globe-btn:hover .citation-globe-tag {
@@ -2030,6 +2169,7 @@ a:hover {
   border: 1px solid rgba(239, 68, 68, 0.45) !important;
 }
 
+.badge.mod,
 .badge.moderate, .badge.medium {
   background: rgba(251, 191, 36, 0.14) !important;
   color: #fbbf24 !important;
@@ -2958,10 +3098,13 @@ body.broadcast-mode .globe-telemetry-badge.bottom-right-badge {
   border: 1px solid #f87171 !important;
 }
 
+.pdf-export-mode .risk-badge.mod,
 .pdf-export-mode .risk-badge.moderate,
 .pdf-export-mode .risk-badge.medium,
+.pdf-export-mode .badge.mod,
 .pdf-export-mode .badge.moderate,
 .pdf-export-mode .badge.medium,
+.pdf-export-mode .matrix-cell-badge.mod,
 .pdf-export-mode .matrix-cell-badge.moderate,
 .pdf-export-mode .matrix-cell-badge.medium {
   background: #fef3c7 !important;
