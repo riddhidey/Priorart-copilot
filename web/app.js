@@ -1050,7 +1050,111 @@ function initApp() {
     beaconGroup.add(wave2Mesh);
     beaconGroup.visible = false;
 
-    let visitorCoords = { lat: 20.2961, lon: 85.8245, city: "Bhubaneswar", country: "India" };
+    // Zero-Permission Timezone Geolocation Database (Instant, silent, zero-permission fallback)
+    const TIMEZONE_GEO_MAP = {
+      // North America (US, Canada, Mexico)
+      "America/New_York": { lat: 40.7128, lon: -74.0060, city: "New York", country: "United States" },
+      "America/Detroit": { lat: 42.3314, lon: -83.0458, city: "Detroit", country: "United States" },
+      "America/Kentucky/Louisville": { lat: 38.2527, lon: -85.7585, city: "Louisville", country: "United States" },
+      "America/Indiana/Indianapolis": { lat: 39.7684, lon: -86.1581, city: "Indianapolis", country: "United States" },
+      "America/Chicago": { lat: 41.8781, lon: -87.6298, city: "Chicago", country: "United States" },
+      "America/Denver": { lat: 39.7392, lon: -104.9903, city: "Denver", country: "United States" },
+      "America/Phoenix": { lat: 33.4484, lon: -112.0740, city: "Phoenix", country: "United States" },
+      "America/Los_Angeles": { lat: 34.0522, lon: -118.2437, city: "Los Angeles", country: "United States" },
+      "America/Anchorage": { lat: 61.2181, lon: -149.9003, city: "Anchorage", country: "United States" },
+      "Pacific/Honolulu": { lat: 21.3069, lon: -157.8583, city: "Honolulu", country: "United States" },
+      "America/Toronto": { lat: 43.6532, lon: -79.3832, city: "Toronto", country: "Canada" },
+      "America/Vancouver": { lat: 49.2827, lon: -123.1207, city: "Vancouver", country: "Canada" },
+      "America/Montreal": { lat: 45.5017, lon: -73.5673, city: "Montreal", country: "Canada" },
+      "America/Edmonton": { lat: 53.5461, lon: -113.4938, city: "Edmonton", country: "Canada" },
+      "America/Mexico_City": { lat: 19.4326, lon: -99.1332, city: "Mexico City", country: "Mexico" },
+      "America/Monterrey": { lat: 25.6866, lon: -100.3161, city: "Monterrey", country: "Mexico" },
+
+      // South America
+      "America/Bogota": { lat: 4.7110, lon: -74.0721, city: "Bogota", country: "Colombia" },
+      "America/Lima": { lat: -12.0464, lon: -77.0428, city: "Lima", country: "Peru" },
+      "America/Santiago": { lat: -33.4489, lon: -70.6693, city: "Santiago", country: "Chile" },
+      "America/Buenos_Aires": { lat: -34.6037, lon: -58.3816, city: "Buenos Aires", country: "Argentina" },
+      "America/Sao_Paulo": { lat: -23.5505, lon: -46.6333, city: "São Paulo", country: "Brazil" },
+      "America/Rio_de_Janeiro": { lat: -22.9068, lon: -43.1729, city: "Rio de Janeiro", country: "Brazil" },
+
+      // Europe & United Kingdom
+      "Europe/London": { lat: 51.5074, lon: -0.1278, city: "London", country: "United Kingdom" },
+      "Europe/Dublin": { lat: 53.3498, lon: -6.2603, city: "Dublin", country: "Ireland" },
+      "Europe/Paris": { lat: 48.8566, lon: 2.3522, city: "Paris", country: "France" },
+      "Europe/Berlin": { lat: 52.5200, lon: 13.4050, city: "Berlin", country: "Germany" },
+      "Europe/Rome": { lat: 41.9028, lon: 12.4964, city: "Rome", country: "Italy" },
+      "Europe/Madrid": { lat: 40.4168, lon: -3.7038, city: "Madrid", country: "Spain" },
+      "Europe/Amsterdam": { lat: 52.3676, lon: 4.9041, city: "Amsterdam", country: "Netherlands" },
+      "Europe/Brussels": { lat: 50.8503, lon: 4.3517, city: "Brussels", country: "Belgium" },
+      "Europe/Zurich": { lat: 47.3769, lon: 8.5417, city: "Zurich", country: "Switzerland" },
+      "Europe/Vienna": { lat: 48.2082, lon: 16.3738, city: "Vienna", country: "Austria" },
+      "Europe/Stockholm": { lat: 59.3293, lon: 18.0686, city: "Stockholm", country: "Sweden" },
+      "Europe/Oslo": { lat: 59.9139, lon: 10.7522, city: "Oslo", country: "Norway" },
+      "Europe/Copenhagen": { lat: 55.6761, lon: 12.5683, city: "Copenhagen", country: "Denmark" },
+      "Europe/Helsinki": { lat: 60.1699, lon: 24.9384, city: "Helsinki", country: "Finland" },
+      "Europe/Warsaw": { lat: 52.2297, lon: 21.0122, city: "Warsaw", country: "Poland" },
+      "Europe/Prague": { lat: 50.0755, lon: 14.4378, city: "Prague", country: "Czechia" },
+      "Europe/Budapest": { lat: 47.4979, lon: 19.0402, city: "Budapest", country: "Hungary" },
+      "Europe/Athens": { lat: 37.9838, lon: 23.7275, city: "Athens", country: "Greece" },
+      "Europe/Bucharest": { lat: 44.4268, lon: 26.1025, city: "Bucharest", country: "Romania" },
+      "Europe/Istanbul": { lat: 41.0082, lon: 28.9784, city: "Istanbul", country: "Turkey" },
+      "Europe/Kyiv": { lat: 50.4501, lon: 30.5234, city: "Kyiv", country: "Ukraine" },
+      "Europe/Lisbon": { lat: 38.7223, lon: -9.1393, city: "Lisbon", country: "Portugal" },
+
+      // Asia & Middle East
+      "Asia/Kolkata": { lat: 20.2961, lon: 85.8245, city: "Bhubaneswar", country: "India" },
+      "Asia/Calcutta": { lat: 20.2961, lon: 85.8245, city: "Bhubaneswar", country: "India" },
+      "Asia/Dubai": { lat: 25.2048, lon: 55.2708, city: "Dubai", country: "UAE" },
+      "Asia/Riyadh": { lat: 24.7136, lon: 46.6753, city: "Riyadh", country: "Saudi Arabia" },
+      "Asia/Qatar": { lat: 25.2854, lon: 51.5310, city: "Doha", country: "Qatar" },
+      "Asia/Kuwait": { lat: 29.3759, lon: 47.9774, city: "Kuwait City", country: "Kuwait" },
+      "Asia/Jerusalem": { lat: 31.7683, lon: 35.2137, city: "Jerusalem", country: "Israel" },
+      "Asia/Singapore": { lat: 1.3521, lon: 103.8198, city: "Singapore", country: "Singapore" },
+      "Asia/Bangkok": { lat: 13.7563, lon: 100.5018, city: "Bangkok", country: "Thailand" },
+      "Asia/Jakarta": { lat: -6.2088, lon: 106.8456, city: "Jakarta", country: "Indonesia" },
+      "Asia/Kuala_Lumpur": { lat: 3.1390, lon: 101.6869, city: "Kuala Lumpur", country: "Malaysia" },
+      "Asia/Manila": { lat: 14.5995, lon: 120.9842, city: "Manila", country: "Philippines" },
+      "Asia/Hong_Kong": { lat: 22.3193, lon: 114.1694, city: "Hong Kong", country: "China" },
+      "Asia/Taipei": { lat: 25.0330, lon: 121.5654, city: "Taipei", country: "Taiwan" },
+      "Asia/Shanghai": { lat: 31.2304, lon: 121.4737, city: "Shanghai", country: "China" },
+      "Asia/Tokyo": { lat: 35.6762, lon: 139.6503, city: "Tokyo", country: "Japan" },
+      "Asia/Seoul": { lat: 37.5665, lon: 126.9780, city: "Seoul", country: "South Korea" },
+      "Asia/Dhaka": { lat: 23.8103, lon: 90.4125, city: "Dhaka", country: "Bangladesh" },
+      "Asia/Karachi": { lat: 24.8607, lon: 67.0011, city: "Karachi", country: "Pakistan" },
+      "Asia/Colombo": { lat: 6.9271, lon: 79.8612, city: "Colombo", country: "Sri Lanka" },
+      "Asia/Kathmandu": { lat: 27.7172, lon: 85.3240, city: "Kathmandu", country: "Nepal" },
+
+      // Oceania & Africa
+      "Australia/Sydney": { lat: -33.8688, lon: 151.2093, city: "Sydney", country: "Australia" },
+      "Australia/Melbourne": { lat: -37.8136, lon: 144.9631, city: "Melbourne", country: "Australia" },
+      "Australia/Brisbane": { lat: -27.4698, lon: 153.0251, city: "Brisbane", country: "Australia" },
+      "Australia/Perth": { lat: -31.9505, lon: 115.8605, city: "Perth", country: "Australia" },
+      "Pacific/Auckland": { lat: -36.8485, lon: 174.7633, city: "Auckland", country: "New Zealand" },
+      "Africa/Cairo": { lat: 30.0444, lon: 31.2357, city: "Cairo", country: "Egypt" },
+      "Africa/Johannesburg": { lat: -26.2041, lon: 28.0473, city: "Johannesburg", country: "South Africa" },
+      "Africa/Nairobi": { lat: -1.2921, lon: 36.8219, city: "Nairobi", country: "Kenya" },
+      "Africa/Lagos": { lat: 6.5244, lon: 3.3792, city: "Lagos", country: "Nigeria" }
+    };
+
+    function getZeroPermissionTimezoneSeed() {
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (tz && TIMEZONE_GEO_MAP[tz]) {
+          return { ...TIMEZONE_GEO_MAP[tz] };
+        }
+        if (tz) {
+          if (tz.startsWith("America/")) return { lat: 39.8283, lon: -98.5795, city: "North America Node", country: "United States" };
+          if (tz.startsWith("Europe/")) return { lat: 50.1109, lon: 8.6821, city: "Europe Node", country: "Germany" };
+          if (tz.startsWith("Asia/")) return { lat: 28.6139, lon: 77.2090, city: "Asia Node", country: "India" };
+          if (tz.startsWith("Australia/") || tz.startsWith("Pacific/")) return { lat: -33.8688, lon: 151.2093, city: "Oceania Node", country: "Australia" };
+          if (tz.startsWith("Africa/")) return { lat: -1.2921, lon: 36.8219, city: "Africa Node", country: "Kenya" };
+        }
+      } catch (e) {}
+      return { lat: 20.2961, lon: 85.8245, city: "Client Node", country: "Global" };
+    }
+
+    let visitorCoords = getZeroPermissionTimezoneSeed();
 
     function placeVisitorBeacon(lat, lon, city, country) {
       visitorCoords.lat = lat;
@@ -2523,37 +2627,122 @@ function initApp() {
       }
     });
 
-    // Geolocation Resolution
+    // Geolocation Resolution (Zero Permission, High-Accuracy Multi-Provider Waterfall)
     async function resolveClientLocation() {
       const geoStatus = document.getElementById("preloader-geo-status");
       const pingEl = document.getElementById("visitor-ping");
       const startPing = performance.now();
 
-      try {
-        const resp = await fetch("https://get.geojs.io/v1/ip/geo.json", { signal: AbortSignal.timeout(3500) });
-        if (!resp.ok) throw new Error("Geo lookup error");
-        const data = await resp.json();
-        const lat = parseFloat(data.latitude);
-        const lon = parseFloat(data.longitude);
-        const city = data.city || data.region || "Client Node";
-        const country = data.country || "Global";
+      // Multi-provider zero-permission waterfall (NO browser permission dialogs)
+      const providers = [
+        {
+          name: "Server-Proxy API",
+          url: "/api/visitor-geo",
+          parse: (data) => {
+            if (data && data.status === "success" && data.latitude != null && data.longitude != null) {
+              return {
+                lat: parseFloat(data.latitude),
+                lon: parseFloat(data.longitude),
+                city: data.city || "Client Node",
+                country: data.country || "Global"
+              };
+            }
+            return null;
+          }
+        },
+        {
+          name: "ipwho.is",
+          url: "https://ipwho.is/",
+          parse: (data) => {
+            if (data && data.success !== false && data.latitude != null && data.longitude != null) {
+              return {
+                lat: parseFloat(data.latitude),
+                lon: parseFloat(data.longitude),
+                city: data.city || data.region || "Client Node",
+                country: data.country || "Global"
+              };
+            }
+            return null;
+          }
+        },
+        {
+          name: "freeipapi.com",
+          url: "https://freeipapi.com/api/json",
+          parse: (data) => {
+            if (data && data.latitude != null && data.longitude != null) {
+              return {
+                lat: parseFloat(data.latitude),
+                lon: parseFloat(data.longitude),
+                city: data.cityName || data.regionName || "Client Node",
+                country: data.countryName || "Global"
+              };
+            }
+            return null;
+          }
+        },
+        {
+          name: "geojs.io",
+          url: "https://get.geojs.io/v1/ip/geo.json",
+          parse: (data) => {
+            if (data && data.latitude != null && data.longitude != null) {
+              return {
+                lat: parseFloat(data.latitude),
+                lon: parseFloat(data.longitude),
+                city: data.city || data.region || "Client Node",
+                country: data.country || "Global"
+              };
+            }
+            return null;
+          }
+        }
+      ];
 
-        const pingMs = Math.round(performance.now() - startPing);
-        if (pingEl) pingEl.textContent = `${pingMs} ms`;
+      let resolved = null;
+      for (const p of providers) {
+        try {
+          const resp = await fetch(p.url, {
+            signal: AbortSignal.timeout(2800),
+            headers: { "Accept": "application/json" }
+          });
+          if (!resp.ok) continue;
+          const json = await resp.json();
+          const parsed = p.parse(json);
+          if (parsed && !isNaN(parsed.lat) && !isNaN(parsed.lon)) {
+            resolved = parsed;
+            break;
+          }
+        } catch (e) {
+          // Continue to next provider in waterfall
+        }
+      }
 
-        visitorCoords = { lat, lon, city, country };
-        placeVisitorBeacon(lat, lon, city, country);
+      const pingMs = Math.max(14, Math.round(performance.now() - startPing));
+      if (pingEl) pingEl.textContent = `${pingMs} ms`;
 
-        const geoSummary = `GEO: ${city.toUpperCase()}, ${country.toUpperCase()} (${Math.abs(lat).toFixed(2)}° ${lat >= 0 ? "N" : "S"}, ${Math.abs(lon).toFixed(2)}° ${lon >= 0 ? "E" : "W"})`;
+      if (resolved) {
+        visitorCoords = resolved;
+        placeVisitorBeacon(resolved.lat, resolved.lon, resolved.city, resolved.country);
+
+        const latStr = Math.abs(resolved.lat).toFixed(2) + "° " + (resolved.lat >= 0 ? "N" : "S");
+        const lonStr = Math.abs(resolved.lon).toFixed(2) + "° " + (resolved.lon >= 0 ? "E" : "W");
+        const geoSummary = `GEO: ${resolved.city.toUpperCase()}, ${resolved.country.toUpperCase()} (${latStr}, ${lonStr})`;
         if (window.__updatePreloaderGeo) window.__updatePreloaderGeo(geoSummary);
         if (geoStatus) geoStatus.textContent = geoSummary;
 
-        setTimeout(() => focusCoordinates(lat, lon, false), 800);
-      } catch (err) {
-        placeVisitorBeacon(20.2961, 85.8245, "Client Node", "Regional");
-        if (pingEl) pingEl.textContent = "18 ms";
-        if (window.__updatePreloaderGeo) window.__updatePreloaderGeo("GEO: CLIENT NODE TRIANGULATED (AUTO)");
-        setTimeout(() => focusCoordinates(20.2961, 85.8245, false), 800);
+        setTimeout(() => focusCoordinates(resolved.lat, resolved.lon, false), 700);
+      } else {
+        // Fallback to zero-permission timezone database (covers user wherever they are in the world)
+        const seed = getZeroPermissionTimezoneSeed();
+        visitorCoords = seed;
+        placeVisitorBeacon(seed.lat, seed.lon, seed.city, seed.country);
+
+        const latStr = Math.abs(seed.lat).toFixed(2) + "° " + (seed.lat >= 0 ? "N" : "S");
+        const lonStr = Math.abs(seed.lon).toFixed(2) + "° " + (seed.lon >= 0 ? "E" : "W");
+        const geoSummary = `GEO: ${seed.city.toUpperCase()}, ${seed.country.toUpperCase()} (${latStr}, ${lonStr})`;
+        if (window.__updatePreloaderGeo) window.__updatePreloaderGeo(geoSummary);
+        if (geoStatus) geoStatus.textContent = geoSummary;
+
+        setTimeout(() => focusCoordinates(seed.lat, seed.lon, false), 700);
       }
     }
     resolveClientLocation();

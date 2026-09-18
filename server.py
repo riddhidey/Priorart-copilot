@@ -2,7 +2,7 @@ import os
 import sys
 from pathlib import Path
 from typing import Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,6 +47,99 @@ class ScreenElementsRequest(BaseModel):
     technical_domain: str
     summary: str
     claim_elements: list[dict]
+
+
+@app.get("/api/visitor-geo")
+async def get_visitor_geo(request: Request):
+    """
+    Zero-permission server-side IP geolocation resolver.
+    Extracts the visitor's public IP from proxy headers (Cloudflare, Vercel, Render, Nginx)
+    and resolves geographic coordinates without requesting any browser permissions.
+    """
+    forwarded = request.headers.get("x-forwarded-for")
+    cf_ip = request.headers.get("cf-connecting-ip")
+    real_ip = request.headers.get("x-real-ip")
+
+    client_ip = None
+    if cf_ip:
+        client_ip = cf_ip.strip()
+    elif forwarded:
+        client_ip = forwarded.split(",")[0].strip()
+    elif real_ip:
+        client_ip = real_ip.strip()
+    elif request.client and request.client.host:
+        client_ip = request.client.host
+
+    is_local = (
+        not client_ip or
+        client_ip in ("127.0.0.1", "localhost", "::1") or
+        client_ip.startswith("192.168.") or
+        client_ip.startswith("10.") or
+        client_ip.startswith("172.16.")
+    )
+
+    import urllib.request
+    import json
+
+    if not is_local and client_ip:
+        geo_urls = [
+            f"https://ipwho.is/{client_ip}",
+            f"https://freeipapi.com/api/json/{client_ip}",
+            f"https://get.geojs.io/v1/ip/geo/{client_ip}.json"
+        ]
+    else:
+        geo_urls = [
+            "https://ipwho.is/",
+            "https://freeipapi.com/api/json",
+            "https://get.geojs.io/v1/ip/geo.json"
+        ]
+
+    for url in geo_urls:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+            with urllib.request.urlopen(req, timeout=3.5) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+
+                if "latitude" in data and "longitude" in data and data.get("latitude") is not None:
+                    lat = float(data.get("latitude"))
+                    lon = float(data.get("longitude"))
+                    city = data.get("city") or data.get("cityName") or data.get("region") or "Client Node"
+                    country = data.get("country") or data.get("countryName") or "Global"
+                    country_code = data.get("country_code") or data.get("countryCode") or ""
+                    return {
+                        "status": "success",
+                        "ip": data.get("ip", client_ip or "client"),
+                        "city": city,
+                        "country": country,
+                        "country_code": country_code,
+                        "latitude": lat,
+                        "longitude": lon,
+                        "source": "server_ip_geo"
+                    }
+                elif "lat" in data and "lon" in data and data.get("lat") is not None:
+                    lat = float(data.get("lat"))
+                    lon = float(data.get("lon"))
+                    city = data.get("city") or data.get("region") or "Client Node"
+                    country = data.get("country") or "Global"
+                    country_code = data.get("country_code") or ""
+                    return {
+                        "status": "success",
+                        "ip": data.get("ip", client_ip or "client"),
+                        "city": city,
+                        "country": country,
+                        "country_code": country_code,
+                        "latitude": lat,
+                        "longitude": lon,
+                        "source": "server_ip_geo"
+                    }
+        except Exception:
+            continue
+
+    return {
+        "status": "fallback",
+        "ip": client_ip or "127.0.0.1",
+        "message": "Fallback to client-side geolocation"
+    }
 
 
 @app.post("/api/parse-elements")
