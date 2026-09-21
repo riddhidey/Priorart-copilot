@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PriorArt Copilot · Exchanging Security Token</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/static/auth.js"></script>
+</head>
+<body class="auth-page-body theme-dark">
+  <div class="animated-background" aria-hidden="true">
+    <div class="bg-layer-grid"></div>
+    <div class="bg-layer-orb orb-1"></div>
+    <div class="bg-layer-orb orb-2"></div>
+    <div class="bg-layer-scanbeam"></div>
+  </div>
+
+  <div class="auth-viewport">
+    <main class="auth-container">
+      <div class="auth-card telemetry-card callback-card">
+        <div class="auth-card-radar-bar">
+          <div class="radar-tag">
+            <span class="auth-beacon-dot"></span>
+            <span id="callback-status-header">SECURITY HANDSHAKE IN PROGRESS</span>
+          </div>
+          <div class="auth-terminal-code">[PKCE / OAUTH 2.0]</div>
+        </div>
+
+        <div class="callback-content">
+          <div class="callback-spinner-wrap" id="callback-spinner-wrap">
+            <div class="radar-spinner"></div>
+          </div>
+
+          <h2 class="callback-title" id="callback-title">Exchanging Security Token...</h2>
+          <p class="callback-desc" id="callback-desc">
+            Validating cryptographic signature and establishing authenticated telemetry channel.
+          </p>
+
+          <div class="callback-terminal-box" id="callback-terminal">
+            <div class="terminal-line">> INITIATING SECURE OAUTH PROTOCOL EXCHANGE</div>
+            <div class="terminal-line">> VERIFYING JWT CRYPTOGRAPHIC SIGNATURE</div>
+            <div class="terminal-line" id="term-status">> COMMUNICATING WITH SUPABASE AUTH CLUSTER...</div>
+          </div>
+
+          <div id="callback-error-actions" class="callback-error-actions hidden">
+            <div id="callback-error-msg" class="auth-alert error"></div>
+            <a href="/login" class="btn-primary auth-submit-btn" style="text-decoration: none; margin-top: 1rem;">
+              ← Return to Login
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function() {
+      const termStatus = document.getElementById('term-status');
+      const title = document.getElementById('callback-title');
+      const desc = document.getElementById('callback-desc');
+      const spinner = document.getElementById('callback-spinner-wrap');
+      const errorActions = document.getElementById('callback-error-actions');
+      const errorMsg = document.getElementById('callback-error-msg');
+      const statusHeader = document.getElementById('callback-status-header');
+
+      async function processAuthCallback() {
+        try {
+          await window.PriorArtAuth.init();
+          
+          if (!window.PriorArtAuth.client) {
+            throw new Error('Supabase client not initialized. Missing environment keys.');
+          }
+
+          const url = new URL(window.location.href);
+          const errorParam = url.searchParams.get('error');
+          const errorDesc = url.searchParams.get('error_description');
+          if (errorParam || errorDesc) {
+            throw new Error(errorDesc || errorParam || 'OAuth authentication failed at provider.');
+          }
+
+          const code = url.searchParams.get('code');
+          let session = null;
+
+          if (code) {
+            termStatus.textContent = '> EXCHANGING PKCE AUTHORIZATION CODE...';
+            const { data, error } = await window.PriorArtAuth.exchangeCodeForSession(code);
+            if (error) throw error;
+            if (data && data.session) {
+              session = data.session;
+            }
+          }
+
+          if (!session) {
+            termStatus.textContent = '> VERIFYING ACTIVE TELEMETRY SESSION...';
+            const { data, error } = await window.PriorArtAuth.client.auth.getSession();
+            if (error) throw error;
+            if (data && data.session) {
+              session = data.session;
+            }
+          }
+
+          if (!session) {
+            // Brief wait for background auth listener
+            await new Promise((resolve) => setTimeout(resolve, 800));
+            const retry = await window.PriorArtAuth.client.auth.getSession();
+            if (retry.data && retry.data.session) {
+              session = retry.data.session;
+            }
+          }
+
+          if (session) {
+            termStatus.textContent = '> OAUTH SESSION VERIFIED: ACCESS GRANTED';
+            title.textContent = 'Authorization Successful!';
+            desc.textContent = 'Redirecting to PriorArt Copilot Radar...';
+            statusHeader.textContent = 'OPERATOR AUTHORIZED';
+
+            const redirectTarget = sessionStorage.getItem('priorart_auth_redirect') || '/';
+            sessionStorage.removeItem('priorart_auth_redirect');
+
+            setTimeout(() => {
+              window.location.href = redirectTarget;
+            }, 600);
+          } else {
+            throw new Error('No active authentication session could be verified from the authorization cluster.');
+          }
+        } catch (err) {
+          console.error('[Auth Callback Error]', err);
+          spinner.classList.add('hidden');
+          title.textContent = 'Authentication Failed';
+          desc.textContent = 'The security token could not be verified or has expired.';
+          statusHeader.textContent = 'HANDSHAKE ABORTED';
+          termStatus.textContent = `> ERROR: ${err.message || 'Authorization rejected'}`;
+          errorMsg.textContent = err.message || 'Authentication failed. Please try logging in again.';
+          errorActions.classList.remove('hidden');
+        }
+      }
+
+      processAuthCallback();
+    })();
+  </script>
+</body>
+</html>

@@ -14,11 +14,12 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class LLMClient:
-    """Free-tier compatible LLM wrapper supporting Google Gemini and deterministic fallback."""
+    """Free-tier compatible LLM wrapper supporting latest Google Gemini models and deterministic fallback."""
 
-    def __init__(self, api_key: Optional[str] = None, model_name: str = "gemini-2.5-flash"):
+    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        self.model_name = model_name
+        # Default to Google's latest next-gen AI model: gemini-3-flash-preview
+        self.model_name = model_name or os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
         self._genai_client = None
         if self.api_key:
             try:
@@ -41,24 +42,32 @@ class LLMClient:
     ) -> T:
         """Generate structured Pydantic output using Gemini or fallback."""
         if self._genai_client:
-            try:
-                from google.genai import types
-                full_prompt = f"{system_instruction}\n\nTask:\n{prompt}\n\nRespond ONLY with a valid JSON object matching the required schema."
-                
-                response = self._genai_client.models.generate_content(
-                    model=self.model_name,
-                    contents=full_prompt,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        response_schema=response_model,
-                        temperature=0.2,
-                    ),
-                )
-                if response.text:
-                    return response_model.model_validate_json(response.text)
-            except Exception as e:
-                # Log or print warning and fall through to fallback if provided
-                print(f"[LLMClient Warning] Live Gemini call failed ({e}), falling back to deterministic agent engine.")
+            from google.genai import types
+
+            # Robust candidate cascade: configured primary -> gemini-3-flash-preview -> gemini-2.5-flash
+            candidates = [self.model_name]
+            if "gemini-3-flash-preview" not in candidates:
+                candidates.append("gemini-3-flash-preview")
+            if "gemini-2.5-flash" not in candidates:
+                candidates.append("gemini-2.5-flash")
+
+            full_prompt = f"{system_instruction}\n\nTask:\n{prompt}\n\nRespond ONLY with a valid JSON object matching the required schema."
+
+            for candidate in candidates:
+                try:
+                    response = self._genai_client.models.generate_content(
+                        model=candidate,
+                        contents=full_prompt,
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            response_schema=response_model,
+                            temperature=0.2,
+                        ),
+                    )
+                    if response.text:
+                        return response_model.model_validate_json(response.text)
+                except Exception as e:
+                    print(f"[LLMClient Warning] Live Gemini call with '{candidate}' failed ({e}), trying next candidate.")
 
         if fallback_factory:
             return fallback_factory()

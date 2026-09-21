@@ -455,6 +455,60 @@ async def get_presets():
     ]
 
 
+# Authentication configuration endpoint for client-side Supabase SDK
+@app.get("/api/auth/config")
+async def get_auth_config():
+    supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL") or os.environ.get("SUPABASE_URL", "")
+    supabase_anon_key = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_ANON_KEY", "")
+    return {
+        "status": "success",
+        "supabaseUrl": supabase_url,
+        "supabaseAnonKey": supabase_anon_key,
+        "hasConfig": bool(supabase_url and supabase_anon_key)
+    }
+
+
+@app.get("/api/auth/provider-status")
+async def get_provider_status(provider: str = "google"):
+    supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL") or os.environ.get("SUPABASE_URL", "")
+    supabase_anon_key = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_ANON_KEY", "")
+    if not supabase_url or not supabase_anon_key:
+        return {"enabled": False, "reason": "missing_keys"}
+
+    import urllib.request
+    check_url = f"{supabase_url.rstrip('/')}/auth/v1/authorize?provider={provider}"
+    req = urllib.request.Request(check_url, headers={"apikey": supabase_anon_key})
+    try:
+        urllib.request.urlopen(req, timeout=3.5)
+        return {"enabled": True}
+    except urllib.error.HTTPError as e:
+        if e.code == 400:
+            body = e.read().decode(errors="ignore")
+            if "provider is not enabled" in body:
+                return {"enabled": False, "reason": "provider_not_enabled"}
+        return {"enabled": True}
+    except Exception:
+        return {"enabled": True}
+
+
+@app.get("/api/engine-status")
+async def get_engine_status():
+    """Returns real-time status of the active AI model engine."""
+    from agents.llm_client import LLMClient
+    client = LLMClient()
+    return {
+        "status": "online" if client.is_live else "heuristic_fallback",
+        "model": client.model_name,
+        "provider": "Google DeepMind (GenAI SDK)",
+        "pipeline": "Autonomous 4-Agent Pipeline",
+        "structured_schema": "Pydantic 35 U.S.C. §§ 102/103",
+        "inference_mode": "Deterministic (Temp 0.2)",
+        "generation": "Gemini 3 Flash (Latest Generation)"
+    }
+
+
+
+
 # Serve frontend static files
 web_dir = Path(__file__).resolve().parent / "web"
 if not web_dir.exists():
@@ -471,6 +525,28 @@ async def serve_index():
         index_file = Path.cwd() / "web" / "index.html"
     return FileResponse(
         str(index_file),
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+    )
+
+
+@app.get("/login")
+async def serve_login():
+    login_file = web_dir / "login.html"
+    if not login_file.exists():
+        login_file = Path.cwd() / "web" / "login.html"
+    return FileResponse(
+        str(login_file),
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+    )
+
+
+@app.get("/auth/callback")
+async def serve_auth_callback():
+    cb_file = web_dir / "callback.html"
+    if not cb_file.exists():
+        cb_file = Path.cwd() / "web" / "callback.html"
+    return FileResponse(
+        str(cb_file),
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
     )
 

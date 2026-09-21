@@ -4656,6 +4656,31 @@ function initApp() {
       closeAboutModal();
     }
   });
+
+  // Fetch real-time AI Engine status and update telemetry hover badge
+  async function syncEngineStatus() {
+    try {
+      const res = await fetch("/api/engine-status");
+      if (res.ok) {
+        const data = await res.json();
+        const modelEl = document.getElementById("telemetry-engine-model");
+        const genEl = document.getElementById("telemetry-engine-generation");
+        const badge = document.getElementById("engine-status-badge");
+        if (modelEl && data.model) {
+          modelEl.textContent = data.model;
+        }
+        if (genEl && data.generation) {
+          genEl.textContent = data.generation;
+        }
+        if (badge && data.model) {
+          badge.setAttribute("title", `Active Engine: ${data.generation || data.model}`);
+        }
+      }
+    } catch (e) {
+      // Graceful fallback
+    }
+  }
+  syncEngineStatus();
 }
 
 // Ensure execution whether DOM is already interactive/complete or still loading
