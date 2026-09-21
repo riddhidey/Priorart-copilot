@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import time
 from typing import Optional, Type, TypeVar
 from pydantic import BaseModel
 
@@ -11,6 +12,18 @@ except ImportError:
     pass
 
 T = TypeVar("T", bound=BaseModel)
+
+# Global rate-limit cooldown to avoid serial 429 timeouts across multiple agent steps
+_QUOTA_COOLDOWN_UNTIL: float = 0.0
+
+
+def _is_rate_limited() -> bool:
+    return time.time() < _QUOTA_COOLDOWN_UNTIL
+
+
+def _trigger_cooldown(seconds: float = 25.0):
+    global _QUOTA_COOLDOWN_UNTIL
+    _QUOTA_COOLDOWN_UNTIL = max(_QUOTA_COOLDOWN_UNTIL, time.time() + seconds)
 
 
 class LLMClient:
@@ -31,7 +44,7 @@ class LLMClient:
 
     @property
     def is_live(self) -> bool:
-        return self._genai_client is not None
+        return self._genai_client is not None and not _is_rate_limited()
 
     def generate_structured(
         self,
@@ -41,6 +54,11 @@ class LLMClient:
         fallback_factory: Optional[callable] = None
     ) -> T:
         """Generate structured Pydantic output using Gemini or fallback."""
+        # Fast-path: if quota was recently exhausted, avoid blocking on failing network calls
+        if _is_rate_limited():
+            if fallback_factory:
+                return fallback_factory()
+
         if self._genai_client:
             from google.genai import types
 
@@ -67,6 +85,11 @@ class LLMClient:
                     if response.text:
                         return response_model.model_validate_json(response.text)
                 except Exception as e:
+                    err_str = str(e).lower()
+                    if "429" in err_str or "resource_exhausted" in err_str:
+                        _trigger_cooldown(25.0)
+                        print(f"[LLMClient Rate-Limit] Model '{candidate}' hit 429 quota, activating {25}s circuit breaker.")
+                        break
                     print(f"[LLMClient Warning] Live Gemini call with '{candidate}' failed ({e}), trying next candidate.")
 
         if fallback_factory:

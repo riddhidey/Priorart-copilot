@@ -8,8 +8,9 @@ from schemas.retrieval import PriorArtCandidate
 class GooglePatentsConnector(BasePatentConnector):
     """Connector for querying Google Patents public search endpoints."""
 
-    def __init__(self, timeout: int = 8):
+    def __init__(self, timeout: float = 3.5):
         self.timeout = timeout
+        self.session = requests.Session()
 
     @property
     def source_name(self) -> str:
@@ -29,7 +30,7 @@ class GooglePatentsConnector(BasePatentConnector):
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PriorArtCopilot/1.0",
                 "Accept": "application/json"
             }
-            resp = requests.get(search_url, headers=headers, timeout=self.timeout)
+            resp = self.session.get(search_url, headers=headers, timeout=self.timeout)
             if resp.status_code == 200:
                 data = resp.json()
                 clusters = data.get("results", {}).get("cluster", [])

@@ -21,13 +21,32 @@ class NoveltyClusteringAgent:
         element_map = {el.element_id: el for el in parsed_disclosure.claim_elements}
         element_clusters: Dict[str, ElementNoveltyCluster] = {}
 
-        for element_id, el_retrieval in retrieval_output.element_results.items():
-            element = element_map.get(element_id)
-            if not element:
-                continue
+        valid_items = [
+            (el_id, element_map[el_id], el_retrieval.candidates)
+            for el_id, el_retrieval in retrieval_output.element_results.items()
+            if el_id in element_map
+        ]
 
-            cluster = self._cluster_element(element, el_retrieval.candidates)
-            element_clusters[element_id] = cluster
+        if len(valid_items) > 1:
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            with ThreadPoolExecutor(max_workers=min(len(valid_items), 4)) as executor:
+                futures = {
+                    executor.submit(self._cluster_element, el, candidates): el_id
+                    for el_id, el, candidates in valid_items
+                }
+                for f in as_completed(futures):
+                    el_id = futures[f]
+                    try:
+                        element_clusters[el_id] = f.result()
+                    except Exception:
+                        el = element_map[el_id]
+                        element_clusters[el_id] = self._heuristic_cluster(el, [])
+        else:
+            for el_id, el, candidates in valid_items:
+                element_clusters[el_id] = self._cluster_element(el, candidates)
+
+        # Preserve original order
+        element_clusters = {el.element_id: element_clusters.get(el.element_id) for el in parsed_disclosure.claim_elements if el.element_id in element_clusters}
 
         # Compute overall invention risk
         high_count = sum(1 for c in element_clusters.values() if c.overall_element_risk == "high")

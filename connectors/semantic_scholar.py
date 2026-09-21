@@ -8,10 +8,11 @@ from schemas.retrieval import PriorArtCandidate
 class SemanticScholarConnector(BasePatentConnector):
     """Free Non-Patent Literature connector using Semantic Scholar Graph API."""
 
-    def __init__(self, api_key: Optional[str] = None, timeout: int = 8):
+    def __init__(self, api_key: Optional[str] = None, timeout: float = 3.5):
         self.api_key = api_key or os.getenv("SEMANTIC_SCHOLAR_API_KEY")
         self.base_url = "https://api.semanticscholar.org/graph/v1/paper/search"
         self.timeout = timeout
+        self.session = requests.Session()
 
     @property
     def source_name(self) -> str:
@@ -34,7 +35,7 @@ class SemanticScholarConnector(BasePatentConnector):
         }
 
         try:
-            response = requests.get(
+            response = self.session.get(
                 self.base_url,
                 params=params,
                 headers=headers,
