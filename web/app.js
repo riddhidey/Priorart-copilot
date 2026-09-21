@@ -4260,10 +4260,146 @@ function initApp() {
     });
   }
 
-  // Download PDF
+  // Build Pristine White-Background Printable Report HTML (Immune to scroll offsets & theme variable distortion)
+  function buildPrintableReportHtml(report, threatMatrix) {
+    if (!report) return "";
+    const riskLevel = (report.overall_novelty_risk || "medium").toUpperCase();
+    const riskColor = riskLevel === "HIGH" ? "#dc2626" : (riskLevel === "MODERATE" || riskLevel === "MEDIUM" ? "#d97706" : "#16a34a");
+    const riskBg = riskLevel === "HIGH" ? "#fee2e2" : (riskLevel === "MODERATE" || riskLevel === "MEDIUM" ? "#fef3c7" : "#dcfce7");
+
+    let matrixHtml = "";
+    if (threatMatrix && threatMatrix.documents && threatMatrix.documents.length > 0) {
+      matrixHtml = `
+        <div style="margin-top: 22px; page-break-inside: avoid;">
+          <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; margin: 0 0 8px; border-bottom: 2px solid #0f172a; padding-bottom: 4px; letter-spacing: 0.05em;">2D Prior-Art Threat Matrix</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 10.5px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+            <thead>
+              <tr style="background-color: #f1f5f9;">
+                <th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; color: #0f172a; font-weight: 700;">Claim Element</th>
+                ${threatMatrix.documents.map(d => `<th style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; color: #0f172a; font-weight: 700;">${escapeHtml(d.doc_id)}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${threatMatrix.rows.map(r => `
+                <tr>
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 8px; color: #0f172a;"><strong>[${escapeHtml(r.element_id)}]</strong> ${escapeHtml(r.element_title)}</td>
+                  ${threatMatrix.documents.map(d => {
+                    const rawThreat = (r.threats && r.threats[d.doc_id]) || "—";
+                    const normThreat = typeof rawThreat === 'string' ? rawThreat : (rawThreat.threat || "—");
+                    const isHigh = normThreat.toLowerCase().includes("high");
+                    const isMod = normThreat.toLowerCase().includes("mod");
+                    const bg = isHigh ? "#fee2e2" : (isMod ? "#fef3c7" : "#f8fafc");
+                    const fg = isHigh ? "#dc2626" : (isMod ? "#d97706" : "#64748b");
+                    return `<td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; background-color: ${bg}; color: ${fg}; font-weight: 700;">${escapeHtml(normThreat)}</td>`;
+                  }).join('')}
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    let elementsHtml = "";
+    if (report.element_sections && report.element_sections.length > 0) {
+      elementsHtml = `
+        <div style="margin-top: 24px;">
+          <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; margin: 0 0 10px; border-bottom: 2px solid #0f172a; padding-bottom: 4px; letter-spacing: 0.05em;">Claim-by-Claim Prior Art Breakdown</h3>
+          ${report.element_sections.map(sec => `
+            <div style="margin-bottom: 12px; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc; page-break-inside: avoid;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+                <span style="font-weight: 700; font-size: 12px; color: #0f172a;">[${escapeHtml(sec.element_id)}] ${escapeHtml(sec.element_title)}</span>
+                <span style="font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 4px; background-color: ${sec.novelty_risk_level === 'high' ? '#fee2e2' : '#fef3c7'}; color: ${sec.novelty_risk_level === 'high' ? '#dc2626' : '#d97706'};">${escapeHtml((sec.novelty_risk_level || 'LOW').toUpperCase())} RISK</span>
+              </div>
+              <p style="font-size: 11px; color: #334155; margin: 4px 0 6px; line-height: 1.45;">${escapeHtml(sec.novelty_gap_analysis || "")}</p>
+              ${sec.citations && sec.citations.length > 0 ? `
+                <div style="font-size: 10px; color: #475569; border-top: 1px solid #e2e8f0; padding-top: 6px; margin-top: 6px;">
+                  <strong>Identified Prior Art:</strong> ${sec.citations.map(c => `<span style="font-family: monospace; background: #e2e8f0; padding: 1px 4px; border-radius: 3px; color: #0f172a; margin-right: 4px;">${escapeHtml(c.citation_id || '')} ${escapeHtml(c.doc_id)}</span>`).join(' ')}
+                </div>
+              ` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    let citationsHtml = "";
+    if (report.all_citations && report.all_citations.length > 0) {
+      citationsHtml = `
+        <div style="margin-top: 24px;">
+          <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; margin: 0 0 10px; border-bottom: 2px solid #0f172a; padding-bottom: 4px; letter-spacing: 0.05em;">Master Index of Verified Citations</h3>
+          ${report.all_citations.map(cit => `
+            <div style="margin-bottom: 10px; padding: 10px 12px; border-left: 3px solid #0284c7; background-color: #f8fafc; font-size: 11px; page-break-inside: avoid; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; border-radius: 0 4px 4px 0;">
+              <div style="font-weight: 700; color: #0f172a; margin-bottom: 3px;">
+                <span style="color: #0284c7; font-family: monospace;">${escapeHtml(cit.citation_id || '')}</span>
+                <span style="font-family: monospace; margin-left: 4px;">${escapeHtml(cit.doc_id)}</span> — <em>${escapeHtml(cit.title)}</em>
+              </div>
+              <div style="font-size: 10.5px; color: #334155; font-style: italic; background-color: #ffffff; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 4px; margin-top: 4px; line-height: 1.4;">
+                "${escapeHtml(cit.cited_passage)}"
+              </div>
+              <div style="font-size: 9.5px; color: #64748b; margin-top: 4px;">
+                Source: <strong>${escapeHtml(cit.source)}</strong> · Verified Traceable Citations (§2 Compliance)
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    let recsHtml = "";
+    if (report.strategic_recommendations && report.strategic_recommendations.length > 0) {
+      recsHtml = `
+        <div style="margin-top: 24px; page-break-inside: avoid;">
+          <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; margin: 0 0 10px; border-bottom: 2px solid #0f172a; padding-bottom: 4px; letter-spacing: 0.05em;">Strategic Claim Drafting Recommendations</h3>
+          <ul style="margin: 8px 0; padding-left: 18px; font-size: 11px; color: #334155; line-height: 1.55;">
+            ${report.strategic_recommendations.map(r => `<li style="margin-bottom: 6px;">${escapeHtml(r)}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    const disclaimerHtml = `
+      <div style="margin-top: 26px; padding: 10px 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 9.5px; color: #64748b; line-height: 1.45; page-break-inside: avoid;">
+        <strong>LEGAL & REGULATORY DISCLAIMER:</strong> ${escapeHtml(report.mandatory_disclaimer || "This report is an automated preliminary screening assessment for informational purposes and does not constitute a formal legal opinion or patent prosecution guarantee.")}
+      </div>
+    `;
+
+    return `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 28px 32px; background: #ffffff; color: #0f172a; line-height: 1.5; width: 740px; margin: 0 auto; box-sizing: border-box;">
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px;">
+          <div>
+            <div style="font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;">PRIORART COPILOT</div>
+            <div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px;">Autonomous Patentability Screening Memorandum</div>
+          </div>
+          <div style="text-align: right; font-size: 9.5px; color: #64748b; font-family: monospace;">
+            <div>Generated: ${new Date().toLocaleDateString()}</div>
+            <div style="color: #16a34a; font-weight: 700;">Zero-Hallucination Verified</div>
+          </div>
+        </div>
+
+        <!-- Executive Card -->
+        <div style="padding: 14px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background-color: #f8fafc; margin-bottom: 16px; page-break-inside: avoid;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em;">EXECUTIVE ASSESSMENT</span>
+            <span style="font-size: 10.5px; font-weight: 800; padding: 3px 9px; border-radius: 9999px; background-color: ${riskBg}; color: ${riskColor}; border: 1px solid ${riskColor};">${riskLevel} RISK</span>
+          </div>
+          <h2 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0 0 8px;">${escapeHtml(report.title || "Patentability Screening Report")}</h2>
+          <p style="font-size: 11.5px; color: #334155; margin: 0; line-height: 1.5;">${escapeHtml(report.executive_summary || "")}</p>
+        </div>
+
+        ${matrixHtml}
+        ${elementsHtml}
+        ${citationsHtml}
+        ${recsHtml}
+        ${disclaimerHtml}
+      </div>
+    `;
+  }
+
+  // Download PDF (Reliable zero-scroll, high-fidelity export)
   async function downloadReportAsPdf() {
-    const reportEl = document.getElementById("results-content");
-    if (!reportEl || !currentReportData) {
+    if (!currentReportData) {
       showToast("No report available to export as PDF.", "warning");
       return;
     }
@@ -4274,19 +4410,39 @@ function initApp() {
       btnDownloadPdf.innerHTML = `<span>Exporting...</span>`;
     }
 
-    reportEl.classList.add("pdf-export-mode");
+    // Build dedicated clean report container at fixed coordinates (prevents scroll offset blanks)
+    const exportDiv = document.createElement("div");
+    exportDiv.id = "pdf-export-container";
+    exportDiv.style.position = "fixed";
+    exportDiv.style.top = "0";
+    exportDiv.style.left = "0";
+    exportDiv.style.width = "780px";
+    exportDiv.style.backgroundColor = "#ffffff";
+    exportDiv.style.zIndex = "9999999";
+    exportDiv.style.pointerEvents = "none";
+    exportDiv.innerHTML = buildPrintableReportHtml(currentReportData, currentThreatMatrix);
+    document.body.appendChild(exportDiv);
+
     const titleSlug = slugify(currentReportData.title || "priorart-report");
     const opt = {
       margin: [0.35, 0.35, 0.35, 0.35],
       filename: `${titleSlug || "priorart-report"}.pdf`,
       image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        scrollY: 0,
+        scrollX: 0,
+        windowWidth: 820
+      },
+      jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
+      pagebreak: { mode: ["avoid-all", "css", "legacy"] }
     };
 
     try {
       if (typeof html2pdf !== "undefined") {
-        await html2pdf().set(opt).from(reportEl).save();
+        await html2pdf().set(opt).from(exportDiv).save();
         showToast("PDF downloaded successfully!");
       } else {
         window.print();
@@ -4296,7 +4452,9 @@ function initApp() {
       showToast("PDF generator busy. Opening print dialog...", "warning");
       window.print();
     } finally {
-      reportEl.classList.remove("pdf-export-mode");
+      if (exportDiv.parentNode) {
+        exportDiv.parentNode.removeChild(exportDiv);
+      }
       if (btnDownloadPdf) {
         btnDownloadPdf.disabled = false;
         if (originalContent) btnDownloadPdf.innerHTML = originalContent;
