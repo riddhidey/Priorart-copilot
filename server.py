@@ -358,21 +358,99 @@ async def get_presets():
     return [
         {
             "id": "drone_rotor",
+            "patent_no": "US-2026-0048192-A1",
             "title": "Variable-Pitch Drone Rotor with Magnetic Position Feedback",
             "domain": "mechanical",
+            "category": "Aerospace & Robotics",
             "text": "1. Rotor Hub with Dual Bearings: A multirotor central hub assembly having four blade grips pivotally seated on pre-loaded dual angular-contact ball bearings.\n2. Concentric Axial Pushrod Actuator: A hollow-shaft brushless motor driving an axial pushrod through the center of the motor shaft to adjust blade pitch dynamically.\n3. Magnetic Rotary Sensor Array: Contactless Hall-effect rotary encoders integrated directly into each blade root retention sleeve to measure angular deflection in real-time."
         },
         {
             "id": "acoustic_harvester",
+            "patent_no": "US-2026-0092144-A1",
             "title": "Sub-Nanowatt Acoustic Trigger with Energy Harvesting Rectifier",
             "domain": "electronics",
+            "category": "Micro-Power & MEMS",
             "text": "1. Piezoelectric Acoustic Harvester: A MEMS piezoelectric cantilever diaphragm tuned to ultrasonic frequencies to harvest acoustic wave energy.\n2. Sub-Threshold Comparator Wake-Up Circuit: A dynamic threshold differential comparator operating in weak inversion CMOS regime consuming under 1 nanowatt in standby.\n3. Power-Gating Switch: High-side PMOS switch isolating the main microcontroller until a validated threshold voltage burst triggers system power."
         },
         {
             "id": "stepper_actuator",
+            "patent_no": "EP-4182901-A1",
             "title": "Direct-Drive Micro-Stepper Pitch Linkage for UAVs",
             "domain": "mechanical",
-            "text": "1. Blade Root Micro-Steppers: Direct brushless torque actuators embedded inside each blade shank to eliminate mechanical swashplates.\n2. Dual Hall Rotary Feedback: High-resolution absolute angular encoders providing closed-loop control under 0.1 degree resolution."
+            "category": "Precision Actuators",
+            "text": "1. Blade Root Micro-Steppers: Direct brushless torque actuators embedded inside each blade shank to eliminate mechanical swashplates.\n2. Dual Hall Rotary Feedback: High-resolution absolute angular encoders providing closed-loop control under 0.1 degree resolution.\n3. Harmonic Anti-Backlash Reducer: Integrated strain wave gearing providing 50:1 reduction within an 18mm cylindrical envelope."
+        },
+        {
+            "id": "quantum_annealer",
+            "patent_no": "WO-2026-081920-A2",
+            "title": "Superconducting Flux Qubit Array with Topological Noise Mitigation",
+            "domain": "electronics",
+            "category": "Quantum Computing",
+            "text": "1. SQUID Loop Coplanar Resonator: An array of capacitively shunted flux qubits coupled via tunable Josephson inductive elements.\n2. Flux-Noise Mitigation Geometry: Symmetric differential bias lines canceling external homogeneous magnetic field fluctuations below 10 micro-flux quanta.\n3. Multiplexed Kinetic Inductance Readout: High-Q transmission line interrogating 64 qubits simultaneously via frequency division multiplexing."
+        },
+        {
+            "id": "solid_state_battery",
+            "patent_no": "US-2026-0118392-A1",
+            "title": "Dendrite-Free Silicon-Graphene Solid-State Electrolyte",
+            "domain": "chemical",
+            "category": "Clean Energy Storage",
+            "text": "1. Sulfide-Halide Composite Electrolyte: Cold-pressed Li6PS5Cl glass-ceramic matrix having ionic conductivity exceeding 12 mS/cm at 25 degrees Celsius.\n2. 3D Graphene Porous Scaffold Anode: Vapor-grown vertically oriented graphene networks hosting sub-5nm silicon nanoparticles with pre-lithiated interfaces.\n3. Elastic Self-Healing Interphase: In-situ polymer buffer layer absorbing 300% volume expansion during 4C high-rate cycling."
+        },
+        {
+            "id": "neural_bci",
+            "patent_no": "EP-4209115-A1",
+            "title": "Intracortical Microelectrode Array with Spike Deconvolution",
+            "domain": "biotech",
+            "category": "Neural Interfaces",
+            "text": "1. Flexible Polyimide Micro-Shank Array: 1024-channel platinum-nanograss microelectrode shank penetrating motor cortex tissue with bending stiffness under 0.05 N/m.\n2. In-Situ Neural Spike Deconvolution ASIC: Sub-microwatt analog front-end performing continuous wavelet transform for real-time single-unit action potential isolation.\n3. Inductive Transcutaneous Telemetry: 13.56 MHz near-field power and 50 Mbps secure data carrier operating through intact dermal layer."
+        },
+        {
+            "id": "photonic_tpu",
+            "patent_no": "US-2026-0149021-A1",
+            "title": "Silicon Photonic Tensor Core Using Mach-Zehnder Meshes",
+            "domain": "electronics",
+            "category": "Optical AI Hardware",
+            "text": "1. Integrated Optical Waveguide Mesh: Silicon-on-insulator triangular mesh of 128 thermo-optic Mach-Zehnder interferometers performing unitary matrix multiplications.\n2. Phase-Change Non-Volatile Weight Storage: Antimony triselenide (Sb2Se3) optical phase-change material cells maintaining weight states with zero static holding power.\n3. High-Bandwidth Balanced Photodetector Grid: Germanium waveguide photodetectors converting optical dot products into differential currents at 40 GHz line rates."
+        },
+        {
+            "id": "mhd_thruster",
+            "patent_no": "WO-2026-039182-A1",
+            "title": "Helical Magnetohydrodynamic Propulsion for Marine Craft",
+            "domain": "mechanical",
+            "category": "Fluid Propulsion",
+            "text": "1. Superconducting Helical Dipole Magnet: Cryogen-free high-temperature REBCO superconducting coil generating a continuous 8 Tesla transverse magnetic field along a central water conduit.\n2. Segmented Titanium Diboride Electrodes: Corrosion-resistant conductive cathode-anode pairs establishing orthogonal pulsed electric fields across seawater flow paths.\n3. Acoustic Cavitation Suppressor: Boundary layer micro-bubble injection ring attenuating acoustic turbulence signatures below 10 kHz."
+        },
+        {
+            "id": "crispr_nanorobot",
+            "patent_no": "US-2026-0177301-A1",
+            "title": "Magnetic Nanocarrier for Epigenetic CRISPR-Cas12b Delivery",
+            "domain": "biotech",
+            "category": "Genomic Nanomedicine",
+            "text": "1. Superparamagnetic Iron Oxide Core: 25nm Fe3O4 magnetic nanoparticle core functionalized with hyperbranched poly(beta-amino ester) shell.\n2. Hypoxia-Cleavable Polyethylene Glycol Corona: Azobenzene linker releasing Cas12b ribonucleoprotein complexes specifically within acidic tumor microenvironments.\n3. Electromagnetic Steering Array: External rotating magnetic gradient system navigating nanocarriers through microvascular endothelium barriers."
+        },
+        {
+            "id": "fusion_divertor",
+            "patent_no": "EP-4318990-A1",
+            "title": "Liquid-Metal Capillary Divertor with MHD Recirculation",
+            "domain": "mechanical",
+            "category": "Fusion Energy Systems",
+            "text": "1. Capillary Porous Tungsten Matrix: 3D printed mesh with 50-micron pore channels continuously wetted by liquid lithium to absorb 20 MW/m2 heat loads.\n2. Thermoelectric MHD Return Pump: Utilizing intrinsic temperature gradients between plasma-facing surface and heat-sink to drive passive lithium replenishment.\n3. Deuterium-Tritium Getter Reservoir: In-line getter bed continuously extracting absorbed hydrogen isotopes from circulating liquid metal."
+        },
+        {
+            "id": "terahertz_6g",
+            "patent_no": "US-2026-0205814-A1",
+            "title": "Phased-Array Sub-Terahertz Beamforming Transceiver",
+            "domain": "electronics",
+            "category": "6G Communications",
+            "text": "1. Monolithic Indium Phosphide RFIC: Heterojunction bipolar transistor mixer operating in 140-170 GHz D-band with 8 dB noise figure.\n2. Metamaterial Patch Array: 64-element dielectric resonator antenna array printed on liquid crystal polymer substrate with 22 dBi peak gain.\n3. True-Time-Delay Optical Phase Shifter: Micro-ring resonator time-delay matrix eliminating beam-squint across 10 GHz instantaneous channel bandwidth."
+        },
+        {
+            "id": "ev_swarm_mesh",
+            "patent_no": "WO-2026-054911-A1",
+            "title": "Cryptographic Mesh for Autonomous Fleet Platoon Routing",
+            "domain": "software",
+            "category": "Autonomous Systems",
+            "text": "1. Byzantine Fault-Tolerant V2V Mesh: Low-latency 5.9 GHz C-V2X ad-hoc peer network exchanging cryptographic kinematic proofs every 10 milliseconds.\n2. Zero-Knowledge Spatial Claim Verification: Verifying vehicle braking capabilities and trajectory envelopes without revealing complete historical telemetry.\n3. Cooperative Dynamic Platooning Controller: Model predictive control solver synchronizing inter-vehicle spacing down to 0.5 meters at highway cruise speeds."
         }
     ]
 

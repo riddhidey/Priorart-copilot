@@ -5,24 +5,103 @@
 
 function initApp() {
   // Built-in Default Presets for Instant 0ms Local Availability
+  // Built-in Default Presets for Instant 0ms Local Availability (12 Inventions)
   const DEFAULT_PRESETS = {
     drone_rotor: {
       id: "drone_rotor",
+      patent_no: "US-2026-0048192-A1",
       title: "Variable-Pitch Drone Rotor with Magnetic Position Feedback",
       domain: "mechanical",
+      category: "Aerospace & Robotics",
       text: "1. Rotor Hub with Dual Bearings: A multirotor central hub assembly having four blade grips pivotally seated on pre-loaded dual angular-contact ball bearings.\n2. Concentric Axial Pushrod Actuator: A hollow-shaft brushless motor driving an axial pushrod through the center of the motor shaft to adjust blade pitch dynamically.\n3. Magnetic Rotary Sensor Array: Contactless Hall-effect rotary encoders integrated directly into each blade root retention sleeve to measure angular deflection in real-time."
     },
     acoustic_harvester: {
       id: "acoustic_harvester",
+      patent_no: "US-2026-0092144-A1",
       title: "Sub-Nanowatt Acoustic Trigger with Energy Harvesting Rectifier",
       domain: "electronics",
+      category: "Micro-Power & MEMS",
       text: "1. Piezoelectric Acoustic Harvester: A MEMS piezoelectric cantilever diaphragm tuned to ultrasonic frequencies to harvest acoustic wave energy.\n2. Sub-Threshold Comparator Wake-Up Circuit: A dynamic threshold differential comparator operating in weak inversion CMOS regime consuming under 1 nanowatt in standby.\n3. Power-Gating Switch: High-side PMOS switch isolating the main microcontroller until a validated threshold voltage burst triggers system power."
     },
     stepper_actuator: {
       id: "stepper_actuator",
+      patent_no: "EP-4182901-A1",
       title: "Direct-Drive Micro-Stepper Pitch Linkage for UAVs",
       domain: "mechanical",
-      text: "1. Blade Root Micro-Steppers: Direct brushless torque actuators embedded inside each blade shank to eliminate mechanical swashplates.\n2. Dual Hall Rotary Feedback: High-resolution absolute angular encoders providing closed-loop control under 0.1 degree resolution."
+      category: "Precision Actuators",
+      text: "1. Blade Root Micro-Steppers: Direct brushless torque actuators embedded inside each blade shank to eliminate mechanical swashplates.\n2. Dual Hall Rotary Feedback: High-resolution absolute angular encoders providing closed-loop control under 0.1 degree resolution.\n3. Harmonic Anti-Backlash Reducer: Integrated strain wave gearing providing 50:1 reduction within an 18mm cylindrical envelope."
+    },
+    quantum_annealer: {
+      id: "quantum_annealer",
+      patent_no: "WO-2026-081920-A2",
+      title: "Superconducting Flux Qubit Array with Topological Noise Mitigation",
+      domain: "electronics",
+      category: "Quantum Computing",
+      text: "1. SQUID Loop Coplanar Resonator: An array of capacitively shunted flux qubits coupled via tunable Josephson inductive elements.\n2. Flux-Noise Mitigation Geometry: Symmetric differential bias lines canceling external homogeneous magnetic field fluctuations below 10 micro-flux quanta.\n3. Multiplexed Kinetic Inductance Readout: High-Q transmission line interrogating 64 qubits simultaneously via frequency division multiplexing."
+    },
+    solid_state_battery: {
+      id: "solid_state_battery",
+      patent_no: "US-2026-0118392-A1",
+      title: "Dendrite-Free Silicon-Graphene Solid-State Electrolyte",
+      domain: "chemical",
+      category: "Clean Energy Storage",
+      text: "1. Sulfide-Halide Composite Electrolyte: Cold-pressed Li6PS5Cl glass-ceramic matrix having ionic conductivity exceeding 12 mS/cm at 25 degrees Celsius.\n2. 3D Graphene Porous Scaffold Anode: Vapor-grown vertically oriented graphene networks hosting sub-5nm silicon nanoparticles with pre-lithiated interfaces.\n3. Elastic Self-Healing Interphase: In-situ polymer buffer layer absorbing 300% volume expansion during 4C high-rate cycling."
+    },
+    neural_bci: {
+      id: "neural_bci",
+      patent_no: "EP-4209115-A1",
+      title: "Intracortical Microelectrode Array with Spike Deconvolution",
+      domain: "biotech",
+      category: "Neural Interfaces",
+      text: "1. Flexible Polyimide Micro-Shank Array: 1024-channel platinum-nanograss microelectrode shank penetrating motor cortex tissue with bending stiffness under 0.05 N/m.\n2. In-Situ Neural Spike Deconvolution ASIC: Sub-microwatt analog front-end performing continuous wavelet transform for real-time single-unit action potential isolation.\n3. Inductive Transcutaneous Telemetry: 13.56 MHz near-field power and 50 Mbps secure data carrier operating through intact dermal layer."
+    },
+    photonic_tpu: {
+      id: "photonic_tpu",
+      patent_no: "US-2026-0149021-A1",
+      title: "Silicon Photonic Tensor Core Using Mach-Zehnder Meshes",
+      domain: "electronics",
+      category: "Optical AI Hardware",
+      text: "1. Integrated Optical Waveguide Mesh: Silicon-on-insulator triangular mesh of 128 thermo-optic Mach-Zehnder interferometers performing unitary matrix multiplications.\n2. Phase-Change Non-Volatile Weight Storage: Antimony triselenide (Sb2Se3) optical phase-change material cells maintaining weight states with zero static holding power.\n3. High-Bandwidth Balanced Photodetector Grid: Germanium waveguide photodetectors converting optical dot products into differential currents at 40 GHz line rates."
+    },
+    mhd_thruster: {
+      id: "mhd_thruster",
+      patent_no: "WO-2026-039182-A1",
+      title: "Helical Magnetohydrodynamic Propulsion for Marine Craft",
+      domain: "mechanical",
+      category: "Fluid Propulsion",
+      text: "1. Superconducting Helical Dipole Magnet: Cryogen-free high-temperature REBCO superconducting coil generating a continuous 8 Tesla transverse magnetic field along a central water conduit.\n2. Segmented Titanium Diboride Electrodes: Corrosion-resistant conductive cathode-anode pairs establishing orthogonal pulsed electric fields across seawater flow paths.\n3. Acoustic Cavitation Suppressor: Boundary layer micro-bubble injection ring attenuating acoustic turbulence signatures below 10 kHz."
+    },
+    crispr_nanorobot: {
+      id: "crispr_nanorobot",
+      patent_no: "US-2026-0177301-A1",
+      title: "Magnetic Nanocarrier for Epigenetic CRISPR-Cas12b Delivery",
+      domain: "biotech",
+      category: "Genomic Nanomedicine",
+      text: "1. Superparamagnetic Iron Oxide Core: 25nm Fe3O4 magnetic nanoparticle core functionalized with hyperbranched poly(beta-amino ester) shell.\n2. Hypoxia-Cleavable Polyethylene Glycol Corona: Azobenzene linker releasing Cas12b ribonucleoprotein complexes specifically within acidic tumor microenvironments.\n3. Electromagnetic Steering Array: External rotating magnetic gradient system navigating nanocarriers through microvascular endothelium barriers."
+    },
+    fusion_divertor: {
+      id: "fusion_divertor",
+      patent_no: "EP-4318990-A1",
+      title: "Liquid-Metal Capillary Divertor with MHD Recirculation",
+      domain: "mechanical",
+      category: "Fusion Energy Systems",
+      text: "1. Capillary Porous Tungsten Matrix: 3D printed mesh with 50-micron pore channels continuously wetted by liquid lithium to absorb 20 MW/m2 heat loads.\n2. Thermoelectric MHD Return Pump: Utilizing intrinsic temperature gradients between plasma-facing surface and heat-sink to drive passive lithium replenishment.\n3. Deuterium-Tritium Getter Reservoir: In-line getter bed continuously extracting absorbed hydrogen isotopes from circulating liquid metal."
+    },
+    terahertz_6g: {
+      id: "terahertz_6g",
+      patent_no: "US-2026-0205814-A1",
+      title: "Phased-Array Sub-Terahertz Beamforming Transceiver",
+      domain: "electronics",
+      category: "6G Communications",
+      text: "1. Monolithic Indium Phosphide RFIC: Heterojunction bipolar transistor mixer operating in 140-170 GHz D-band with 8 dB noise figure.\n2. Metamaterial Patch Array: 64-element dielectric resonator antenna array printed on liquid crystal polymer substrate with 22 dBi peak gain.\n3. True-Time-Delay Optical Phase Shifter: Micro-ring resonator time-delay matrix eliminating beam-squint across 10 GHz instantaneous channel bandwidth."
+    },
+    ev_swarm_mesh: {
+      id: "ev_swarm_mesh",
+      patent_no: "WO-2026-054911-A1",
+      title: "Cryptographic Mesh for Autonomous Fleet Platoon Routing",
+      domain: "software",
+      category: "Autonomous Systems",
+      text: "1. Byzantine Fault-Tolerant V2V Mesh: Low-latency 5.9 GHz C-V2X ad-hoc peer network exchanging cryptographic kinematic proofs every 10 milliseconds.\n2. Zero-Knowledge Spatial Claim Verification: Verifying vehicle braking capabilities and trajectory envelopes without revealing complete historical telemetry.\n3. Cooperative Dynamic Platooning Controller: Model predictive control solver synchronizing inter-vehicle spacing down to 0.5 meters at highway cruise speeds."
     }
   };
 
@@ -2181,9 +2260,20 @@ function initApp() {
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     const hoverCard = document.getElementById("globe-node-hover-card");
+    let isCardPinned = false;
+    let pinnedHub = null;
 
-    function showHubHoverCard(hub) {
+    function showHubHoverCard(hub, pin = false) {
       if (!hub || !hoverCard) return;
+
+      if (pin) {
+        isCardPinned = true;
+        pinnedHub = hub;
+        hoverCard.classList.add("is-pinned");
+        const pinTag = document.getElementById("hover-pin-tag");
+        if (pinTag) pinTag.style.display = "inline-block";
+      }
+
       const levelInfo = getNodeLevelInfo(hub);
       const flagEl = document.getElementById("hover-node-flag");
       const titleEl = document.getElementById("hover-node-title");
@@ -2222,7 +2312,36 @@ function initApp() {
       hoverCard.style.display = "flex";
     }
 
+    function closeHubHoverCard() {
+      isCardPinned = false;
+      pinnedHub = null;
+      if (hoverCard) {
+        hoverCard.style.display = "none";
+        hoverCard.classList.remove("is-pinned");
+        const pinTag = document.getElementById("hover-pin-tag");
+        if (pinTag) pinTag.style.display = "none";
+      }
+    }
+
+    // Close button handler
+    const btnCloseHoverCard = document.getElementById("btn-close-hover-card");
+    if (btnCloseHoverCard) {
+      btnCloseHoverCard.addEventListener("click", (e) => {
+        e.stopPropagation();
+        closeHubHoverCard();
+      });
+    }
+
+    // Escape key closes pinned card
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && isCardPinned) {
+        closeHubHoverCard();
+      }
+    });
+
     mount.addEventListener("pointermove", (e) => {
+      if (isDragging) return;
+
       const rect = mount.getBoundingClientRect();
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -2240,7 +2359,10 @@ function initApp() {
         }
 
         if (hub && hoverCard) {
-          showHubHoverCard(hub);
+          // If not pinned, preview on hover
+          if (!isCardPinned) {
+            showHubHoverCard(hub, false);
+          }
         }
         mount.style.cursor = "pointer";
       } else {
@@ -2250,14 +2372,20 @@ function initApp() {
         } else {
           mount.style.cursor = isDragging ? "grabbing" : "grab";
         }
-        if (hoverCard) {
+        // ONLY hide if NOT pinned by user click!
+        if (hoverCard && !isCardPinned) {
           hoverCard.style.display = "none";
         }
       }
     });
 
-    mount.addEventListener("pointerleave", () => {
-      if (hoverCard) hoverCard.style.display = "none";
+    mount.addEventListener("pointerleave", (e) => {
+      // Never hide if card is pinned! Also allow mouse to enter the card itself
+      if (hoverCard && !isCardPinned) {
+        if (!e.relatedTarget || !hoverCard.contains(e.relatedTarget)) {
+          hoverCard.style.display = "none";
+        }
+      }
     });
 
     // Wire Real-time Live Typing Listeners on Invention Title & Description
@@ -2321,16 +2449,16 @@ function initApp() {
     // Enhanced Node Highlighting, Pulse & Camera Focus
     function highlightAndFocusNode(target) {
       if (!target || !target.hub) return;
-      pauseAutoRotate(9000);
+      pauseAutoRotate(12000);
       const hub = target.hub;
+
+      // Pin and show analysis card immediately so it stays open during rotation
+      showHubHoverCard(hub, true);
 
       // Smoothly rotate globe with shortest arc to node coordinates
       focusCoordinates(hub.lat, hub.lon, false, () => {
-        showHubHoverCard(hub);
+        showHubHoverCard(hub, true);
       });
-
-      // Show hover card immediately
-      showHubHoverCard(hub);
 
       // Pulse pin billboard badge scale for unmistakable visual clarity
       if (target.labelSprite && window.gsap) {
@@ -2804,6 +2932,11 @@ function initApp() {
               showIndustrialToast(`TARGETING JURISDICTION: [${cData.code} · ${cData.name.toUpperCase()}]`, 2600);
             }
           }
+        } else {
+          // If user clicked on empty canvas background (not dragging), dismiss the pinned card
+          if (!isDragging) {
+            closeHubHoverCard();
+          }
         }
       }
     });
@@ -3134,58 +3267,330 @@ function initApp() {
     });
   }
 
-  // Presets Data Cache (initialized with defaults so buttons work immediately)
+  // ==========================================================================
+  // Live Patent Radar Stream & Continuous Ingest Engine
+  // ==========================================================================
   let presetsData = { ...DEFAULT_PRESETS };
+  let presetKeys = Object.keys(presetsData);
+  let currentStreamIndex = 0;
+  let autoCycleActive = true;
+  let progressVal = 0;
+  let cycleTimer = null;
+  const CYCLE_INTERVAL_MS = 4200;
+  const TICK_INTERVAL_MS = 60;
 
-  // Asynchronously refresh presets from server if available
+  // DOM elements for stream
+  const streamCard = document.getElementById("stream-featured-card");
+  const streamPatentId = document.getElementById("stream-patent-id");
+  const streamPatentCat = document.getElementById("stream-patent-cat");
+  const streamPatentDomain = document.getElementById("stream-patent-domain");
+  const streamPatentTitle = document.getElementById("stream-patent-title");
+  const streamTickerProgress = document.getElementById("stream-ticker-progress");
+  const btnStreamLoad = document.getElementById("btn-stream-load");
+  const btnStreamCycle = document.getElementById("btn-stream-cycle");
+  const streamCycleText = document.getElementById("stream-cycle-text");
+  const streamSpinIcon = document.getElementById("stream-spin-icon");
+  const btnStreamPrev = document.getElementById("btn-stream-prev");
+  const btnStreamNext = document.getElementById("btn-stream-next");
+  const btnStreamDrawer = document.getElementById("btn-stream-drawer");
+  const streamLibraryDrawer = document.getElementById("stream-library-drawer");
+  const btnCloseDrawer = document.getElementById("btn-close-drawer");
+  const libraryGrid = document.getElementById("library-grid");
+  const presetPillsContainer = document.getElementById("preset-buttons-container");
+  const presetStreamBox = document.getElementById("preset-stream-box");
+  const radarHeroSection = document.getElementById("patent-radar-hero");
+
+  // Track if user is watching/interacting with the Global Radar Map or if stream is offscreen
+  let isStreamInViewport = true;
+  let isUserOnGlobalMap = false;
+
+  // Intersection observer: only run auto-cycle if stream box is actually on screen
+  if ("IntersectionObserver" in window && presetStreamBox) {
+    const streamObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        isStreamInViewport = entry.isIntersecting;
+      });
+    }, { threshold: 0.15 });
+    streamObserver.observe(presetStreamBox);
+  }
+
+  // Detect when user is watching or interacting with the Global Patent Radar Map
+  if (radarHeroSection) {
+    radarHeroSection.addEventListener("mouseenter", () => {
+      isUserOnGlobalMap = true;
+    });
+    radarHeroSection.addEventListener("mouseleave", () => {
+      isUserOnGlobalMap = false;
+    });
+    radarHeroSection.addEventListener("touchstart", () => {
+      isUserOnGlobalMap = true;
+    }, { passive: true });
+  }
+
+  function getActivePreset() {
+    const key = presetKeys[currentStreamIndex] || presetKeys[0];
+    return presetsData[key] || DEFAULT_PRESETS[key];
+  }
+
+  function displayStreamPatent(index, animate = true) {
+    if (!presetKeys.length) return;
+    currentStreamIndex = (index + presetKeys.length) % presetKeys.length;
+    const preset = getActivePreset();
+    if (!preset) return;
+
+    if (animate && streamPatentTitle) {
+      streamPatentTitle.classList.add("switching");
+      setTimeout(() => {
+        applyPatentToStreamCard(preset);
+        streamPatentTitle.classList.remove("switching");
+      }, 150);
+    } else {
+      applyPatentToStreamCard(preset);
+    }
+
+    // Sync active pill in horizontal reel WITHOUT ANY WINDOW/PAGE SCROLLING!
+    const allPills = document.querySelectorAll(".preset-pill");
+    allPills.forEach(pill => {
+      const match = pill.getAttribute("data-preset") === preset.id;
+      pill.classList.toggle("active", match);
+      // ONLY scroll the internal horizontal reel if the stream box is in the viewport
+      if (match && presetPillsContainer && isStreamInViewport && !isUserOnGlobalMap) {
+        const pillLeft = pill.offsetLeft;
+        const pillWidth = pill.offsetWidth;
+        const containerWidth = presetPillsContainer.clientWidth;
+        presetPillsContainer.scrollTo({
+          left: Math.max(0, pillLeft - (containerWidth / 2) + (pillWidth / 2)),
+          behavior: "smooth"
+        });
+      }
+    });
+
+    progressVal = 0;
+    if (streamTickerProgress) {
+      streamTickerProgress.style.width = "0%";
+    }
+  }
+
+  function applyPatentToStreamCard(preset) {
+    if (streamPatentId) streamPatentId.textContent = preset.patent_no || `PAT-${preset.id.toUpperCase()}`;
+    if (streamPatentCat) streamPatentCat.textContent = preset.category || "Autonomous Systems";
+    if (streamPatentDomain) streamPatentDomain.textContent = (preset.domain || "mechanical").toUpperCase();
+    if (streamPatentTitle) streamPatentTitle.textContent = preset.title;
+  }
+
+  function loadPatentIntoWorkspace(preset, triggerBtn) {
+    if (!preset) return;
+    if (titleInput) titleInput.value = preset.title;
+    if (textInput) {
+      textInput.value = preset.text;
+      textInput.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    if (typeof window.__refreshPriorArtRadar === "function") {
+      window.__refreshPriorArtRadar(preset.title + " " + preset.text);
+    }
+    if (charCounter) {
+      charCounter.textContent = `${preset.text.length.toLocaleString()} chars`;
+    }
+    const radio = document.querySelector(`input[name="domain"][value="${preset.domain}"]`);
+    if (radio) radio.checked = true;
+
+    // Visual button feedback
+    const btn = triggerBtn || btnStreamLoad;
+    if (btn) {
+      const originalText = btn.innerHTML;
+      btn.style.background = "#22c55e";
+      btn.style.color = "#000000";
+      btn.innerHTML = `<span>LOADED ✓</span>`;
+      setTimeout(() => {
+        btn.style.background = "";
+        btn.style.color = "";
+        btn.innerHTML = originalText;
+      }, 1200);
+    }
+
+    // Card pulse feedback
+    if (streamCard) {
+      streamCard.style.boxShadow = "0 0 24px rgba(134, 239, 172, 0.5)";
+      streamCard.style.borderColor = "var(--accent)";
+      setTimeout(() => {
+        streamCard.style.boxShadow = "";
+        streamCard.style.borderColor = "";
+      }, 700);
+    }
+  }
+
+  // Auto-Cycle Loop: completely non-intrusive, pauses when watching map or when off-screen
+  function startStreamCycle() {
+    stopStreamCycle();
+    cycleTimer = setInterval(() => {
+      // If auto-cycle is disabled, or user is watching the global map, or stream is not visible: do not cycle!
+      if (!autoCycleActive || isUserOnGlobalMap || !isStreamInViewport) {
+        return;
+      }
+      progressVal += (TICK_INTERVAL_MS / CYCLE_INTERVAL_MS) * 100;
+      if (streamTickerProgress) {
+        streamTickerProgress.style.width = `${Math.min(progressVal, 100)}%`;
+      }
+      if (progressVal >= 100) {
+        progressVal = 0;
+        displayStreamPatent(currentStreamIndex + 1, true);
+      }
+    }, TICK_INTERVAL_MS);
+  }
+
+  function stopStreamCycle() {
+    if (cycleTimer) {
+      clearInterval(cycleTimer);
+      cycleTimer = null;
+    }
+  }
+
+  // Toggle Auto-Cycle
+  if (btnStreamCycle) {
+    btnStreamCycle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      autoCycleActive = !autoCycleActive;
+      btnStreamCycle.classList.toggle("active", autoCycleActive);
+      if (streamCycleText) {
+        streamCycleText.textContent = autoCycleActive ? "AUTO-CYCLE: ON" : "AUTO-CYCLE: PAUSED";
+      }
+      if (autoCycleActive) {
+        startStreamCycle();
+      } else {
+        if (streamTickerProgress) streamTickerProgress.style.width = "0%";
+      }
+    });
+  }
+
+  // Prev / Next controls
+  if (btnStreamPrev) {
+    btnStreamPrev.addEventListener("click", (e) => {
+      e.stopPropagation();
+      displayStreamPatent(currentStreamIndex - 1, true);
+    });
+  }
+
+  if (btnStreamNext) {
+    btnStreamNext.addEventListener("click", (e) => {
+      e.stopPropagation();
+      displayStreamPatent(currentStreamIndex + 1, true);
+    });
+  }
+
+  // Load button and Card Click
+  if (btnStreamLoad) {
+    btnStreamLoad.addEventListener("click", (e) => {
+      e.stopPropagation();
+      loadPatentIntoWorkspace(getActivePreset(), btnStreamLoad);
+    });
+  }
+
+  if (streamCard) {
+    streamCard.addEventListener("click", (e) => {
+      if (e.target.closest("#btn-stream-load")) return;
+      loadPatentIntoWorkspace(getActivePreset(), btnStreamLoad);
+    });
+
+    // Pause on hover
+    streamCard.addEventListener("mouseenter", () => {
+      if (autoCycleActive && streamTickerProgress) {
+        streamTickerProgress.style.opacity = "0.5";
+      }
+    });
+    streamCard.addEventListener("mouseleave", () => {
+      if (autoCycleActive && streamTickerProgress) {
+        streamTickerProgress.style.opacity = "1";
+      }
+    });
+  }
+
+  // Preset Pills Handling (Works for all dynamic pills)
+  function bindPresetPills() {
+    const pills = document.querySelectorAll(".preset-pill");
+    pills.forEach(pill => {
+      pill.onclick = (e) => {
+        e.stopPropagation();
+        const presetId = pill.getAttribute("data-preset");
+        const idx = presetKeys.indexOf(presetId);
+        if (idx !== -1) {
+          displayStreamPatent(idx, true);
+        }
+        const preset = presetsData[presetId] || DEFAULT_PRESETS[presetId];
+        if (preset) {
+          loadPatentIntoWorkspace(preset, pill);
+        }
+      };
+    });
+  }
+
+  // Build Full Library Grid
+  function renderLibraryGrid() {
+    if (!libraryGrid) return;
+    libraryGrid.innerHTML = "";
+    presetKeys.forEach((key, idx) => {
+      const p = presetsData[key];
+      if (!p) return;
+      const card = document.createElement("div");
+      card.className = "library-item-card";
+      card.innerHTML = `
+        <div class="library-item-meta">
+          <span class="library-item-id">${p.patent_no || `PAT-${key.toUpperCase()}`}</span>
+          <span class="library-item-domain">${(p.domain || "mechanical").toUpperCase()}</span>
+        </div>
+        <div class="library-item-title">${p.title}</div>
+      `;
+      card.onclick = () => {
+        displayStreamPatent(idx, true);
+        loadPatentIntoWorkspace(p);
+        if (streamLibraryDrawer) streamLibraryDrawer.style.display = "none";
+      };
+      libraryGrid.appendChild(card);
+    });
+  }
+
+  // Drawer Toggle
+  if (btnStreamDrawer) {
+    btnStreamDrawer.addEventListener("click", (e) => {
+      e.stopPropagation();
+      renderLibraryGrid();
+      if (streamLibraryDrawer) {
+        const isShown = streamLibraryDrawer.style.display === "flex";
+        streamLibraryDrawer.style.display = isShown ? "none" : "flex";
+      }
+    });
+  }
+
+  if (btnCloseDrawer && streamLibraryDrawer) {
+    btnCloseDrawer.addEventListener("click", (e) => {
+      e.stopPropagation();
+      streamLibraryDrawer.style.display = "none";
+    });
+  }
+
+  // Load from server and refresh repository
   async function loadPresets() {
     try {
       const res = await fetch("/api/presets");
       if (res.ok) {
         const presets = await res.json();
-        if (Array.isArray(presets)) {
+        if (Array.isArray(presets) && presets.length > 0) {
           presets.forEach(p => {
             presetsData[p.id] = p;
           });
+          presetKeys = Object.keys(presetsData);
+          renderLibraryGrid();
         }
       }
     } catch (e) {
       console.warn("Using built-in presets fallback:", e);
     }
   }
+
+  // Initialize stream engine
+  bindPresetPills();
+  displayStreamPatent(0, false);
+  startStreamCycle();
   loadPresets();
-
-  // Preset Buttons Handling
-  const presetButtons = document.querySelectorAll(".preset-pill");
-  presetButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      const presetId = btn.getAttribute("data-preset");
-      const preset = presetsData[presetId] || DEFAULT_PRESETS[presetId];
-      if (preset) {
-        if (titleInput) titleInput.value = preset.title;
-        if (textInput) {
-          textInput.value = preset.text;
-          textInput.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-        if (typeof window.__refreshPriorArtRadar === "function") {
-          window.__refreshPriorArtRadar(preset.title + " " + preset.text);
-        }
-        if (charCounter) {
-          charCounter.textContent = `${preset.text.length.toLocaleString()} chars`;
-        }
-        const radio = document.querySelector(`input[name="domain"][value="${preset.domain}"]`);
-        if (radio) radio.checked = true;
-
-        // Visual feedback on active pill
-        presetButtons.forEach(b => {
-          b.style.borderColor = "";
-          b.classList.remove("active");
-        });
-        btn.style.borderColor = "var(--accent)";
-        btn.classList.add("active");
-      }
-    });
-  });
 
   // Theme Switching System
   const themeBtns = document.querySelectorAll(".theme-btn");

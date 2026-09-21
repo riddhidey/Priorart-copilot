@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/static/style.css?v=61.0">
+  <link rel="stylesheet" href="/static/style.css?v=66.0">
 </head>
 <body>
 
@@ -358,12 +358,14 @@
             </div>
           </div>
 
-          <!-- Dynamic Prior-Art Node Hover Card -->
+          <!-- Dynamic Prior-Art Node Analysis & Inspection Card (Pinned on Click) -->
           <div class="globe-node-hover-card" id="globe-node-hover-card" style="display: none;">
             <div class="hover-card-header">
               <span class="hover-card-flag" id="hover-node-flag">🌐</span>
               <span class="hover-card-title" id="hover-node-title">USPTO</span>
               <span class="hover-card-type" id="hover-node-type">REGISTRY</span>
+              <span class="hover-pin-tag" id="hover-pin-tag" style="display: none;">PINNED</span>
+              <button type="button" id="btn-close-hover-card" class="hover-card-close-btn" title="Close analysis card (Esc)">✕</button>
             </div>
             <div class="hover-card-city" id="hover-node-city">Alexandria, US</div>
             <div class="hover-card-stats">
@@ -437,19 +439,88 @@
               <span class="section-num">01</span>
               <h2>Invention Disclosure</h2>
             </div>
-            <button type="button" id="btn-clear" class="btn-ghost" title="Reset all input fields">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-              <span>Clear</span>
+            <button type="button" id="btn-clear" class="btn-ghost btn-clear-danger" title="Reset all input fields" style="color: #f87171 !important; border-color: rgba(248, 113, 113, 0.45) !important; background: rgba(248, 113, 113, 0.14) !important;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" style="stroke: #f87171 !important;"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              <span style="color: #f87171 !important;">Clear</span>
             </button>
           </div>
 
-          <!-- Quick Presets -->
-          <div class="preset-strip">
-            <span class="preset-label">Presets:</span>
-            <div class="preset-buttons" id="preset-buttons-container">
-              <button type="button" class="preset-pill" data-preset="drone_rotor">Drone Rotor</button>
+          <!-- Dynamic Live Patent Ingest Stream & Interactive Selector -->
+          <div class="preset-stream-box" id="preset-stream-box">
+            <!-- Control & Status Topbar -->
+            <div class="stream-topbar">
+              <div class="stream-live-indicator">
+                <span class="live-radar-beacon"></span>
+                <span class="stream-title-tag">LIVE PATENT RADAR STREAM</span>
+                <span class="stream-count-badge" id="stream-count-badge">12 SYNCED</span>
+              </div>
+              <div class="stream-actions">
+                <button type="button" id="btn-stream-cycle" class="stream-pill-btn active" title="Toggle continuous auto-rotation of patent feed">
+                  <span class="stream-icon-spin" id="stream-spin-icon">↻</span>
+                  <span id="stream-cycle-text">AUTO-CYCLE: ON</span>
+                </button>
+                <div class="stream-nav-pair">
+                  <button type="button" id="btn-stream-prev" class="stream-nav-arrow" title="Previous patent">‹</button>
+                  <button type="button" id="btn-stream-next" class="stream-nav-arrow" title="Next patent">›</button>
+                </div>
+                <button type="button" id="btn-stream-drawer" class="stream-pill-btn stream-library-btn" title="View all 12 patent templates">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  <span>ALL (12)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Active Featured Patent Live Card -->
+            <div class="stream-card" id="stream-featured-card" role="button" tabindex="0" title="Click to load this patent into workspace">
+              <div class="stream-card-meta">
+                <span class="stream-patent-id" id="stream-patent-id">US-2026-0048192-A1</span>
+                <span class="stream-patent-cat" id="stream-patent-cat">Aerospace & Robotics</span>
+                <span class="stream-domain-pill" id="stream-patent-domain">MECHANICAL</span>
+                <span class="stream-load-hint">CLICK TO LOAD ↵</span>
+              </div>
+              <div class="stream-card-body">
+                <div class="stream-patent-title" id="stream-patent-title">
+                  Variable-Pitch Drone Rotor with Magnetic Position Feedback
+                </div>
+                <button type="button" class="stream-load-action-btn" id="btn-stream-load" title="Load into disclosure">
+                  <span>LOAD</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+              <!-- Subtle progress bar indicating next auto-cycle tick -->
+              <div class="stream-ticker-bar-wrap">
+                <div class="stream-ticker-progress" id="stream-ticker-progress"></div>
+              </div>
+            </div>
+
+            <!-- Horizontal Quick-Select Reel (All 12 Patents as Interactive Pills) -->
+            <div class="stream-pills-reel" id="preset-buttons-container">
+              <button type="button" class="preset-pill active" data-preset="drone_rotor">Drone Rotor</button>
               <button type="button" class="preset-pill" data-preset="acoustic_harvester">Acoustic Harvester</button>
               <button type="button" class="preset-pill" data-preset="stepper_actuator">Micro-Stepper</button>
+              <button type="button" class="preset-pill" data-preset="quantum_annealer">Quantum Qubit</button>
+              <button type="button" class="preset-pill" data-preset="solid_state_battery">Solid-State Battery</button>
+              <button type="button" class="preset-pill" data-preset="neural_bci">Neural BCI</button>
+              <button type="button" class="preset-pill" data-preset="photonic_tpu">Photonic TPU</button>
+              <button type="button" class="preset-pill" data-preset="mhd_thruster">MHD Thruster</button>
+              <button type="button" class="preset-pill" data-preset="crispr_nanorobot">CRISPR Nano</button>
+              <button type="button" class="preset-pill" data-preset="fusion_divertor">Fusion Divertor</button>
+              <button type="button" class="preset-pill" data-preset="terahertz_6g">Sub-THz 6G</button>
+              <button type="button" class="preset-pill" data-preset="ev_swarm_mesh">EV Swarm Mesh</button>
+            </div>
+
+            <!-- Full Library Drawer (collapsible modal/drawer) -->
+            <div class="stream-library-drawer" id="stream-library-drawer" style="display: none;">
+              <div class="library-drawer-header">
+                <div class="library-drawer-title-group">
+                  <span class="live-radar-beacon"></span>
+                  <span class="library-drawer-title">PATENT ARCHIVE REPOSITORY (12 INVENTIONS)</span>
+                </div>
+                <button type="button" id="btn-close-drawer" class="library-drawer-close" title="Close Library">✕</button>
+              </div>
+              <div class="library-grid" id="library-grid">
+                <!-- Dynamically rendered 12 cards -->
+              </div>
             </div>
           </div>
 
@@ -573,19 +644,19 @@
               <h2>Screening Findings & Analysis</h2>
             </div>
             <div class="actions-group" id="report-actions">
-              <button id="btn-copy-md" class="btn-ghost" title="Run a screening first to copy markdown" disabled>
+              <button id="btn-copy-md" class="btn-ghost btn-action-copy" title="Run a screening first to copy markdown" disabled>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                 <span>Copy MD</span>
               </button>
-              <button id="btn-download-pdf" class="btn-ghost" title="Run a screening first to download PDF" disabled>
+              <button id="btn-download-pdf" class="btn-ghost btn-action-pdf" title="Run a screening first to download PDF" disabled>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 <span>Download PDF</span>
               </button>
-              <button id="btn-share-link" class="btn-ghost" title="Run a screening first to share link" disabled>
+              <button id="btn-share-link" class="btn-ghost btn-action-share" title="Run a screening first to share link" disabled>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 <span>Share Link</span>
               </button>
-              <button id="btn-print" class="btn-ghost" title="Run a screening first to print report" disabled>
+              <button id="btn-print" class="btn-ghost btn-action-print" title="Run a screening first to print report" disabled>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
                 <span>Print</span>
               </button>
@@ -974,6 +1045,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
   <script src="/static/world_land_data.js?v=61.0"></script>
-  <script src="/static/app.js?v=61.0"></script>
+  <script src="/static/app.js?v=66.0"></script>
 </body>
 </html>
