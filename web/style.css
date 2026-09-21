@@ -3345,7 +3345,12 @@ button#btn-clear:active {
    Benchmark Suite View
    ========================================================================== */
 
+#tab-benchmark {
+  scroll-margin-top: 24px;
+}
+
 .benchmark-section {
+  scroll-margin-top: 24px;
   display: flex;
   flex-direction: column;
   gap: 30px;

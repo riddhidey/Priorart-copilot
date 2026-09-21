@@ -3642,8 +3642,38 @@ function initApp() {
           tabContents[k].style.display = (k === target) ? "block" : "none";
         }
       });
+
+      // Directly scroll down to Capstone Benchmark Evaluation Suite when Benchmark Suite tab is clicked
+      if (target === "tab-benchmark") {
+        const benchmarkTarget = document.getElementById("tab-benchmark");
+        if (benchmarkTarget) {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              benchmarkTarget.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+          });
+        }
+      } else if (target === "tab-screening") {
+        const screeningTarget = document.getElementById("tab-screening");
+        if (screeningTarget) {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              const workbench = document.querySelector(".workbench-grid") || screeningTarget;
+              workbench.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+          });
+        }
+      }
     });
   });
+
+  // Support direct URL hash navigation (#benchmark or #tab-benchmark)
+  if (window.location.hash === "#benchmark" || window.location.hash === "#tab-benchmark") {
+    const benchBtn = document.querySelector('.tab-btn[data-tab="tab-benchmark"]');
+    if (benchBtn) {
+      setTimeout(() => benchBtn.click(), 120);
+    }
+  }
 
   // Presentation / Broadcast Mode
   const btnBroadcast = document.getElementById("btn-broadcast-mode");
