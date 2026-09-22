@@ -34,9 +34,16 @@
           const url = this.config.supabaseUrl;
           const key = this.config.supabaseAnonKey;
 
+          // Clear any legacy persistent storage so users are prompted for fresh login every session
+          try {
+            localStorage.removeItem('priorart_supabase_auth');
+            localStorage.removeItem('priorart_operator_session');
+          } catch (e) {}
+
           if (url && key && window.supabase && typeof window.supabase.createClient === 'function') {
             this.client = window.supabase.createClient(url, key, {
               auth: {
+                storage: window.sessionStorage, // Session-only storage: closes with browser/tab to ask for login every visit
                 persistSession: true,
                 autoRefreshToken: true,
                 detectSessionInUrl: true,
@@ -63,7 +70,7 @@
           }
 
           if (!this.session) {
-            const stored = localStorage.getItem('priorart_operator_session');
+            const stored = sessionStorage.getItem('priorart_operator_session');
             if (stored) {
               try {
                 const parsed = JSON.parse(stored);
@@ -114,7 +121,7 @@
         session = this.session;
       }
       if (!session) {
-        const stored = localStorage.getItem('priorart_operator_session');
+        const stored = sessionStorage.getItem('priorart_operator_session');
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
@@ -203,7 +210,7 @@
               access_token: 'op_session_' + Date.now(),
               token_type: 'bearer'
             };
-            localStorage.setItem('priorart_operator_session', JSON.stringify(operatorSession));
+            sessionStorage.setItem('priorart_operator_session', JSON.stringify(operatorSession));
             this.session = operatorSession;
             this.user = operatorUser;
             return { data: { session: operatorSession, user: operatorUser }, error: null, isFallback: true };
@@ -224,6 +231,10 @@
       if (provider === 'google') {
         options.queryParams = {
           access_type: 'offline',
+          prompt: 'select_account consent' // Forces account chooser every single time
+        };
+      } else if (provider === 'github') {
+        options.queryParams = {
           prompt: 'consent'
         };
       }
@@ -238,7 +249,12 @@
      */
     async signOut() {
       await this.init();
-      localStorage.removeItem('priorart_operator_session');
+      sessionStorage.removeItem('priorart_operator_session');
+      try {
+        localStorage.removeItem('priorart_operator_session');
+        sessionStorage.removeItem('priorart_supabase_auth');
+        localStorage.removeItem('priorart_supabase_auth');
+      } catch (e) {}
       if (this.client) {
         try {
           await this.client.auth.signOut();
