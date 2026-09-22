@@ -6991,5 +6991,745 @@ body.broadcast-mode .globe-telemetry-badge.bottom-right-badge {
   box-shadow: 0 0 12px rgba(134, 239, 172, 0.25);
 }
 
+/* ==========================================================================
+   Comprehensive Mobile & Phone Display Optimization Architecture (<= 768px)
+   Guarantees 100% responsive ergonomics on iPhone, Pixel, Samsung, and tablets
+   ========================================================================== */
 
+@media (max-width: 768px) {
+  /* 1. Global Viewport & Container Reset */
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
 
+  .app-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 12px 12px 36px !important;
+    gap: 16px !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  /* 2. Top Legal Disclaimer Banner */
+  .disclaimer-banner {
+    padding: 8px 12px !important;
+    font-size: 11px !important;
+  }
+
+  .disclaimer-inner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+  }
+
+  .disclaimer-inner p {
+    font-size: 10.5px !important;
+    line-height: 1.35 !important;
+  }
+
+  .pill-tag {
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+  }
+
+  /* 3. Header Multi-Row Mobile Architecture */
+  .app-header {
+    gap: 12px !important;
+    padding-bottom: 14px !important;
+    width: 100% !important;
+  }
+
+  .header-main-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .brand-group {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .brand-symbol {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .brand-symbol svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .brand-meta {
+    gap: 1px !important;
+    min-width: 0 !important;
+  }
+
+  .brand-title-row {
+    gap: 8px !important;
+    align-items: center !important;
+  }
+
+  .brand-name {
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+  }
+
+  .version-tag {
+    font-size: 10px !important;
+    padding: 1px 6px !important;
+  }
+
+  .brand-caption {
+    display: none !important; /* Conceal long desktop caption on phone displays */
+  }
+
+  /* Top-Right Auth Badge on Mobile */
+  .header-auth-slot.header-auth-top-right {
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  .header-auth-badge {
+    padding: 3px 8px 3px 4px !important;
+    min-height: 34px !important;
+    gap: 6px !important;
+  }
+
+  .auth-avatar-wrap,
+  .auth-avatar-circle {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .auth-avatar-fallback {
+    font-size: 0.6rem !important;
+  }
+
+  .auth-user-info {
+    max-width: 85px !important;
+  }
+
+  .auth-user-name {
+    font-size: 0.72rem !important;
+  }
+
+  .auth-user-tier {
+    font-size: 0.54rem !important;
+  }
+
+  .auth-logout-btn {
+    padding: 3px 7px !important;
+    font-size: 0.64rem !important;
+    margin-left: 2px !important;
+  }
+
+  .btn-auth-login {
+    padding: 5px 9px !important;
+    font-size: 0.72rem !important;
+    min-height: 32px !important;
+  }
+
+  /* Navigation Tabs: Full-Width 2-Segment Deck */
+  .header-main-row .nav-tabs {
+    width: 100% !important;
+    order: 3 !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 4px !important;
+    margin: 4px 0 0 0 !important;
+    padding: 3px !important;
+    box-sizing: border-box !important;
+  }
+
+  .header-main-row .tab-btn {
+    justify-content: center !important;
+    padding: 8px 6px !important;
+    font-size: 12.5px !important;
+    min-height: 38px !important;
+    text-align: center !important;
+  }
+
+  .header-main-row .tab-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  /* Utility Controls: Theme Selector + Action Deck */
+  .header-utility-row {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .theme-selector {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 3px !important;
+    padding: 3px !important;
+    box-sizing: border-box !important;
+  }
+
+  .theme-btn {
+    justify-content: center !important;
+    padding: 6px 2px !important;
+    font-size: 11px !important;
+    min-height: 34px !important;
+    gap: 4px !important;
+  }
+
+  .header-actions {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+
+  #btn-broadcast-mode {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 36px !important;
+    font-size: 11.5px !important;
+    padding: 6px 8px !important;
+  }
+
+  #btn-about-modal {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 36px !important;
+    font-size: 11.5px !important;
+    padding: 6px 8px !important;
+  }
+
+  .engine-badge {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 36px !important;
+    font-size: 11.5px !important;
+    padding: 6px 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Mobile Engine Flyout Tooltip: Fixed bottom dock instead of clipped dropdown */
+  .engine-tooltip {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 14px !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    max-width: calc(100vw - 20px) !important;
+    transform: translateY(12px) !important;
+    box-sizing: border-box !important;
+    z-index: 99999 !important;
+    padding: 12px 14px !important;
+  }
+
+  .engine-tooltip::before {
+    display: none !important;
+  }
+
+  .engine-badge:hover .engine-tooltip,
+  .engine-badge:focus-within .engine-tooltip {
+    transform: translateY(0) !important;
+  }
+
+  /* 4. 3D Patent Radar Section on Mobile */
+  .radar-hero-header {
+    padding: 10px 12px !important;
+    gap: 10px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .radar-hero-title-group {
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .radar-hero-title-row {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .radar-hero-title {
+    font-size: 13.5px !important;
+  }
+
+  .radar-badge {
+    font-size: 8px !important;
+    padding: 1px 5px !important;
+  }
+
+  .radar-hero-sub {
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+  }
+
+  .radar-hero-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  .radar-action-btn {
+    font-size: 10px !important;
+    padding: 6px 4px !important;
+    justify-content: center !important;
+    min-height: 32px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+  }
+
+  .radar-action-btn span {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .radar-hero-body {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: auto !important;
+    width: 100% !important;
+  }
+
+  .radar-globe-stage {
+    order: 1 !important;
+    width: 100% !important;
+    height: 340px !important;
+    min-height: 340px !important;
+    overflow: hidden !important;
+    position: relative !important;
+  }
+
+  .radar-telemetry-hud {
+    order: 2 !important;
+    width: 100% !important;
+    border-right: none !important;
+    border-top: 1px solid var(--border-subtle) !important;
+    padding: 12px 10px !important;
+    max-height: none !important;
+  }
+
+  .globe-radar-legend {
+    top: 6px !important;
+    left: 6px !important;
+    right: 6px !important;
+    max-width: calc(100% - 12px) !important;
+    padding: 3px 6px !important;
+    gap: 4px !important;
+    font-size: 8px !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .legend-item {
+    padding: 2px 4px !important;
+    font-size: 8px !important;
+    gap: 4px !important;
+  }
+
+  .globe-zoom-controls {
+    right: 6px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    padding: 5px 3px !important;
+    gap: 4px !important;
+  }
+
+  .globe-zoom-btn {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .globe-zoom-slider-wrap {
+    width: 18px !important;
+    height: 65px !important;
+  }
+
+  .globe-zoom-slider {
+    width: 55px !important;
+  }
+
+  .globe-zoom-reset-badge {
+    font-size: 7.5px !important;
+  }
+
+  /* Node Hover Card docked neatly at bottom of globe canvas */
+  .globe-node-hover-card {
+    position: absolute !important;
+    top: auto !important;
+    bottom: 8px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+    z-index: 60 !important;
+    border-radius: 6px !important;
+  }
+
+  .globe-floating-pin-hud {
+    top: 38px !important;
+    right: 6px !important;
+    left: auto !important;
+    padding: 4px 8px !important;
+    max-width: calc(100% - 44px) !important;
+    font-size: 10px !important;
+    border-radius: 4px !important;
+  }
+
+  .pin-hud-name {
+    font-size: 10px !important;
+  }
+
+  .pin-hud-coords {
+    font-size: 8.5px !important;
+  }
+
+  .pin-hud-tag {
+    font-size: 7px !important;
+  }
+
+  /* 5. Screening Copilot Workspace on Mobile */
+  .workbench-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    width: 100% !important;
+  }
+
+  .panel {
+    padding: 14px 12px !important;
+    gap: 14px !important;
+    border-radius: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .panel-head {
+    padding-bottom: 12px !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .panel-head-title {
+    gap: 8px !important;
+  }
+
+  .panel-head h2 {
+    font-size: 16.5px !important;
+  }
+
+  /* Input fields: 16px prevents iOS automatic zoom on focus */
+  input, textarea, select, .form-input, .input-field {
+    font-size: 16px !important;
+  }
+
+  .preset-stream-box {
+    padding: 10px 12px !important;
+    gap: 10px !important;
+  }
+
+  .stream-topbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .stream-actions {
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 4px !important;
+    width: 100% !important;
+  }
+
+  .stream-pill-btn {
+    font-size: 10px !important;
+    padding: 4px 6px !important;
+  }
+
+  .stream-card {
+    padding: 10px !important;
+  }
+
+  .stream-card-body {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .stream-patent-title {
+    font-size: 13.5px !important;
+  }
+
+  .stream-load-action-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 34px !important;
+  }
+
+  .stream-pills-reel {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 6px !important;
+  }
+
+  .stream-library-drawer {
+    position: fixed !important;
+    inset: 8px !important;
+    z-index: 9999 !important;
+    border-radius: 8px !important;
+  }
+
+  /* Claim Elements & Pipeline Stepper */
+  .element-edit-item {
+    padding: 10px !important;
+    gap: 6px !important;
+  }
+
+  .agent-stepper {
+    gap: 8px !important;
+  }
+
+  .step-card {
+    padding: 10px 12px !important;
+    gap: 10px !important;
+    min-height: 52px !important;
+  }
+
+  .step-num {
+    font-size: 13px !important;
+    width: 22px !important;
+  }
+
+  .step-title {
+    font-size: 13px !important;
+  }
+
+  .step-detail {
+    font-size: 11.5px !important;
+  }
+
+  .btn-primary.btn-screen,
+  #btn-screen-invention {
+    width: 100% !important;
+    min-height: 48px !important;
+    font-size: 14.5px !important;
+    justify-content: center !important;
+  }
+
+  /* 6. Screening Findings, Report Actions & Threat Matrix */
+  #report-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+    width: 100% !important;
+    margin-top: 8px !important;
+  }
+
+  #report-actions .btn-ghost {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 36px !important;
+    font-size: 11.5px !important;
+    padding: 6px 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  .report-heading {
+    font-size: 17px !important;
+    line-height: 1.3 !important;
+  }
+
+  .exec-summary-text {
+    font-size: 13.5px !important;
+    line-height: 1.55 !important;
+  }
+
+  .matrix-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    border-radius: 6px !important;
+  }
+
+  .matrix-table th,
+  .matrix-table td {
+    padding: 8px 10px !important;
+    font-size: 11.5px !important;
+  }
+
+  .matrix-patent-btn {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    gap: 4px !important;
+  }
+
+  .matrix-cell-badge {
+    font-size: 10.5px !important;
+    padding: 2px 6px !important;
+  }
+
+  .citation-globe-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 34px !important;
+    margin-top: 6px !important;
+  }
+
+  /* 7. Benchmark Suite View on Mobile */
+  .kpi-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .kpi-card {
+    padding: 16px !important;
+    gap: 6px !important;
+  }
+
+  .kpi-value {
+    font-size: 28px !important;
+  }
+
+  .benchmark-case-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 14px 12px !important;
+  }
+
+  .benchmark-case-badges {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  /* 8. About Model & System Architecture Modal */
+  .about-modal-dialog {
+    width: calc(100vw - 16px) !important;
+    max-height: 92vh !important;
+    margin: 0 auto !important;
+    border-radius: 8px !important;
+  }
+
+  .about-modal-header {
+    padding: 12px 14px !important;
+  }
+
+  .about-modal-title-wrap h3 {
+    font-size: 15px !important;
+  }
+
+  .about-modal-body {
+    padding: 12px 14px !important;
+    gap: 14px !important;
+  }
+
+  .about-agents-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .about-specs-grid {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+
+  .about-modal-footer {
+    padding: 12px 14px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .btn-primary-about {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 38px !important;
+    text-align: center !important;
+  }
+
+  .about-footer-link {
+    text-align: center !important;
+  }
+
+  /* 9. Footer */
+  .app-footer {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 12px !important;
+    padding-top: 20px !important;
+  }
+
+  .footer-left,
+  .footer-right {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+}
+
+/* Specific Extra Compact Tweaks for Very Narrow Phones (<= 420px) */
+@media (max-width: 420px) {
+  .app-wrapper {
+    padding: 8px 8px 24px !important;
+    gap: 12px !important;
+  }
+
+  .brand-name {
+    font-size: 16px !important;
+  }
+
+  .brand-symbol {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .theme-btn span:not(.theme-dot) {
+    display: none !important; /* On ultra-small phones, show vibrant theme dot pills */
+  }
+
+  .theme-btn {
+    padding: 6px 0 !important;
+  }
+
+  .radar-hero-actions {
+    grid-template-columns: 1fr !important; /* Stack 1 by 1 on tiny devices */
+  }
+
+  .radar-globe-stage {
+    height: 300px !important;
+    min-height: 300px !important;
+  }
+
+  .header-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  #report-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
