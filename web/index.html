@@ -11,10 +11,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/static/style.css?v=70.0">
+  <link rel="stylesheet" href="/static/style.css?v=73.0">
+  <!-- Firebase App & Auth SDK (v10.12.0 Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <!-- Supabase JS Client & Auth Manager -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/static/auth.js?v=70.0"></script>
+  <script src="/static/auth.js?v=73.0"></script>
 </head>
 <body>
 
@@ -743,6 +746,24 @@
           <!-- Populated Findings Report -->
           <div id="results-content" class="report-container" style="display: none;">
             
+            <!-- Target Patent Ingestion & Classification Meta Card -->
+            <div class="report-block target-patent-meta-block" id="report-target-meta-card" style="display: none;">
+              <div class="target-meta-top">
+                <div class="target-meta-code-group">
+                  <span class="target-meta-badge-label">TARGET PATENT RECORD</span>
+                  <span class="target-meta-patent-id" id="report-target-patent-id">US-2026-0048192-A1</span>
+                </div>
+                <div class="target-meta-badges">
+                  <span class="target-meta-cat" id="report-target-category">Aerospace & Robotics</span>
+                  <span class="target-meta-domain" id="report-target-domain">MECHANICAL</span>
+                </div>
+              </div>
+              <div class="target-meta-bottom">
+                <span class="target-meta-pulse-dot"></span>
+                <span class="target-meta-radar-text" id="report-target-radar-text">Surveillance Radar Network: 5/5 Synced Registries (USPTO, EPO, WIPO, CNIPA, JPO) · Statutory Analysis Engine</span>
+              </div>
+            </div>
+
             <!-- Executive Summary Header Card -->
             <div class="report-block exec-block">
               <div class="exec-top-bar">
@@ -1095,7 +1116,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
   <script src="/static/world_land_data.js?v=61.0"></script>
-  <script src="/static/app.js?v=66.0"></script>
+  <script src="/static/app.js?v=72.0"></script>
   <script>
     // Enforce Supabase Authentication Route Guard for Screening & Radar Telemetry
     if (window.PriorArtAuth) {

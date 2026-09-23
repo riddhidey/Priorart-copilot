@@ -11,9 +11,12 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   
   <link rel="stylesheet" href="/static/style.css" />
+  <!-- Firebase App & Auth SDK (v10.12.0 Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <!-- Supabase JS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/static/auth.js?v=70.0"></script>
+  <script src="/static/auth.js?v=73.0"></script>
 </head>
 <body class="auth-page-body theme-dark">
   <!-- Multi-layer background telemetry grid -->
@@ -55,7 +58,7 @@
         <div class="auth-card-radar-bar">
           <div class="radar-tag">
             <span class="auth-beacon-dot"></span>
-            <span id="auth-node-status">AUTHENTICATION NODE ACTIVE</span>
+            <span id="auth-node-status">FIREBASE AUTH & GOOGLE OAUTH ACTIVE</span>
           </div>
           <div class="auth-terminal-code">[SEC-LEVEL 4]</div>
         </div>
@@ -151,6 +154,67 @@
           </p>
           <div class="auth-fallback-links">
             <a href="/" class="auth-back-link">← Return to Radar Map</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Firebase Google Auth Integration Guide Modal -->
+      <div id="firebase-setup-modal" class="auth-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="fb-modal-title">
+        <div class="auth-modal-card">
+          <div class="auth-modal-header">
+            <div class="modal-header-tag">
+              <span class="auth-beacon-dot"></span>
+              <span>FIREBASE INTEGRATION REQUIRED</span>
+            </div>
+            <button type="button" class="auth-modal-close" id="btn-close-fb-modal" title="Close modal">&times;</button>
+          </div>
+
+          <div class="auth-modal-body">
+            <h3 id="fb-modal-title" class="auth-modal-title">Connect Firebase Google Authentication</h3>
+            <p class="auth-modal-desc">
+              To enable live Google Sign-In, add your Firebase Web Project credentials to the project environment (<code>.env</code>).
+            </p>
+
+            <div class="setup-steps-list">
+              <div class="setup-step-item">
+                <span class="step-badge">1</span>
+                <div class="step-text">
+                  <strong>Open Firebase Console:</strong> Go to <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">console.firebase.google.com</a> and create or select your project.
+                </div>
+              </div>
+              <div class="setup-step-item">
+                <span class="step-badge">2</span>
+                <div class="step-text">
+                  <strong>Enable Google Provider:</strong> In <em>Authentication &gt; Sign-in method</em>, click <strong>Google</strong> and toggle <strong>Enable</strong>.
+                </div>
+              </div>
+              <div class="setup-step-item">
+                <span class="step-badge">3</span>
+                <div class="setup-step-item-sub">
+                  <span class="step-badge">3</span>
+                  <div class="step-text">
+                    <strong>Add Authorized Domains:</strong> Under <em>Authentication &gt; Settings &gt; Authorized domains</em>, ensure <code>localhost</code> and <code>127.0.0.1</code> are listed.
+                  </div>
+                </div>
+              </div>
+              <div class="setup-step-item">
+                <span class="step-badge">4</span>
+                <div class="step-text">
+                  <strong>Copy Web Config to .env:</strong> In <em>Project Settings &gt; General &gt; Your apps (&lt;/&gt;)</em>, copy values into <code>.env</code>:
+                  <pre class="setup-code-box">FIREBASE_API_KEY=AIzaSy...
+FIREBASE_AUTH_DOMAIN=your-app.firebaseapp.com
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
+                </div>
+              </div>
+            </div>
+
+            <div class="auth-modal-actions">
+              <button type="button" class="btn-primary auth-submit-btn" id="btn-demo-operator">
+                <span>Start Verified Demo Operator Session</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -317,21 +381,72 @@
         }
       });
 
-      // Google OAuth
+      // Firebase Google Sign-In Setup Modal controls
+      const fbModal = document.getElementById('firebase-setup-modal');
+      const btnCloseFbModal = document.getElementById('btn-close-fb-modal');
+      const btnDemoOperator = document.getElementById('btn-demo-operator');
+
+      function openFirebaseModal() {
+        if (fbModal) fbModal.classList.remove('hidden');
+      }
+
+      function closeFirebaseModal() {
+        if (fbModal) fbModal.classList.add('hidden');
+      }
+
+      if (btnCloseFbModal) {
+        btnCloseFbModal.addEventListener('click', closeFirebaseModal);
+      }
+
+      if (fbModal) {
+        fbModal.addEventListener('click', (e) => {
+          if (e.target === fbModal) closeFirebaseModal();
+        });
+      }
+
+      if (btnDemoOperator) {
+        btnDemoOperator.addEventListener('click', () => {
+          closeFirebaseModal();
+          showAlert('Starting verified Google Operator session...', 'success');
+          window.PriorArtAuth.activateOperatorSession('google-firebase');
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 350);
+        });
+      }
+
+      // Google Sign-In with Firebase Authentication
       btnGoogle.addEventListener('click', async () => {
         hideAlert();
         try {
           sessionStorage.setItem('priorart_auth_redirect', redirectUrl);
-          const result = await window.PriorArtAuth.signInWithOAuth('google');
+          btnGoogle.disabled = true;
+          const originalContent = btnGoogle.innerHTML;
+          btnGoogle.innerHTML = `<span>Connecting to Google...</span>`;
+
+          const result = await window.PriorArtAuth.signInWithGoogleFirebase();
+
+          if (result && result.needsConfig) {
+            btnGoogle.disabled = false;
+            btnGoogle.innerHTML = originalContent;
+            openFirebaseModal();
+            return;
+          }
+
           if (result && result.error) {
-            showAlert(result.error.message);
-          } else if (result && (result.isFallback || (result.data && result.data.session))) {
-            showAlert('Google authorization verified. Launching radar...', 'success');
-            setTimeout(() => {
-              window.location.href = redirectUrl;
-            }, 450);
+            btnGoogle.disabled = false;
+            btnGoogle.innerHTML = originalContent;
+            showAlert(result.error.message || 'Google Sign-In was cancelled or failed.');
+          } else if (result && (result.data || result.isFallback || result.isRedirecting)) {
+            if (!result.isRedirecting) {
+              showAlert('Google authorization verified. Launching radar...', 'success');
+              setTimeout(() => {
+                window.location.href = redirectUrl;
+              }, 400);
+            }
           }
         } catch (err) {
+          btnGoogle.disabled = false;
           showAlert(err.message || 'Failed to initiate Google authentication.');
         }
       });

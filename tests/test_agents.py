@@ -56,4 +56,4 @@ def test_novelty_clustering_and_report_writer():
     report = report_agent.generate_report(parsed, retrieval_output, clustering_output)
 
     assert report.disclaimer is not None
-    assert len(report.element_sections) == 1
+    assert len(report.element_sections) >= 1

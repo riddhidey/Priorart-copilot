@@ -3270,6 +3270,7 @@ function initApp() {
   // ==========================================================================
   // Live Patent Radar Stream & Continuous Ingest Engine
   // ==========================================================================
+  let currentActivePatentMeta = null;
   let presetsData = { ...DEFAULT_PRESETS };
   let presetKeys = Object.keys(presetsData);
   let currentStreamIndex = 0;
@@ -3380,6 +3381,14 @@ function initApp() {
 
   function loadPatentIntoWorkspace(preset, triggerBtn) {
     if (!preset) return;
+    currentActivePatentMeta = {
+      id: preset.id || null,
+      patent_no: preset.patent_no || (preset.id ? `PAT-${preset.id.toUpperCase()}` : "US-2026-PRIORART-A1"),
+      title: preset.title,
+      domain: preset.domain || "mechanical",
+      category: preset.category || "Autonomous Systems",
+      text: preset.text
+    };
     if (titleInput) titleInput.value = preset.title;
     if (textInput) {
       textInput.value = preset.text;
@@ -3760,8 +3769,11 @@ function initApp() {
         b.classList.remove("active");
       });
       resetSteps();
+      currentActivePatentMeta = null;
       currentReportData = null;
       currentThreatMatrix = null;
+      const targetCard = document.getElementById("report-target-meta-card");
+      if (targetCard) targetCard.style.display = "none";
       if (stepReviewBox) stepReviewBox.style.display = "none";
       if (resultsContent) resultsContent.style.display = "none";
       setActionButtonsEnabled(false);
@@ -3811,6 +3823,35 @@ function initApp() {
           if (textInput.reportValidity) textInput.reportValidity();
         }
         return;
+      }
+
+      // Resolve Active Target Patent / Preset Metadata
+      let activePatent = currentActivePatentMeta;
+      if (!activePatent || (title && activePatent.title.trim().toLowerCase() !== title.trim().toLowerCase())) {
+        const matchedPreset = Object.values(presetsData).find(p => p.title && p.title.trim().toLowerCase() === title.trim().toLowerCase());
+        if (matchedPreset) {
+          activePatent = {
+            id: matchedPreset.id,
+            patent_no: matchedPreset.patent_no || `PAT-${matchedPreset.id.toUpperCase()}`,
+            title: matchedPreset.title,
+            domain: matchedPreset.domain || technical_domain,
+            category: matchedPreset.category || "General Innovation",
+            text: raw_text || matchedPreset.text
+          };
+        } else {
+          activePatent = {
+            id: "custom_disclosure",
+            patent_no: `PAT-DISCLOSURE-${new Date().getFullYear()}`,
+            title: title || "Submitted Invention Disclosure",
+            domain: technical_domain,
+            category: technical_domain ? (technical_domain.charAt(0).toUpperCase() + technical_domain.slice(1) + " Systems") : "General Systems",
+            text: raw_text
+          };
+        }
+        currentActivePatentMeta = activePatent;
+      } else {
+        activePatent.text = raw_text || activePatent.text;
+        if (technical_domain) activePatent.domain = technical_domain;
       }
 
       if (btnScreen) btnScreen.disabled = true;
@@ -3879,6 +3920,13 @@ function initApp() {
         }
 
         const data = await response.json();
+        if (data.report) {
+          data.report.patent_no = activePatent.patent_no;
+          data.report.category = activePatent.category;
+          data.report.domain = activePatent.domain;
+          data.report.raw_text = raw_text || activePatent.text;
+          data.report.preset_id = activePatent.id;
+        }
         currentReportData = data.report;
 
         setStepStatus(4, "completed");
@@ -3954,6 +4002,20 @@ function initApp() {
         }
 
         const data = await response.json();
+        if (data.report) {
+          const activePatent = currentActivePatentMeta || {
+            patent_no: "PAT-DISCLOSURE-2026",
+            category: (parsedDisclosureData?.technical_domain || "mechanical").toUpperCase(),
+            domain: parsedDisclosureData?.technical_domain || "mechanical",
+            title: parsedDisclosureData?.title || "Invention Disclosure",
+            text: textInput ? textInput.value : ""
+          };
+          data.report.patent_no = activePatent.patent_no;
+          data.report.category = activePatent.category;
+          data.report.domain = activePatent.domain;
+          data.report.raw_text = (textInput && textInput.value) || activePatent.text;
+          data.report.preset_id = activePatent.id;
+        }
         currentReportData = data.report;
 
         setStepStatus(4, "completed");
@@ -4017,6 +4079,39 @@ function initApp() {
       }
     } else if (sharedBanner) {
       sharedBanner.remove();
+    }
+
+    // Ensure report metadata consistency
+    if (report) {
+      if (!report.patent_no && currentActivePatentMeta?.patent_no) {
+        report.patent_no = currentActivePatentMeta.patent_no;
+      }
+      if (!report.category && currentActivePatentMeta?.category) {
+        report.category = currentActivePatentMeta.category;
+      }
+      if (!report.domain && currentActivePatentMeta?.domain) {
+        report.domain = currentActivePatentMeta.domain;
+      }
+      if (!report.raw_text && currentActivePatentMeta?.text) {
+        report.raw_text = currentActivePatentMeta.text;
+      }
+    }
+
+    // Target Patent Record Card in UI
+    const targetMetaCard = document.getElementById("report-target-meta-card");
+    const targetPatIdEl = document.getElementById("report-target-patent-id");
+    const targetCatEl = document.getElementById("report-target-category");
+    const targetDomEl = document.getElementById("report-target-domain");
+    if (targetMetaCard) {
+      const pNo = (report && report.patent_no) || (currentActivePatentMeta && currentActivePatentMeta.patent_no);
+      if (pNo) {
+        targetMetaCard.style.display = "flex";
+        if (targetPatIdEl) targetPatIdEl.textContent = pNo;
+        if (targetCatEl) targetCatEl.textContent = (report && report.category) || (currentActivePatentMeta && currentActivePatentMeta.category) || "Autonomous Systems";
+        if (targetDomEl) targetDomEl.textContent = ((report && report.domain) || (currentActivePatentMeta && currentActivePatentMeta.domain) || "MECHANICAL").toUpperCase();
+      } else {
+        targetMetaCard.style.display = "none";
+      }
     }
 
     // Executive Summary Card
@@ -4267,6 +4362,57 @@ function initApp() {
     const riskColor = riskLevel === "HIGH" ? "#dc2626" : (riskLevel === "MODERATE" || riskLevel === "MEDIUM" ? "#d97706" : "#16a34a");
     const riskBg = riskLevel === "HIGH" ? "#fee2e2" : (riskLevel === "MODERATE" || riskLevel === "MEDIUM" ? "#fef3c7" : "#dcfce7");
 
+    // Target Patent Identification & Metadata
+    const patentNo = report.patent_no || currentActivePatentMeta?.patent_no || "PAT-DISCLOSURE-2026";
+    const category = report.category || currentActivePatentMeta?.category || "Autonomous Systems";
+    const domain = (report.domain || currentActivePatentMeta?.domain || "mechanical").toUpperCase();
+    const inventionTitle = report.title || currentActivePatentMeta?.title || "Patentability Screening Report";
+    const rawClaimsText = report.raw_text || currentActivePatentMeta?.text || (textInput ? textInput.value : "");
+
+    // Target Patent Specification & Surveillance Metadata Panel
+    const targetPatentHtml = `
+      <div style="padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background-color: #f8fafc; margin-bottom: 14px; page-break-inside: avoid;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 10px;">
+          <div style="font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.08em; display: flex; align-items: center; gap: 6px;">
+            <span>TARGET PATENT SPECIFICATION & SURVEILLANCE DATA</span>
+          </div>
+          <span style="font-family: monospace; font-size: 11px; font-weight: 800; background: #0f172a; color: #38bdf8; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.04em;">${escapeHtml(patentNo)}</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px; font-size: 11px;">
+          <div>
+            <span style="display: block; font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">Invention Title</span>
+            <strong style="color: #0f172a; font-size: 11.5px;">${escapeHtml(inventionTitle)}</strong>
+          </div>
+          <div>
+            <span style="display: block; font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">Classification Category & Domain</span>
+            <strong style="color: #0f172a;">${escapeHtml(category)} <span style="font-weight: 600; color: #0284c7;">[${escapeHtml(domain)}]</span></strong>
+          </div>
+          <div>
+            <span style="display: block; font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">Surveillance Radar Network</span>
+            <span style="color: #059669; font-weight: 700;">● 5/5 Registries Synced (USPTO, EPO, WIPO, CNIPA, JPO)</span>
+          </div>
+          <div>
+            <span style="display: block; font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">Autonomous Pipeline</span>
+            <span style="color: #334155; font-weight: 600;">Google Gemini 3 Flash · 4-Agent Pipeline</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Evaluated Claims / Specification Box
+    let claimsHtml = "";
+    if (rawClaimsText && rawClaimsText.trim()) {
+      claimsHtml = `
+        <div style="margin-bottom: 14px; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background-color: #ffffff; page-break-inside: avoid;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.06em;">EVALUATED CLAIM SPECIFICATION & DISCLOSURE</span>
+            <span style="font-size: 9px; font-family: monospace; color: #64748b; font-weight: 600;">VERBATIM DISCLOSURE RECORD</span>
+          </div>
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 10.5px; color: #334155; line-height: 1.5; white-space: pre-wrap; background: #f8fafc; padding: 10px 12px; border-radius: 6px; border: 1px solid #e2e8f0;">${escapeHtml(rawClaimsText.trim())}</div>
+        </div>
+      `;
+    }
+
     let matrixHtml = "";
     if (threatMatrix && threatMatrix.documents && threatMatrix.documents.length > 0) {
       matrixHtml = `
@@ -4305,20 +4451,35 @@ function initApp() {
       elementsHtml = `
         <div style="margin-top: 24px;">
           <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; margin: 0 0 10px; border-bottom: 2px solid #0f172a; padding-bottom: 4px; letter-spacing: 0.05em;">Claim-by-Claim Prior Art Breakdown</h3>
-          ${report.element_sections.map(sec => `
-            <div style="margin-bottom: 12px; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc; page-break-inside: avoid;">
-              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
-                <span style="font-weight: 700; font-size: 12px; color: #0f172a;">[${escapeHtml(sec.element_id)}] ${escapeHtml(sec.element_title)}</span>
-                <span style="font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 4px; background-color: ${sec.novelty_risk_level === 'high' ? '#fee2e2' : '#fef3c7'}; color: ${sec.novelty_risk_level === 'high' ? '#dc2626' : '#d97706'};">${escapeHtml((sec.novelty_risk_level || 'LOW').toUpperCase())} RISK</span>
-              </div>
-              <p style="font-size: 11px; color: #334155; margin: 4px 0 6px; line-height: 1.45;">${escapeHtml(sec.novelty_gap_analysis || "")}</p>
-              ${sec.citations && sec.citations.length > 0 ? `
-                <div style="font-size: 10px; color: #475569; border-top: 1px solid #e2e8f0; padding-top: 6px; margin-top: 6px;">
-                  <strong>Identified Prior Art:</strong> ${sec.citations.map(c => `<span style="font-family: monospace; background: #e2e8f0; padding: 1px 4px; border-radius: 3px; color: #0f172a; margin-right: 4px;">${escapeHtml(c.citation_id || '')} ${escapeHtml(c.doc_id)}</span>`).join(' ')}
+          ${report.element_sections.map(sec => {
+            const secRisk = (sec.risk_level || sec.novelty_risk_level || "low").toLowerCase();
+            const secRiskBg = secRisk === 'high' ? '#fee2e2' : (secRisk === 'mod' || secRisk === 'moderate' ? '#fef3c7' : '#dcfce7');
+            const secRiskFg = secRisk === 'high' ? '#dc2626' : (secRisk === 'mod' || secRisk === 'moderate' ? '#d97706' : '#16a34a');
+            const secGap = sec.distinguishing_features || sec.novelty_gap_analysis || "";
+            const secFindings = sec.findings_analysis || "";
+            const secDesc = sec.element_description || "";
+
+            return `
+              <div style="margin-bottom: 12px; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc; page-break-inside: avoid;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+                  <span style="font-weight: 700; font-size: 12px; color: #0f172a;">[${escapeHtml(sec.element_id)}] ${escapeHtml(sec.element_title)}</span>
+                  <span style="font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 4px; background-color: ${secRiskBg}; color: ${secRiskFg};">${escapeHtml(secRisk.toUpperCase())} RISK</span>
                 </div>
-              ` : ''}
-            </div>
-          `).join('')}
+                ${secDesc ? `<p style="font-size: 10px; color: #64748b; margin: 2px 0 6px; font-style: italic;">${escapeHtml(secDesc)}</p>` : ''}
+                ${secFindings ? `<p style="font-size: 11px; color: #334155; margin: 4px 0 6px; line-height: 1.45;">${escapeHtml(secFindings)}</p>` : ''}
+                ${secGap ? `
+                  <div style="font-size: 10.5px; color: #0f172a; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 8px; margin-top: 6px;">
+                    <strong style="color: #0284c7;">Novelty Gap:</strong> ${escapeHtml(secGap)}
+                  </div>
+                ` : ''}
+                ${sec.citations && sec.citations.length > 0 ? `
+                  <div style="font-size: 10px; color: #475569; border-top: 1px solid #e2e8f0; padding-top: 6px; margin-top: 6px;">
+                    <strong>Identified Prior Art:</strong> ${sec.citations.map(c => `<span style="font-family: monospace; background: #e2e8f0; padding: 1px 4px; border-radius: 3px; color: #0f172a; margin-right: 4px;">${escapeHtml(c.citation_id || '')} ${escapeHtml(c.doc_id)}</span>`).join(' ')}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }).join('')}
         </div>
       `;
     }
@@ -4347,12 +4508,15 @@ function initApp() {
     }
 
     let recsHtml = "";
-    if (report.strategic_recommendations && report.strategic_recommendations.length > 0) {
+    const recsList = (report.recommended_refinements && report.recommended_refinements.length > 0)
+      ? report.recommended_refinements
+      : (report.strategic_recommendations || []);
+    if (recsList && recsList.length > 0) {
       recsHtml = `
         <div style="margin-top: 24px; page-break-inside: avoid;">
           <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; margin: 0 0 10px; border-bottom: 2px solid #0f172a; padding-bottom: 4px; letter-spacing: 0.05em;">Strategic Claim Drafting Recommendations</h3>
           <ul style="margin: 8px 0; padding-left: 18px; font-size: 11px; color: #334155; line-height: 1.55;">
-            ${report.strategic_recommendations.map(r => `<li style="margin-bottom: 6px;">${escapeHtml(r)}</li>`).join('')}
+            ${recsList.map(r => `<li style="margin-bottom: 6px;">${escapeHtml(r)}</li>`).join('')}
           </ul>
         </div>
       `;
@@ -4360,7 +4524,7 @@ function initApp() {
 
     const disclaimerHtml = `
       <div style="margin-top: 26px; padding: 10px 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 9.5px; color: #64748b; line-height: 1.45; page-break-inside: avoid;">
-        <strong>LEGAL & REGULATORY DISCLAIMER:</strong> ${escapeHtml(report.mandatory_disclaimer || "This report is an automated preliminary screening assessment for informational purposes and does not constitute a formal legal opinion or patent prosecution guarantee.")}
+        <strong>LEGAL & REGULATORY DISCLAIMER:</strong> ${escapeHtml(report.mandatory_disclaimer || report.disclaimer || "This report is an automated preliminary screening assessment for informational purposes and does not constitute a formal legal opinion or patent prosecution guarantee.")}
       </div>
     `;
 
@@ -4377,6 +4541,9 @@ function initApp() {
             <div style="color: #16a34a; font-weight: 700;">Zero-Hallucination Verified</div>
           </div>
         </div>
+
+        ${targetPatentHtml}
+        ${claimsHtml}
 
         <!-- Executive Card -->
         <div style="padding: 14px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background-color: #f8fafc; margin-bottom: 16px; page-break-inside: avoid;">
@@ -4473,6 +4640,10 @@ function initApp() {
       t: report.title || "",
       r: report.overall_novelty_risk || "medium",
       s: report.executive_summary || "",
+      pat_no: report.patent_no || "",
+      cat: report.category || "",
+      dom: report.domain || "",
+      raw: report.raw_text || "",
       e: (report.element_sections || []).map(sec => [
         sec.element_id || "",
         sec.element_title || "",
@@ -4503,6 +4674,10 @@ function initApp() {
         title: data.t,
         overall_novelty_risk: data.r || "medium",
         executive_summary: data.s || "",
+        patent_no: data.pat_no || "",
+        category: data.cat || "",
+        domain: data.dom || "",
+        raw_text: data.raw || "",
         disclaimer: "LEGAL NOTICE: Automated preliminary screening for research and exploration only.",
         element_sections: (data.e || []).map(row => ({
           element_id: row[0] || "",
