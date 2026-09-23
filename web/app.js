@@ -3906,10 +3906,16 @@ function initApp() {
       }, 1800);
 
       try {
+        const authUser = window.PriorArtAuth && window.PriorArtAuth.user;
         const response = await fetch("/api/screen", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, raw_text, technical_domain })
+          body: JSON.stringify({
+            title,
+            raw_text,
+            technical_domain,
+            user_id: authUser ? authUser.uid : null
+          })
         });
 
         clearInterval(stepInterval);
@@ -3931,6 +3937,10 @@ function initApp() {
 
         setStepStatus(4, "completed");
         renderReport(data.report, data.threat_matrix);
+
+        if (data.saved_id && typeof showIndustrialToast === "function") {
+          showIndustrialToast("Report automatically saved to your Supabase history!", 3000);
+        }
 
       } catch (err) {
         clearInterval(stepInterval);
@@ -3990,10 +4000,14 @@ function initApp() {
       if (loadingStatusText) loadingStatusText.textContent = "Agent 2: Searching patents per reviewed element...";
 
       try {
+        const authUser = window.PriorArtAuth && window.PriorArtAuth.user;
         const response = await fetch("/api/screen-elements", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(parsedDisclosureData)
+          body: JSON.stringify({
+            ...parsedDisclosureData,
+            user_id: authUser ? authUser.uid : null
+          })
         });
 
         if (!response.ok) {
@@ -4020,6 +4034,10 @@ function initApp() {
 
         setStepStatus(4, "completed");
         renderReport(data.report, data.threat_matrix);
+
+        if (data.saved_id && typeof showIndustrialToast === "function") {
+          showIndustrialToast("Report automatically saved to your Supabase history!", 3000);
+        }
       } catch (err) {
         resetSteps();
         if (resultsLoading) resultsLoading.style.display = "none";
@@ -5019,6 +5037,283 @@ function initApp() {
       closeAboutModal();
     }
   });
+
+  // ==========================================
+  // USER CUSTOM API KEYS MODAL (SUPABASE BYOK)
+  // ==========================================
+  const userSettingsModal = document.getElementById("user-settings-modal");
+  const btnCloseSettings = document.getElementById("btn-close-settings-modal");
+  const userKeysForm = document.getElementById("user-keys-form");
+  const inputCustomGemini = document.getElementById("input-custom-gemini");
+  const inputCustomEpo = document.getElementById("input-custom-epo");
+  const btnToggleGeminiKey = document.getElementById("btn-toggle-gemini-key");
+  const btnSaveUserKeys = document.getElementById("btn-save-user-keys");
+  const btnDeleteUserKeys = document.getElementById("btn-delete-user-keys");
+  const saveKeysSpinner = document.getElementById("save-keys-spinner");
+  const saveKeysText = document.getElementById("save-keys-text");
+  const settingsAlert = document.getElementById("settings-alert");
+  const settingsAlertIcon = document.getElementById("settings-alert-icon");
+  const settingsAlertMsg = document.getElementById("settings-alert-message");
+  const geminiKeyStatusBadge = document.getElementById("gemini-key-status-badge");
+  const geminiKeyMaskedDisplay = document.getElementById("gemini-key-masked-display");
+
+  function showSettingsAlert(msg, type = "success") {
+    if (!settingsAlert) return;
+    settingsAlert.className = `auth-alert ${type}`;
+    if (settingsAlertMsg) settingsAlertMsg.textContent = msg;
+    if (settingsAlertIcon) settingsAlertIcon.textContent = type === "success" ? "✓" : "⚠️";
+    settingsAlert.classList.remove("hidden");
+  }
+
+  function hideSettingsAlert() {
+    if (settingsAlert) settingsAlert.classList.add("hidden");
+  }
+
+  window.openUserSettingsModal = async function() {
+    if (!userSettingsModal) return;
+    hideSettingsAlert();
+    userSettingsModal.classList.remove("hidden");
+
+    if (geminiKeyStatusBadge) {
+      geminiKeyStatusBadge.textContent = "CHECKING...";
+      geminiKeyStatusBadge.className = "status-badge";
+    }
+
+    try {
+      if (window.PriorArtAuth) {
+        const data = await window.PriorArtAuth.getUserApiKeys();
+        if (data && data.keys && data.keys.has_gemini_key) {
+          if (geminiKeyStatusBadge) {
+            geminiKeyStatusBadge.textContent = "CUSTOM KEY ACTIVE";
+            geminiKeyStatusBadge.className = "status-badge custom-active";
+          }
+          if (geminiKeyMaskedDisplay) {
+            geminiKeyMaskedDisplay.textContent = `Active Key: ${data.keys.gemini_api_key_masked} (Dedicated Quota)`;
+          }
+          if (btnDeleteUserKeys) btnDeleteUserKeys.style.display = "inline-block";
+        } else {
+          if (geminiKeyStatusBadge) {
+            geminiKeyStatusBadge.textContent = "SYSTEM DEFAULT";
+            geminiKeyStatusBadge.className = "status-badge";
+          }
+          if (geminiKeyMaskedDisplay) {
+            geminiKeyMaskedDisplay.textContent = "Using Shared System Gemini 3 Flash Quota";
+          }
+          if (btnDeleteUserKeys) btnDeleteUserKeys.style.display = "none";
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load user keys:", e);
+    }
+  };
+
+  function closeUserSettingsModal() {
+    if (userSettingsModal) userSettingsModal.classList.add("hidden");
+  }
+
+  if (btnCloseSettings) btnCloseSettings.addEventListener("click", closeUserSettingsModal);
+  if (userSettingsModal) {
+    userSettingsModal.addEventListener("click", (e) => {
+      if (e.target === userSettingsModal) closeUserSettingsModal();
+    });
+  }
+
+  if (btnToggleGeminiKey && inputCustomGemini) {
+    btnToggleGeminiKey.addEventListener("click", () => {
+      const isPw = inputCustomGemini.type === "password";
+      inputCustomGemini.type = isPw ? "text" : "password";
+      btnToggleGeminiKey.textContent = isPw ? "🙈" : "👁️";
+    });
+  }
+
+  if (userKeysForm) {
+    userKeysForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideSettingsAlert();
+
+      const geminiKey = inputCustomGemini ? inputCustomGemini.value.trim() : "";
+      const epoKey = inputCustomEpo ? inputCustomEpo.value.trim() : "";
+
+      if (!geminiKey) {
+        showSettingsAlert("Please enter a Gemini API key to save.", "warn");
+        return;
+      }
+
+      if (btnSaveUserKeys) btnSaveUserKeys.disabled = true;
+      if (saveKeysSpinner) saveKeysSpinner.classList.remove("hidden");
+      if (saveKeysText) saveKeysText.textContent = "Saving to Supabase...";
+
+      try {
+        if (!window.PriorArtAuth || !window.PriorArtAuth.user) {
+          throw new Error("You must be logged in to save API keys.");
+        }
+        await window.PriorArtAuth.saveUserApiKeys(geminiKey, epoKey);
+        showSettingsAlert("API Keys saved successfully to Supabase! Future screenings will use this key.", "success");
+        if (inputCustomGemini) inputCustomGemini.value = "";
+        if (inputCustomEpo) inputCustomEpo.value = "";
+        window.openUserSettingsModal();
+      } catch (err) {
+        showSettingsAlert(err.message || "Failed to save API keys.", "warn");
+      } finally {
+        if (btnSaveUserKeys) btnSaveUserKeys.disabled = false;
+        if (saveKeysSpinner) saveKeysSpinner.classList.add("hidden");
+        if (saveKeysText) saveKeysText.textContent = "Save Keys to Supabase";
+      }
+    });
+  }
+
+  if (btnDeleteUserKeys) {
+    btnDeleteUserKeys.addEventListener("click", async () => {
+      if (!confirm("Are you sure you want to remove your custom API keys? The app will revert to the shared system quota.")) {
+        return;
+      }
+      try {
+        await window.PriorArtAuth.deleteUserApiKeys();
+        showSettingsAlert("Custom API keys deleted. Reverted to system default quota.", "success");
+        window.openUserSettingsModal();
+      } catch (err) {
+        showSettingsAlert(err.message || "Failed to delete keys.", "warn");
+      }
+    });
+  }
+
+  // ==========================================
+  // SCREENING HISTORY MODAL (SUPABASE REPORTS)
+  // ==========================================
+  const userHistoryModal = document.getElementById("user-history-modal");
+  const btnCloseHistory = document.getElementById("btn-close-history-modal");
+  const btnRefreshHistory = document.getElementById("btn-refresh-history");
+  const historyLoading = document.getElementById("history-loading");
+  const historyEmpty = document.getElementById("history-empty");
+  const historyListContainer = document.getElementById("history-list-container");
+
+  function closeHistoryModal() {
+    if (userHistoryModal) userHistoryModal.classList.add("hidden");
+  }
+
+  if (btnCloseHistory) btnCloseHistory.addEventListener("click", closeHistoryModal);
+  if (userHistoryModal) {
+    userHistoryModal.addEventListener("click", (e) => {
+      if (e.target === userHistoryModal) closeHistoryModal();
+    });
+  }
+
+  async function loadUserScreeningHistory() {
+    if (!historyListContainer) return;
+    if (historyLoading) historyLoading.classList.remove("hidden");
+    if (historyEmpty) historyEmpty.classList.add("hidden");
+    historyListContainer.innerHTML = "";
+
+    try {
+      if (!window.PriorArtAuth || !window.PriorArtAuth.user) {
+        if (historyLoading) historyLoading.classList.add("hidden");
+        if (historyEmpty) historyEmpty.classList.remove("hidden");
+        return;
+      }
+
+      const reports = await window.PriorArtAuth.getScreeningHistory();
+      if (historyLoading) historyLoading.classList.add("hidden");
+
+      if (!reports || reports.length === 0) {
+        if (historyEmpty) historyEmpty.classList.remove("hidden");
+        return;
+      }
+
+      reports.forEach((rep) => {
+        const card = document.createElement("div");
+        card.className = "history-report-card";
+        const riskClass = (rep.risk_level || "MOD").toLowerCase();
+        const dateStr = rep.created_at ? new Date(rep.created_at).toLocaleString() : "Recent";
+
+        card.innerHTML = `
+          <div class="hist-card-top">
+            <h4 class="hist-card-title">${escapeHtml(rep.title || "Untitled Screening")}</h4>
+            <span class="hist-risk-badge ${riskClass}">${(rep.risk_level || "MOD").toUpperCase()} RISK</span>
+          </div>
+          <div class="hist-card-meta">
+            <span class="hist-domain-pill">${escapeHtml(rep.technical_domain || "mechanical")}</span>
+            <span class="hist-card-date">${dateStr}</span>
+          </div>
+          ${rep.summary ? `<p class="hist-card-summary">${escapeHtml(rep.summary)}</p>` : ""}
+          <div class="hist-card-bottom">
+            <button type="button" class="btn-load-report" data-id="${rep.id}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              <span>Load Full Report</span>
+            </button>
+            <button type="button" class="btn-delete-report" data-id="${rep.id}" title="Delete report from Supabase">
+              ✕ Delete
+            </button>
+          </div>
+        `;
+
+        card.querySelector(".btn-load-report").addEventListener("click", async () => {
+          try {
+            if (typeof showIndustrialToast === "function") showIndustrialToast("Loading report from Supabase...", 2000);
+            const fullRep = await window.PriorArtAuth.getHistoryReport(rep.id);
+            if (fullRep && fullRep.report_data) {
+              const repPayload = fullRep.report_data;
+              currentReportData = repPayload.report;
+              currentThreatMatrix = repPayload.threat_matrix;
+
+              // Fill disclosure input values
+              if (titleInput && repPayload.parsed_disclosure) {
+                titleInput.value = repPayload.parsed_disclosure.title || rep.title;
+              }
+              if (textInput && repPayload.report && repPayload.report.raw_text) {
+                textInput.value = repPayload.report.raw_text;
+              }
+
+              // Render report & threat matrix
+              renderReport(repPayload.report, repPayload.threat_matrix);
+              closeHistoryModal();
+              if (typeof showIndustrialToast === "function") {
+                showIndustrialToast(`Loaded "${rep.title}" from Supabase!`, 3200);
+              }
+
+              // Scroll to findings section
+              const findingsSec = document.querySelector(".findings-section");
+              if (findingsSec) findingsSec.scrollIntoView({ behavior: "smooth" });
+            }
+          } catch (loadErr) {
+            alert("Could not load report: " + loadErr.message);
+          }
+        });
+
+        card.querySelector(".btn-delete-report").addEventListener("click", async () => {
+          if (!confirm(`Delete "${rep.title}" from your saved history?`)) return;
+          try {
+            const ok = await window.PriorArtAuth.deleteHistoryReport(rep.id);
+            if (ok) {
+              card.remove();
+              if (typeof showIndustrialToast === "function") {
+                showIndustrialToast("Report removed from Supabase history.", 2200);
+              }
+              if (historyListContainer.children.length === 0 && historyEmpty) {
+                historyEmpty.classList.remove("hidden");
+              }
+            }
+          } catch (delErr) {
+            alert("Failed to delete report: " + delErr.message);
+          }
+        });
+
+        historyListContainer.appendChild(card);
+      });
+    } catch (err) {
+      if (historyLoading) historyLoading.classList.add("hidden");
+      console.warn("History load error:", err);
+    }
+  }
+
+  window.openScreeningHistoryModal = function() {
+    if (!userHistoryModal) return;
+    userHistoryModal.classList.remove("hidden");
+    loadUserScreeningHistory();
+  };
+
+  if (btnRefreshHistory) {
+    btnRefreshHistory.addEventListener("click", loadUserScreeningHistory);
+  }
 
   // Fetch real-time AI Engine status and update telemetry hover badge
   async function syncEngineStatus() {

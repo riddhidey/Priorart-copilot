@@ -40,6 +40,7 @@ class ScreenRequest(BaseModel):
     title: str
     raw_text: str
     technical_domain: str = "mechanical"
+    user_id: Optional[str] = None
 
 
 class ScreenElementsRequest(BaseModel):
@@ -47,6 +48,25 @@ class ScreenElementsRequest(BaseModel):
     technical_domain: str
     summary: str
     claim_elements: list[dict]
+    user_id: Optional[str] = None
+
+
+class UserApiKeyRequest(BaseModel):
+    user_id: str
+    user_email: Optional[str] = ""
+    gemini_api_key: Optional[str] = None
+    epo_consumer_key: Optional[str] = None
+    epo_consumer_secret: Optional[str] = None
+
+
+class SaveReportRequest(BaseModel):
+    user_id: str
+    title: str
+    technical_domain: str = "mechanical"
+    summary: str = ""
+    risk_level: str = "MOD"
+    report_data: dict
+
 
 
 @app.get("/api/visitor-geo")
@@ -236,6 +256,14 @@ async def screen_from_elements(req: ScreenElementsRequest):
     from agents.retrieval_agent import RetrievalAgent
     from agents.novelty_clustering import NoveltyClusteringAgent
     from agents.report_writer import ReportWriterAgent
+    from database.supabase_db import SupabaseDB
+
+    custom_llm = None
+    if req.user_id:
+        user_keys = await SupabaseDB.get_user_keys(req.user_id, mask=False)
+        if user_keys and user_keys.get("gemini_api_key"):
+            from agents.llm_client import LLMClient
+            custom_llm = LLMClient(api_key=user_keys["gemini_api_key"])
 
     elements = [ClaimElement(**el) for el in req.claim_elements]
     parsed = ParsedDisclosure(
@@ -246,8 +274,8 @@ async def screen_from_elements(req: ScreenElementsRequest):
     )
 
     retrieval = RetrievalAgent()
-    clustering = NoveltyClusteringAgent()
-    report_writer = ReportWriterAgent()
+    clustering = NoveltyClusteringAgent(llm_client=custom_llm) if custom_llm else NoveltyClusteringAgent()
+    report_writer = ReportWriterAgent(llm_client=custom_llm) if custom_llm else ReportWriterAgent()
 
     try:
         ret_out = retrieval.retrieve(parsed)
@@ -256,8 +284,29 @@ async def screen_from_elements(req: ScreenElementsRequest):
 
         threat_matrix = _build_threat_matrix(parsed.claim_elements, ret_out, clust_out)
 
+        saved_id = None
+        if req.user_id:
+            overall_risk = getattr(rep_out, "patentability_risk_category", "MOD")
+            save_res = await SupabaseDB.save_screening_report(
+                user_id=req.user_id,
+                title=parsed.title,
+                domain=parsed.technical_domain,
+                summary=parsed.summary,
+                risk_level=overall_risk,
+                report_data={
+                    "parsed_disclosure": parsed.model_dump(),
+                    "retrieval_output": ret_out.model_dump(),
+                    "clustering_output": clust_out.model_dump(),
+                    "report": rep_out.model_dump(),
+                    "threat_matrix": threat_matrix
+                }
+            )
+            if save_res and isinstance(save_res, dict):
+                saved_id = save_res.get("id")
+
         return {
             "status": "success",
+            "saved_id": saved_id,
             "parsed_disclosure": parsed.model_dump(),
             "retrieval_output": ret_out.model_dump(),
             "clustering_output": clust_out.model_dump(),
@@ -273,13 +322,32 @@ async def screen_invention(req: ScreenRequest):
     if not req.raw_text.strip():
         raise HTTPException(status_code=400, detail="Invention disclosure text cannot be empty.")
 
+    from database.supabase_db import SupabaseDB
+    custom_llm = None
+    if req.user_id:
+        user_keys = await SupabaseDB.get_user_keys(req.user_id, mask=False)
+        if user_keys and user_keys.get("gemini_api_key"):
+            from agents.llm_client import LLMClient
+            custom_llm = LLMClient(api_key=user_keys["gemini_api_key"])
+
     disclosure = InventionDisclosure(
         title=req.title or "Untitled Invention",
         raw_text=req.raw_text,
         technical_domain=req.technical_domain
     )
 
-    pipeline = PriorArtPipeline()
+    if custom_llm:
+        from agents.disclosure_parser import DisclosureParserAgent
+        from agents.novelty_clustering import NoveltyClusteringAgent
+        from agents.report_writer import ReportWriterAgent
+        pipeline = PriorArtPipeline(
+            parser_agent=DisclosureParserAgent(llm_client=custom_llm),
+            clustering_agent=NoveltyClusteringAgent(llm_client=custom_llm),
+            report_agent=ReportWriterAgent(llm_client=custom_llm)
+        )
+    else:
+        pipeline = PriorArtPipeline()
+
     state = pipeline.run(disclosure)
 
     if state.errors:
@@ -291,8 +359,29 @@ async def screen_invention(req: ScreenRequest):
         state.clustering_output
     )
 
+    saved_id = None
+    if req.user_id:
+        overall_risk = getattr(state.final_report, "patentability_risk_category", "MOD")
+        save_res = await SupabaseDB.save_screening_report(
+            user_id=req.user_id,
+            title=state.parsed_disclosure.title,
+            domain=state.parsed_disclosure.technical_domain,
+            summary=state.parsed_disclosure.summary,
+            risk_level=overall_risk,
+            report_data={
+                "parsed_disclosure": state.parsed_disclosure.model_dump(),
+                "retrieval_output": state.retrieval_output.model_dump(),
+                "clustering_output": state.clustering_output.model_dump(),
+                "report": state.final_report.model_dump(),
+                "threat_matrix": threat_matrix
+            }
+        )
+        if save_res and isinstance(save_res, dict):
+            saved_id = save_res.get("id")
+
     return {
         "status": "success",
+        "saved_id": saved_id,
         "parsed_disclosure": state.parsed_disclosure.model_dump(),
         "retrieval_output": state.retrieval_output.model_dump(),
         "clustering_output": state.clustering_output.model_dump(),
@@ -455,7 +544,92 @@ async def get_presets():
     ]
 
 
-# Authentication configuration endpoint for client-side Firebase & Supabase SDKs
+# User API Key Management Endpoints (Supabase Database Storage)
+@app.get("/api/user/keys")
+async def get_user_keys(user_id: str):
+    from database.supabase_db import SupabaseDB, is_supabase_configured
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id parameter is required")
+    data = await SupabaseDB.get_user_keys(user_id, mask=True)
+    return {
+        "status": "success",
+        "has_database": is_supabase_configured(),
+        "keys": data or {"has_gemini_key": False, "has_epo_key": False}
+    }
+
+
+@app.post("/api/user/keys")
+async def save_user_keys(req: UserApiKeyRequest):
+    from database.supabase_db import SupabaseDB
+    if not req.user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    try:
+        res = await SupabaseDB.save_user_keys(
+            user_id=req.user_id,
+            user_email=req.user_email or "",
+            gemini_api_key=req.gemini_api_key,
+            epo_consumer_key=req.epo_consumer_key,
+            epo_consumer_secret=req.epo_consumer_secret
+        )
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/user/keys")
+async def delete_user_keys(user_id: str):
+    from database.supabase_db import SupabaseDB
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    success = await SupabaseDB.delete_user_keys(user_id)
+    return {"status": "success" if success else "failed"}
+
+
+# User Screening Report History Endpoints (Supabase Database Storage)
+@app.post("/api/user/save-report")
+async def save_user_report(req: SaveReportRequest):
+    from database.supabase_db import SupabaseDB
+    if not req.user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    saved = await SupabaseDB.save_screening_report(
+        user_id=req.user_id,
+        title=req.title,
+        domain=req.technical_domain,
+        summary=req.summary,
+        risk_level=req.risk_level,
+        report_data=req.report_data
+    )
+    return {"status": "success", "saved": saved}
+
+
+@app.get("/api/user/history")
+async def get_user_history(user_id: str):
+    from database.supabase_db import SupabaseDB
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    reports = await SupabaseDB.get_user_reports(user_id)
+    return {"status": "success", "reports": reports}
+
+
+@app.get("/api/user/history/{report_id}")
+async def get_history_report(report_id: str, user_id: Optional[str] = None):
+    from database.supabase_db import SupabaseDB
+    report = await SupabaseDB.get_report_by_id(report_id, user_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Screening report not found")
+    return {"status": "success", "report": report}
+
+
+@app.delete("/api/user/history/{report_id}")
+async def delete_history_report(report_id: str, user_id: str):
+    from database.supabase_db import SupabaseDB
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    success = await SupabaseDB.delete_report(report_id, user_id)
+    return {"status": "success" if success else "failed"}
+
+
+# Authentication configuration endpoint for client-side Firebase SDK
 @app.get("/api/auth/config")
 async def get_auth_config():
     supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL") or os.environ.get("SUPABASE_URL", "")

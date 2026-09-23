@@ -1110,6 +1110,119 @@
     </div>
   </div>
 
+  <!-- User Settings & Custom API Keys Modal (Supabase Storage) -->
+  <div id="user-settings-modal" class="auth-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+    <div class="auth-modal-card settings-modal-card">
+      <div class="auth-modal-header">
+        <div class="modal-header-tag">
+          <span class="auth-beacon-dot"></span>
+          <span>OPERATOR CREDENTIALS // BYOK</span>
+        </div>
+        <button type="button" class="auth-modal-close" id="btn-close-settings-modal" title="Close settings">&times;</button>
+      </div>
+
+      <div class="auth-modal-body">
+        <h3 id="settings-modal-title" class="auth-modal-title">Custom AI & Patent API Keys</h3>
+        <p class="auth-modal-desc">
+          Store your own Google Gemini or patent registry API keys securely in Supabase. When configured, your screening runs execute using your dedicated quota.
+        </p>
+
+        <!-- Current Key Status Box -->
+        <div class="settings-status-box" id="keys-status-box">
+          <div class="status-box-header">
+            <span class="status-box-label">CURRENT CONFIGURATION</span>
+            <span class="status-badge" id="gemini-key-status-badge">SYSTEM DEFAULT</span>
+          </div>
+          <div class="status-key-preview" id="gemini-key-masked-display">
+            Using Shared System Gemini 3 Flash Quota
+          </div>
+        </div>
+
+        <form id="user-keys-form" class="settings-form">
+          <div class="form-group">
+            <label for="input-custom-gemini" class="form-label">
+              <span>Google Gemini API Key</span>
+              <span class="label-opt">(Get free key from aistudio.google.com)</span>
+            </label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-6 4l3 3m5-5l-3-3L4 17l-1 4 4-1L21 2z"/></svg>
+              <input type="password" id="input-custom-gemini" class="form-input" placeholder="AIzaSy..." autocomplete="off" />
+              <button type="button" id="btn-toggle-gemini-key" class="btn-toggle-pw" title="Show/Hide Key">👁️</button>
+            </div>
+            <span class="form-hint">Paste your Google Gemini API key to run screenings with dedicated quota.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="input-custom-epo" class="form-label">
+              <span>EPO OPS Consumer Key</span>
+              <span class="label-opt">(Optional)</span>
+            </label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+              <input type="text" id="input-custom-epo" class="form-input" placeholder="Optional EPO Consumer Key" autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="settings-form-actions">
+            <button type="submit" id="btn-save-user-keys" class="btn-primary auth-submit-btn">
+              <span class="btn-spinner hidden" id="save-keys-spinner"></span>
+              <span id="save-keys-text">Save Keys to Supabase</span>
+            </button>
+            <button type="button" id="btn-delete-user-keys" class="btn-ghost btn-delete-keys" style="display: none;">
+              <span>Remove Custom Keys</span>
+            </button>
+          </div>
+        </form>
+
+        <div id="settings-alert" class="auth-alert hidden">
+          <span id="settings-alert-icon">✓</span>
+          <span id="settings-alert-message"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Screening Reports History Modal (Supabase Storage) -->
+  <div id="user-history-modal" class="auth-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="history-modal-title">
+    <div class="auth-modal-card history-modal-card">
+      <div class="auth-modal-header">
+        <div class="modal-header-tag">
+          <span class="auth-beacon-dot"></span>
+          <span>SAVED SCREENING REPORTS // SUPABASE</span>
+        </div>
+        <button type="button" class="auth-modal-close" id="btn-close-history-modal" title="Close history">&times;</button>
+      </div>
+
+      <div class="auth-modal-body">
+        <div class="history-top-bar">
+          <div>
+            <h3 id="history-modal-title" class="auth-modal-title">Screening Archive & History</h3>
+            <p class="auth-modal-desc">All invention novelty clearance runs saved under your account.</p>
+          </div>
+          <button type="button" id="btn-refresh-history" class="btn-ghost btn-refresh-hist" title="Refresh history">
+            <span>↻ Refresh</span>
+          </button>
+        </div>
+
+        <div id="history-loading" class="history-loading-wrap hidden">
+          <div class="radar-spinner" style="width: 28px; height: 28px;"></div>
+          <span>Loading historical reports from Supabase...</span>
+        </div>
+
+        <div id="history-empty" class="empty-state history-empty hidden">
+          <div class="empty-terminal-icon">📜</div>
+          <div class="empty-title">No Saved Reports Found</div>
+          <p class="empty-desc">When you run patent screenings, your full findings and threat matrices are automatically archived here.</p>
+        </div>
+
+        <div id="history-list-container" class="history-cards-list">
+          <!-- Dynamically populated report items -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+
   <!-- Pinned CDN Dependencies: Three.js (3D WebGL), GSAP (Industrial Motion), PDF Gen, & Compression -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>

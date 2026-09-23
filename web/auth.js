@@ -19,6 +19,42 @@
       this.authProvider = null; // 'firebase' | 'supabase' | 'operator'
       this.initialized = false;
       this.initPromise = null;
+      this.redirectError = null;
+    }
+
+    /**
+     * Translates raw Firebase Auth error codes into clear, user-friendly messages
+     */
+    formatFirebaseError(err) {
+      if (!err) return 'Authentication failed.';
+      const code = err.code || '';
+      const msg = err.message || '';
+
+      switch (code) {
+        case 'auth/popup-closed-by-user':
+          return 'The Google sign-in window was closed before completing authorization. Please try again.';
+        case 'auth/popup-blocked':
+          return 'The sign-in popup was blocked by your browser. Please allow popups for this site.';
+        case 'auth/unauthorized-domain':
+          return 'This domain is not authorized in Firebase Console. Go to Firebase Console > Authentication > Settings > Authorized domains and add this host domain.';
+        case 'auth/operation-not-allowed':
+          return 'Google Sign-In is not enabled in Firebase Console. Go to Authentication > Sign-in method > Google and toggle Enable.';
+        case 'auth/account-exists-with-different-credential':
+          return 'An account already exists with this email using a different sign-in method. Please use that method or link your accounts.';
+        case 'auth/cancelled-popup-request':
+          return 'Another sign-in window is already active. Please finish or close that window.';
+        case 'auth/network-request-failed':
+          return 'Network request failed. Please check your internet connection.';
+        case 'auth/invalid-api-key':
+          return 'Invalid Firebase API Key. Please verify your FIREBASE_API_KEY environment variable.';
+        case 'auth/app-not-authorized':
+          return 'This app is not authorized to use Firebase Authentication with the provided API key.';
+        default:
+          if (msg.includes('access_denied') || msg.includes('403') || msg.includes('Google verification')) {
+            return 'Access blocked: If your Google OAuth consent screen is in "Testing" mode, add this email under Google Cloud Console > OAuth consent screen > Test users, or set Publishing Status to "In production".';
+          }
+          return msg || 'Google Sign-In failed. Please try again.';
+      }
     }
 
     /**
@@ -79,55 +115,30 @@
               });
 
               // Check for redirect result in case of redirect-based Google Sign-In
-              const redirectResult = await this.firebaseAuth.getRedirectResult();
-              if (redirectResult && redirectResult.user) {
-                this.user = this.normalizeFirebaseUser(redirectResult.user);
-                this.session = {
-                  user: this.user,
-                  provider: 'google-firebase',
-                  token: redirectResult.user.uid
-                };
-                this.authProvider = 'firebase';
-                sessionStorage.setItem('priorart_operator_session', JSON.stringify(this.session));
-                this.renderHeaderAuth();
+              try {
+                const redirectResult = await this.firebaseAuth.getRedirectResult();
+                if (redirectResult && redirectResult.user) {
+                  this.user = this.normalizeFirebaseUser(redirectResult.user);
+                  this.session = {
+                    user: this.user,
+                    provider: 'google-firebase',
+                    token: redirectResult.user.uid
+                  };
+                  this.authProvider = 'firebase';
+                  sessionStorage.setItem('priorart_operator_session', JSON.stringify(this.session));
+                  this.renderHeaderAuth();
+                }
+              } catch (redErr) {
+                console.error('[PriorArt Auth] Firebase getRedirectResult error:', redErr);
+                this.redirectError = redErr;
               }
             } catch (fbErr) {
               console.warn('[PriorArt Auth] Firebase initialization warning:', fbErr);
             }
           }
 
-          // 2. Initialize Supabase Client (Secondary / Complementary)
-          const url = this.config.supabaseUrl;
-          const key = this.config.supabaseAnonKey;
-
-          if (url && key && window.supabase && typeof window.supabase.createClient === 'function') {
-            this.client = window.supabase.createClient(url, key, {
-              auth: {
-                storage: window.sessionStorage,
-                persistSession: true,
-                autoRefreshToken: true,
-                detectSessionInUrl: true,
-                flowType: 'pkce',
-                storageKey: 'priorart_supabase_auth'
-              }
-            });
-
-            this.client.auth.onAuthStateChange((event, session) => {
-              if (session && !this.user) {
-                this.session = session;
-                this.user = session.user;
-                this.authProvider = 'supabase';
-                this.renderHeaderAuth();
-              }
-            });
-
-            const { data } = await this.client.auth.getSession();
-            if (data && data.session && !this.user) {
-              this.session = data.session;
-              this.user = data.session.user;
-              this.authProvider = 'supabase';
-            }
-          }
+          // 2. Supabase Database integration is handled via server-side REST API
+          // (User API Keys & Screening Report History)
 
           // 3. Check Session Storage for active operator session
           if (!this.session) {
@@ -232,8 +243,10 @@
         }
       } catch (err) {
         console.warn('[PriorArt Auth] Firebase popup error:', err);
-        // If popup was blocked by browser or restricted in webview, try redirect
-        if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
+        const friendlyMsg = this.formatFirebaseError(err);
+
+        // If popup was blocked by browser, attempt redirect fallback
+        if (err.code === 'auth/popup-blocked') {
           try {
             const provider = new window.firebase.auth.GoogleAuthProvider();
             provider.addScope('email');
@@ -242,10 +255,11 @@
             await this.firebaseAuth.signInWithRedirect(provider);
             return { isRedirecting: true, error: null };
           } catch (redErr) {
-            return { error: redErr };
+            return { error: { code: redErr.code, message: this.formatFirebaseError(redErr) } };
           }
         }
-        return { error: err };
+
+        return { error: { code: err.code, message: friendlyMsg, original: err } };
       }
     }
 
@@ -409,25 +423,140 @@
     }
 
     /**
-     * Sign out and redirect to /login
+     * Fetch user's stored custom API keys from Supabase
+     */
+    async getUserApiKeys() {
+      await this.init();
+      if (!this.user || !this.user.uid) return null;
+      try {
+        const resp = await fetch(`/api/user/keys?user_id=${encodeURIComponent(this.user.uid)}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        return await resp.json();
+      } catch (err) {
+        console.warn('[PriorArt Auth] getUserApiKeys error:', err);
+        return null;
+      }
+    }
+
+    /**
+     * Save/update user's custom API keys in Supabase
+     */
+    async saveUserApiKeys(geminiKey, epoKey = null, epoSecret = null) {
+      await this.init();
+      if (!this.user || !this.user.uid) throw new Error('Authentication required.');
+      const resp = await fetch('/api/user/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: this.user.uid,
+          user_email: this.user.email || '',
+          gemini_api_key: geminiKey,
+          epo_consumer_key: epoKey,
+          epo_consumer_secret: epoSecret
+        })
+      });
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.detail || `Failed to save keys (HTTP ${resp.status})`);
+      }
+      return await resp.json();
+    }
+
+    /**
+     * Delete user's custom API keys from Supabase
+     */
+    async deleteUserApiKeys() {
+      await this.init();
+      if (!this.user || !this.user.uid) return false;
+      const resp = await fetch(`/api/user/keys?user_id=${encodeURIComponent(this.user.uid)}`, {
+        method: 'DELETE'
+      });
+      return resp.ok;
+    }
+
+    /**
+     * Fetch user's screening reports history from Supabase
+     */
+    async getScreeningHistory() {
+      await this.init();
+      if (!this.user || !this.user.uid) return [];
+      try {
+        const resp = await fetch(`/api/user/history?user_id=${encodeURIComponent(this.user.uid)}`);
+        if (!resp.ok) return [];
+        const data = await resp.json();
+        return data.reports || [];
+      } catch (err) {
+        console.warn('[PriorArt Auth] getScreeningHistory error:', err);
+        return [];
+      }
+    }
+
+    /**
+     * Fetch single historical report by ID
+     */
+    async getHistoryReport(reportId) {
+      await this.init();
+      if (!reportId) return null;
+      const uid = this.user ? this.user.uid : '';
+      const resp = await fetch(`/api/user/history/${encodeURIComponent(reportId)}?user_id=${encodeURIComponent(uid)}`);
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      return data.report || null;
+    }
+
+    /**
+     * Delete a report from user's history
+     */
+    async deleteHistoryReport(reportId) {
+      await this.init();
+      if (!this.user || !this.user.uid || !reportId) return false;
+      const resp = await fetch(`/api/user/history/${encodeURIComponent(reportId)}?user_id=${encodeURIComponent(this.user.uid)}`, {
+        method: 'DELETE'
+      });
+      return resp.ok;
+    }
+
+    /**
+     * Save current screening report to Supabase
+     */
+    async saveScreeningReport(payload) {
+      await this.init();
+      if (!this.user || !this.user.uid) return null;
+      try {
+        const resp = await fetch('/api/user/save-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: this.user.uid,
+            title: payload.title || 'Untitled Screening',
+            technical_domain: payload.technical_domain || 'mechanical',
+            summary: payload.summary || '',
+            risk_level: payload.risk_level || 'MOD',
+            report_data: payload.report_data || payload
+          })
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          return data.saved;
+        }
+      } catch (err) {
+        console.warn('[PriorArt Auth] saveScreeningReport error:', err);
+      }
+      return null;
+    }
+
+    /**
+     * Sign out current user from Firebase & clear session
      */
     async signOut() {
-      await this.init();
       sessionStorage.removeItem('priorart_operator_session');
       try {
         localStorage.removeItem('priorart_operator_session');
-        sessionStorage.removeItem('priorart_supabase_auth');
       } catch (e) {}
 
       if (this.firebaseAuth) {
         try {
           await this.firebaseAuth.signOut();
-        } catch (e) {}
-      }
-
-      if (this.client) {
-        try {
-          await this.client.auth.signOut();
         } catch (e) {}
       }
 
@@ -477,7 +606,7 @@
           : (String(provider).toLowerCase().includes('firebase') ? 'FIREBASE' : 'VERIFIED');
 
         container.innerHTML = `
-          <div class="header-auth-badge" id="auth-profile-dropdown-btn" title="Logged in as ${email}">
+          <div class="header-auth-badge" id="auth-profile-badge" title="Logged in as ${email}">
             <div class="auth-avatar-wrap">
               ${avatarHtml}
               <span class="auth-status-dot online"></span>
@@ -486,8 +615,22 @@
               <span class="auth-user-name">${this.escapeHtml(displayName)}</span>
               <span class="auth-user-tier">${providerLabel}</span>
             </div>
+            <button type="button" id="btn-header-keys" class="auth-action-icon-btn" title="Manage Custom API Keys (Gemini / EPO)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+              <span>Keys</span>
+            </button>
+            <button type="button" id="btn-header-history" class="auth-action-icon-btn" title="Saved Screening Reports & History">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>History</span>
+            </button>
             <button type="button" id="btn-header-logout" class="auth-logout-btn" title="Sign Out of PriorArt Copilot">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                 <polyline points="16 17 21 12 16 7"></polyline>
                 <line x1="21" y1="12" x2="9" y2="12"></line>
@@ -502,6 +645,26 @@
           logoutBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             this.signOut();
+          });
+        }
+
+        const keysBtn = container.querySelector('#btn-header-keys');
+        if (keysBtn) {
+          keysBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (typeof window.openUserSettingsModal === 'function') {
+              window.openUserSettingsModal();
+            }
+          });
+        }
+
+        const historyBtn = container.querySelector('#btn-header-history');
+        if (historyBtn) {
+          historyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (typeof window.openScreeningHistoryModal === 'function') {
+              window.openScreeningHistoryModal();
+            }
           });
         }
       } else {
