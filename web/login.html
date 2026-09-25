@@ -466,6 +466,7 @@ FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
           btnGoogle.innerHTML = `<span>Connecting to Google...</span>`;
 
           const result = await window.PriorArtAuth.signInWithGoogleFirebase();
+          console.log('[PriorArt Auth] Google Sign-In result:', result);
 
           if (result && result.needsConfig) {
             btnGoogle.disabled = false;
@@ -477,7 +478,9 @@ FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
           if (result && result.error) {
             btnGoogle.disabled = false;
             btnGoogle.innerHTML = originalContent;
-            showAlert(result.error.message || 'Google Sign-In was cancelled or failed.');
+            console.error('[PriorArt Auth] Detailed Error:', result.error);
+            const errCode = result.error.code ? `[${result.error.code}] ` : '';
+            showAlert(errCode + (result.error.message || 'Google Sign-In was cancelled or failed.'));
           } else if (result && (result.data || result.isFallback || result.isRedirecting)) {
             if (!result.isRedirecting) {
               showAlert('Google authorization verified. Launching radar...', 'success');
@@ -488,6 +491,7 @@ FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
           }
         } catch (err) {
           btnGoogle.disabled = false;
+          console.error('[PriorArt Auth] Catch error:', err);
           showAlert(err.message || 'Failed to initiate Google authentication.');
         }
       });
