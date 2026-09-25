@@ -12,3 +12,5 @@ venv
 tests
 .coverage
 htmlcov
+cloudflared.exe
+train/

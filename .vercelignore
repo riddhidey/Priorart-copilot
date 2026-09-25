@@ -1,0 +1,20 @@
+# Ignore Python backend files for Vercel (Frontend-only deployment)
+api/
+agents/
+pipeline/
+eval/
+database/
+connectors/
+schemas/
+train/
+tests/
+server.py
+main.py
+requirements.txt
+Dockerfile
+render.yaml
+cloudflared.exe
+Procfile
+*.py
+*.pyc
+__pycache__/
