@@ -23,6 +23,53 @@
     }
 
     /**
+     * Persist operator session to both sessionStorage and localStorage
+     */
+    saveSession(session) {
+      if (!session) return;
+      this.session = session;
+      this.user = session.user || null;
+      this.authProvider = session.provider || 'firebase';
+      try {
+        const json = JSON.stringify(session);
+        sessionStorage.setItem('priorart_operator_session', json);
+        localStorage.setItem('priorart_operator_session', json);
+      } catch (e) {}
+    }
+
+    /**
+     * Clear operator session from both sessionStorage and localStorage
+     */
+    clearSession() {
+      this.session = null;
+      this.user = null;
+      this.authProvider = null;
+      try {
+        sessionStorage.removeItem('priorart_operator_session');
+        localStorage.removeItem('priorart_operator_session');
+      } catch (e) {}
+    }
+
+    /**
+     * Retrieve stored session from either sessionStorage or localStorage
+     */
+    loadStoredSession() {
+      try {
+        const raw = sessionStorage.getItem('priorart_operator_session') || localStorage.getItem('priorart_operator_session');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.user) {
+            this.session = parsed;
+            this.user = parsed.user;
+            this.authProvider = parsed.provider || 'operator';
+            return this.session;
+          }
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    /**
      * Translates raw Firebase Auth error codes into clear, user-friendly messages
      */
     formatFirebaseError(err) {
@@ -104,12 +151,10 @@
                     token: fbUser.uid
                   };
                   this.authProvider = 'firebase';
-                  sessionStorage.setItem('priorart_operator_session', JSON.stringify(this.session));
+                  this.saveSession(this.session);
                   this.renderHeaderAuth();
                 } else if (this.authProvider === 'firebase') {
-                  this.user = null;
-                  this.session = null;
-                  sessionStorage.removeItem('priorart_operator_session');
+                  this.clearSession();
                   this.renderHeaderAuth();
                 }
               });
@@ -125,7 +170,7 @@
                     token: redirectResult.user.uid
                   };
                   this.authProvider = 'firebase';
-                  sessionStorage.setItem('priorart_operator_session', JSON.stringify(this.session));
+                  this.saveSession(this.session);
                   this.renderHeaderAuth();
                 }
               } catch (redErr) {
@@ -140,19 +185,9 @@
           // 2. Supabase Database integration is handled via server-side REST API
           // (User API Keys & Screening Report History)
 
-          // 3. Check Session Storage for active operator session
+          // 3. Check persistent storage for active operator session
           if (!this.session) {
-            const stored = sessionStorage.getItem('priorart_operator_session');
-            if (stored) {
-              try {
-                const parsed = JSON.parse(stored);
-                if (parsed && parsed.user) {
-                  this.session = parsed;
-                  this.user = parsed.user;
-                  this.authProvider = parsed.provider || 'operator';
-                }
-              } catch (e) {}
-            }
+            this.loadStoredSession();
           }
 
           this.initialized = true;
@@ -237,7 +272,7 @@
             token: result.user.uid
           };
           this.authProvider = 'firebase';
-          sessionStorage.setItem('priorart_operator_session', JSON.stringify(this.session));
+          this.saveSession(this.session);
           this.renderHeaderAuth();
           return { data: { user, session: this.session }, error: null };
         }
@@ -289,10 +324,7 @@
         token: 'op_token_' + Date.now()
       };
 
-      sessionStorage.setItem('priorart_operator_session', JSON.stringify(session));
-      this.user = operatorUser;
-      this.session = session;
-      this.authProvider = 'operator';
+      this.saveSession(session);
       this.renderHeaderAuth();
       return { data: { user: operatorUser, session }, error: null };
     }
@@ -313,7 +345,7 @@
             this.user = user;
             this.session = { user, provider: 'firebase-email', token: res.user.uid };
             this.authProvider = 'firebase';
-            sessionStorage.setItem('priorart_operator_session', JSON.stringify(this.session));
+            this.saveSession(this.session);
             this.renderHeaderAuth();
             return { data: { user, session: this.session }, error: null };
           }
@@ -346,7 +378,7 @@
             this.user = user;
             this.session = { user, provider: 'firebase-email', token: res.user.uid };
             this.authProvider = 'firebase';
-            sessionStorage.setItem('priorart_operator_session', JSON.stringify(this.session));
+            this.saveSession(this.session);
             this.renderHeaderAuth();
             return { data: { user, session: this.session }, error: null };
           }
@@ -396,19 +428,43 @@
     async requireAuth(options = {}) {
       await this.init();
 
-      let session = this.session;
-      if (!session) {
-        const stored = sessionStorage.getItem('priorart_operator_session');
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            if (parsed && parsed.user) {
-              session = parsed;
-              this.session = parsed;
-              this.user = parsed.user;
+      let session = this.session || this.loadStoredSession();
+
+      // Gracefully wait for Firebase initial state resolution if not in storage
+      if ((!session || !session.user) && this.firebaseAuth) {
+        await new Promise((resolve) => {
+          let resolved = false;
+          const timer = setTimeout(() => {
+            if (!resolved) {
+              resolved = true;
+              resolve();
             }
-          } catch (e) {}
-        }
+          }, 800);
+
+          try {
+            const unsubscribe = this.firebaseAuth.onAuthStateChanged((fbUser) => {
+              if (!resolved) {
+                resolved = true;
+                clearTimeout(timer);
+                if (fbUser) {
+                  this.user = this.normalizeFirebaseUser(fbUser);
+                  this.session = {
+                    user: this.user,
+                    provider: 'google-firebase',
+                    token: fbUser.uid
+                  };
+                  this.authProvider = 'firebase';
+                  this.saveSession(this.session);
+                }
+                try { unsubscribe(); } catch (e) {}
+                resolve();
+              }
+            });
+          } catch (e) {
+            resolve();
+          }
+        });
+        session = this.session || this.loadStoredSession();
       }
 
       if (!session || !session.user) {
@@ -549,10 +605,7 @@
      * Sign out current user from Firebase & clear session
      */
     async signOut() {
-      sessionStorage.removeItem('priorart_operator_session');
-      try {
-        localStorage.removeItem('priorart_operator_session');
-      } catch (e) {}
+      this.clearSession();
 
       if (this.firebaseAuth) {
         try {
@@ -560,9 +613,6 @@
         } catch (e) {}
       }
 
-      this.session = null;
-      this.user = null;
-      this.authProvider = null;
       window.location.href = '/login';
     }
 
