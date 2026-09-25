@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PriorArt Copilot — Multi-Agent Patentability & Prior-Art Screening</title>
+  <meta name="description" content="Multi-agent RAG system for preliminary patentability & prior-art screening with strict citation traceability.">
+  
+  <!-- Geist & Geist Mono Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/static/style.css?v=73.0">
+  <!-- Firebase App & Auth SDK (v10.12.0 Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <!-- Supabase JS Client & Auth Manager -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/static/auth.js?v=73.0"></script>
+</head>
+<body>
+
+  <!-- Industrial Preloader (001% - 100% Sequence with Milestone Phases) -->
+  <div id="industrial-preloader" class="industrial-preloader" aria-live="polite" aria-label="System Initializing">
+    <div class="preloader-overlay"></div>
+    <div class="preloader-frame">
+      <!-- Reticle corner brackets -->
+      <span class="preloader-bracket top-left">┌</span>
+      <span class="preloader-bracket top-right">┐</span>
+      <span class="preloader-bracket bottom-left">└</span>
+      <span class="preloader-bracket bottom-right">┘</span>
+
+      <!-- Header bar -->
+      <div class="preloader-topbar">
+        <div class="preloader-top-left">
+          <span class="preloader-status-dot"></span>
+          <span class="preloader-sys-tag">SYS // PRIORART-COPILOT v2.4</span>
+        </div>
+        <div class="preloader-top-right">
+          <span class="preloader-geo-tag" id="preloader-geo-status">GEO: SENSING CLIENT NODE...</span>
+          <button type="button" id="btn-preloader-skip" class="preloader-skip-btn" title="Skip initialization sequence">
+            <span>SKIP</span>
+            <kbd>ESC</kbd>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main center display -->
+      <div class="preloader-core">
+        <div class="preloader-metric-badge">INITIALIZATION SEQUENCE</div>
+        <div class="preloader-counter" id="preloader-counter">001%</div>
+
+        <!-- Sequential Theme Calibration Ticker (Green -> Dark -> Light -> Amber) -->
+        <div class="preloader-theme-ticker" id="preloader-theme-ticker" aria-label="Theme Spectrum Calibration">
+          <span class="preloader-theme-pill active" data-preloader-theme="green">
+            <span class="theme-dot green"></span>
+            <span>Green</span>
+          </span>
+          <span class="preloader-theme-pill" data-preloader-theme="dark">
+            <span class="theme-dot dark"></span>
+            <span>Dark</span>
+          </span>
+          <span class="preloader-theme-pill" data-preloader-theme="light">
+            <span class="theme-dot light"></span>
+            <span>Light</span>
+          </span>
+          <span class="preloader-theme-pill" data-preloader-theme="amber">
+            <span class="theme-dot amber"></span>
+            <span>Amber</span>
+          </span>
+        </div>
+
+        <!-- Segmented Industrial Progress Track -->
+        <div class="preloader-progress-wrap">
+          <div class="preloader-progress-bar" id="preloader-progress-bar" style="width: 1%;"></div>
+          <div class="preloader-segments" id="preloader-segments"></div>
+        </div>
+
+        <!-- Milestone Phase Ticker -->
+        <div class="preloader-phase-box">
+          <div class="preloader-phase-tag" id="preloader-phase-tag">PHASE 01/04 · GREEN SPECTRUM</div>
+          <div class="preloader-phase-desc" id="preloader-phase-desc">INITIALIZING CLAIM DECOMPOSITION MATRIX...</div>
+        </div>
+
+        <!-- Live Telemetry Stream -->
+        <div class="preloader-stream" id="preloader-stream" aria-hidden="true">
+          <div class="stream-line" id="stream-line-theme">> SPECTRUM 01/04: PHOSPHOR GREEN MATRIX ONLINE</div>
+          <div class="stream-line" id="stream-line-1">> MEMORY ALLOC: 768-D VECTOR MATRIX ARMED</div>
+          <div class="stream-line" id="stream-line-2">> CONNECTING REPOSITORIES: USPTO, EPO, WIPO, CNIPA, JPO...</div>
+          <div class="stream-line" id="stream-line-3">> COMPILING FIBONACCI 3D LANDMASS POINT CLOUD...</div>
+        </div>
+      </div>
+
+      <!-- Bottom bar -->
+      <div class="preloader-bottombar">
+        <span>SECURITY: ISOLATED</span>
+        <span class="preloader-bottom-center">HIGH-DENSITY PATENTABILITY SCREENING RADAR</span>
+        <span class="preloader-bottom-status" id="preloader-bottom-status">STANDBY CALIBRATING</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dedicated Fixed Animated Background (Multi-Layer Technical Motion) -->
+  <div class="animated-background" aria-hidden="true">
+    <div class="bg-layer-grid"></div>
+    <div class="bg-layer-orb orb-1"></div>
+    <div class="bg-layer-orb orb-2"></div>
+    <div class="bg-layer-orb orb-3"></div>
+    <div class="bg-layer-scanbeam"></div>
+    <canvas id="bg-canvas" class="bg-layer-canvas"></canvas>
+    <div class="bg-layer-vignette"></div>
+  </div>
+
+  <!-- Legal Disclaimer Banner -->
+  <aside class="disclaimer-banner" aria-label="Legal Notice">
+    <div class="disclaimer-inner">
+      <span class="pill-tag warning-tag">LEGAL NOTICE</span>
+      <p>Automated preliminary screening for research and exploration only. Not legal advice or a substitute for a registered patent attorney.</p>
+    </div>
+  </aside>
+
+  <div class="app-wrapper">
+    <!-- Header -->
+    <header class="app-header">
+      <!-- Main Row: Brand (Left), Navigation Tabs (Center), Operator Badge (Far Right) -->
+      <div class="header-main-row">
+        <div class="brand-group">
+          <div class="brand-symbol">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div class="brand-meta">
+            <div class="brand-title-row">
+              <h1 class="brand-name">PriorArt Copilot</h1>
+              <span class="version-tag">v2.4-research</span>
+            </div>
+            <p class="brand-caption">Autonomous 4-Agent Patentability & Claim-Element Screening</p>
+          </div>
+        </div>
+
+        <nav class="nav-tabs" role="tablist">
+          <button class="tab-btn active" data-tab="tab-screening" role="tab" aria-selected="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m10 15 5-3-5-3v6Z"/></svg>
+            <span>Screening Copilot</span>
+          </button>
+          <button class="tab-btn" data-tab="tab-benchmark" role="tab" aria-selected="false">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            <span>Benchmark Suite</span>
+          </button>
+        </nav>
+
+        <!-- Authenticated Operator Status & Logout Action (Clean Top-Right Anchor) -->
+        <div id="header-auth-container" class="header-auth-slot header-auth-top-right"></div>
+      </div>
+
+      <!-- Utility Row: Theme Spectrum (Left), System Controls (Right) -->
+      <div class="header-utility-row">
+        <div class="theme-selector" id="theme-selector" role="group" aria-label="Theme Selector">
+          <button type="button" class="theme-btn active" data-set-theme="green" title="Phosphor Green Terminal Theme">
+            <span class="theme-dot green"></span>
+            <span>Green</span>
+          </button>
+          <button type="button" class="theme-btn" data-set-theme="dark" title="Obsidian Dark Theme">
+            <span class="theme-dot dark"></span>
+            <span>Dark</span>
+          </button>
+          <button type="button" class="theme-btn" data-set-theme="light" title="Minimal Light Theme">
+            <span class="theme-dot light"></span>
+            <span>Light</span>
+          </button>
+          <button type="button" class="theme-btn" data-set-theme="amber" title="Amber CRT Terminal Theme">
+            <span class="theme-dot amber"></span>
+            <span>Amber</span>
+          </button>
+        </div>
+
+        <div class="header-actions">
+          <button id="btn-broadcast-mode" class="header-action-btn" title="Toggle Broadcast / Fullscreen Sizing">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+            </svg>
+            <span class="broadcast-btn-text">Broadcast</span>
+          </button>
+
+          <div class="engine-badge" id="engine-status-badge" tabindex="0" title="Active Engine: Google Gemini 3 Flash (Latest Generation)">
+            <span class="pulse-dot"></span>
+            <span class="engine-text">Gemini Engine Ready</span>
+
+            <!-- Interactive Hover Telemetry Flyout Card -->
+            <div class="engine-tooltip" role="tooltip" aria-hidden="true">
+              <div class="engine-tooltip-header">
+                <div class="engine-tooltip-title-wrap">
+                  <span class="engine-tooltip-icon">⚡</span>
+                  <span class="engine-tooltip-title">Active AI Engine</span>
+                </div>
+                <span class="engine-status-pill online">ONLINE · LIVE</span>
+              </div>
+              <div class="engine-tooltip-body">
+                <div class="engine-detail-row">
+                  <span class="engine-detail-label">Model:</span>
+                  <span class="engine-detail-val model-name" id="telemetry-engine-model">gemini-3-flash-preview</span>
+                </div>
+                <div class="engine-detail-row">
+                  <span class="engine-detail-label">Generation:</span>
+                  <span class="engine-detail-val" id="telemetry-engine-generation">Gemini 3 Flash (Latest Gen)</span>
+                </div>
+                <div class="engine-detail-row">
+                  <span class="engine-detail-label">Provider:</span>
+                  <span class="engine-detail-val">Google DeepMind (GenAI SDK)</span>
+                </div>
+                <div class="engine-detail-row">
+                  <span class="engine-detail-label">Architecture:</span>
+                  <span class="engine-detail-val">Autonomous 4-Agent Pipeline</span>
+                </div>
+                <div class="engine-detail-row">
+                  <span class="engine-detail-label">Structured Schema:</span>
+                  <span class="engine-detail-val">Pydantic 35 U.S.C. §§ 102/103</span>
+                </div>
+                <div class="engine-detail-row">
+                  <span class="engine-detail-label">Inference Mode:</span>
+                  <span class="engine-detail-val">Deterministic (Temp 0.2)</span>
+                </div>
+              </div>
+              <div class="engine-tooltip-footer">
+                <span class="pulse-dot-small"></span>
+                <span>Sub-Second Latency · Strict Citation Verification</span>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" id="btn-about-modal" class="header-action-btn btn-open-about btn-about-highlight" title="About Model & Multi-Agent AI Architecture">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>About Model & Architecture</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 3D Industrial Patent Intelligence Radar & Geolocation Hero -->
+    <section id="patent-radar-hero" class="patent-radar-hero" aria-label="Global Patent Intelligence Radar">
+      <div class="radar-hero-header">
+        <div class="radar-hero-title-group">
+          <div class="radar-status-beacon">
+            <span class="beacon-pulse"></span>
+            <span class="beacon-core"></span>
+          </div>
+          <div>
+            <div class="radar-hero-title-row">
+              <h2 class="radar-hero-title">Global Patent Intelligence Radar</h2>
+              <span class="radar-badge">3D POINT-CLOUD TELEMETRY</span>
+            </div>
+            <p class="radar-hero-sub">Live multi-registry surveillance & visitor geolocation node triangulation</p>
+          </div>
+        </div>
+
+        <div class="radar-hero-actions">
+          <button type="button" id="btn-focus-visitor" class="radar-action-btn" title="Rotate 3D globe to your detected location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+            <span id="btn-focus-label">Target My Node</span>
+          </button>
+          <button type="button" id="btn-toggle-globe-spin" class="radar-action-btn" title="Toggle automatic globe rotation">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <span id="btn-spin-label">Auto-Rotate: ON</span>
+          </button>
+          <button type="button" id="btn-radar-broadcast" class="radar-action-btn" title="Toggle Fullscreen Broadcast Presentation Mode">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+            <span id="btn-radar-broadcast-label">Broadcast</span>
+          </button>
+          <button type="button" id="btn-toggle-radar-collapse" class="radar-action-btn radar-collapse-btn" title="Minimize or expand radar hero">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="collapse-icon"><polyline points="18 15 12 9 6 15"></polyline></svg>
+            <span class="collapse-btn-text">Minimize Radar</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="radar-hero-body" id="radar-hero-body">
+        <!-- Left Column: Industrial Telemetry HUD -->
+        <div class="radar-telemetry-hud">
+          
+          <!-- Visitor Location Card -->
+          <div class="hud-card visitor-node-card">
+            <div class="hud-card-header">
+              <span class="hud-tag">CLIENT TELEMETRY NODE</span>
+              <span class="hud-live-tag main-node-beacon" id="visitor-status-tag">MAIN ORIGIN NODE</span>
+            </div>
+            <div class="visitor-location-name" id="visitor-location-name">
+              <span class="loc-city">Detecting Visitor Node...</span>
+            </div>
+            <div class="visitor-coords-grid">
+              <div class="coord-item">
+                <span class="coord-label">LATITUDE</span>
+                <span class="coord-val" id="visitor-lat">--.----°</span>
+              </div>
+              <div class="coord-item">
+                <span class="coord-label">LONGITUDE</span>
+                <span class="coord-val" id="visitor-lon">--.----°</span>
+              </div>
+              <div class="coord-item">
+                <span class="coord-label">STATUS</span>
+                <span class="coord-val text-accent" id="visitor-acc">TRIANGULATED</span>
+              </div>
+              <div class="coord-item">
+                <span class="coord-label">RADAR PING</span>
+                <span class="coord-val ping-green" id="visitor-ping">16 ms</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Global Registries Grid -->
+          <div class="hud-card registries-card">
+            <div class="hud-card-header">
+              <span class="hud-tag">CONNECTED PATENT REGISTRIES</span>
+              <span class="registry-count" id="radar-matched-total">5/5 SYNCED</span>
+            </div>
+            <div class="registries-grid" id="registries-grid-container">
+              <div class="registry-row" data-registry="USPTO">
+                <span class="reg-dot active"></span>
+                <span class="reg-code">USPTO</span>
+                <span class="reg-loc">Alexandria, US</span>
+                <span class="reg-status" id="reg-status-uspto">ONLINE</span>
+              </div>
+              <div class="registry-row" data-registry="EPO">
+                <span class="reg-dot active"></span>
+                <span class="reg-code">EPO</span>
+                <span class="reg-loc">Munich, EU</span>
+                <span class="reg-status" id="reg-status-epo">ONLINE</span>
+              </div>
+              <div class="registry-row" data-registry="WIPO">
+                <span class="reg-dot active"></span>
+                <span class="reg-code">WIPO</span>
+                <span class="reg-loc">Geneva, INT</span>
+                <span class="reg-status" id="reg-status-wipo">ONLINE</span>
+              </div>
+              <div class="registry-row" data-registry="JPO">
+                <span class="reg-dot active"></span>
+                <span class="reg-code">JPO</span>
+                <span class="reg-loc">Tokyo, JP</span>
+                <span class="reg-status" id="reg-status-jpo">ONLINE</span>
+              </div>
+              <div class="registry-row" data-registry="CNIPA">
+                <span class="reg-dot active"></span>
+                <span class="reg-code">CNIPA</span>
+                <span class="reg-loc">Beijing, CN</span>
+                <span class="reg-status" id="reg-status-cnipa">ONLINE</span>
+              </div>
+            </div>
+
+            <!-- Top Matched Assignees / Innovation Hubs Box -->
+            <div class="assignees-cluster-box" id="assignees-cluster-box" style="display: none;">
+              <div class="cluster-box-header">
+                <span class="hud-tag">MATCHED ASSIGNEE HUBS</span>
+                <span class="cluster-live-tag">LIVE ARCS</span>
+              </div>
+              <div class="assignees-pills-wrap" id="assignees-pills-wrap"></div>
+            </div>
+          </div>
+
+          <!-- Radar Spec Micro-Ticker -->
+          <div class="hud-metrics-row">
+            <div class="hud-micro-metric">
+              <span class="metric-lbl">SAMPLING POINTS</span>
+              <span class="metric-num">4,200 PTS</span>
+            </div>
+            <div class="hud-micro-metric">
+              <span class="metric-lbl">ORBITAL AXIS</span>
+              <span class="metric-num">23.44° TILT</span>
+            </div>
+            <div class="hud-micro-metric">
+              <span class="metric-lbl">RADAR ARCS</span>
+              <span class="metric-num" id="radar-arcs-count">STANDBY</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: 3D Point-Cloud Globe Canvas Stage -->
+        <div class="radar-globe-stage" id="radar-globe-container">
+          <!-- Three.js Canvas mount (Base layer) -->
+          <div id="three-globe-mount" class="three-globe-mount"></div>
+
+          <!-- Corner Reticles -->
+          <span class="globe-reticle top-left">┌</span>
+          <span class="globe-reticle top-right">┐</span>
+          <span class="globe-reticle bottom-left">└</span>
+          <span class="globe-reticle bottom-right">┘</span>
+
+          <!-- Cardinal Crosshairs & Compass Ticks -->
+          <div class="compass-marker north">N 00°</div>
+          <div class="compass-marker south">S 180°</div>
+          <div class="compass-marker east">E 90°</div>
+          <div class="compass-marker west">W 270°</div>
+
+          <!-- Center Crosshairs -->
+          <div class="globe-crosshair horizontal"></div>
+          <div class="globe-crosshair vertical"></div>
+
+          <!-- Floating 3D Geolocation Tooltip Overlay (Main Node) -->
+          <div class="globe-floating-pin-hud" id="globe-pin-hud">
+            <span class="pin-hud-pulse main-node-pulse"></span>
+            <div class="pin-hud-content">
+              <div class="pin-hud-tag main-node-tag">★ MAIN TELEMETRY NODE</div>
+              <div class="pin-hud-name" id="pin-hud-city">Locating...</div>
+              <div class="pin-hud-coords" id="pin-hud-coords">-- , --</div>
+            </div>
+          </div>
+
+          <!-- Dynamic Prior-Art Node Analysis & Inspection Card (Pinned on Click) -->
+          <div class="globe-node-hover-card" id="globe-node-hover-card" style="display: none;">
+            <div class="hover-card-header">
+              <span class="hover-card-flag" id="hover-node-flag">🌐</span>
+              <span class="hover-card-title" id="hover-node-title">USPTO</span>
+              <span class="hover-card-type" id="hover-node-type">REGISTRY</span>
+              <span class="hover-pin-tag" id="hover-pin-tag" style="display: none;">PINNED</span>
+              <button type="button" id="btn-close-hover-card" class="hover-card-close-btn" title="Close analysis card (Esc)">✕</button>
+            </div>
+            <div class="hover-card-city" id="hover-node-city">Alexandria, US</div>
+            <div class="hover-card-stats">
+              <span class="hover-stat-item"><strong id="hover-node-matches">14</strong> Matches</span>
+              <span class="hover-stat-divider">·</span>
+              <span class="hover-stat-item text-accent"><strong id="hover-node-similarity">94%</strong> Similarity</span>
+            </div>
+            <div class="hover-card-patent" id="hover-node-patent">Ref: US11046432B2</div>
+          </div>
+
+          <!-- Interactive Radar Legend with Threat Levels & Main Node -->
+          <div class="globe-radar-legend">
+            <div class="legend-item" data-focus-type="main" title="Click to rotate globe to Main Telemetry Node"><span class="legend-dot main-node-dot"></span><span>Main Node</span></div>
+            <div class="legend-item" data-focus-type="high" title="Click to rotate globe to High Threat Node (Red)"><span class="legend-dot threat-high-dot"></span><span>High (&ge;90%)</span></div>
+            <div class="legend-item" data-focus-type="mod" title="Click to rotate globe to Yellow Medium Threat Node (Chicago, US)"><span class="legend-dot threat-mod-dot"></span><span>Mod (80-89%)</span></div>
+            <div class="legend-item" data-focus-type="low" title="Click to rotate globe to Low Threat Node (Green)"><span class="legend-dot threat-low-dot"></span><span>Low (&lt;80%)</span></div>
+            <div class="legend-item" data-focus-type="registry" title="Click to rotate globe to Patent Registry"><span class="legend-dot registry-dot"></span><span>Registry</span></div>
+          </div>
+
+          <!-- Interactive Drag Hint -->
+          <div class="globe-drag-hint">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+            <span>TYPE TITLE/DESCRIPTION TO TRIGGER 3D PRIOR-ART ARCS</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+          </div>
+
+          <!-- Tactical Concentric Radar Range Rings -->
+          <div class="radar-range-rings-wrap" aria-hidden="true">
+            <div class="radar-range-ring ring-1"></div>
+            <div class="radar-range-ring ring-2"></div>
+            <div class="radar-range-ring ring-3"></div>
+            <div class="radar-range-ring ring-4"></div>
+          </div>
+
+          <!-- Real-time Tactical HUD Corner Badges -->
+          <div class="globe-telemetry-badge bottom-left-badge">
+            <span class="telemetry-live-dot"></span>
+            <span class="telemetry-txt">SWEEP: 360° ACTIVE [24 RPM]</span>
+          </div>
+          <div class="globe-telemetry-badge bottom-right-badge">
+            <span class="telemetry-code">ORBITAL RELAYS: 3/3 ONLINE · X-BAND 9.4GHz</span>
+          </div>
+
+          <!-- Tactical Vertical Zoom Control Scrollbar (Beside Globe) -->
+          <div class="globe-zoom-controls" id="globe-zoom-controls" aria-label="3D Globe Zoom Controls">
+            <button type="button" class="globe-zoom-btn" id="btn-globe-zoom-in" title="Zoom In (+)" aria-label="Zoom In">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            </button>
+            <div class="globe-zoom-slider-wrap" title="Drag to Zoom In / Out">
+              <input type="range" class="globe-zoom-slider" id="globe-zoom-slider" min="0" max="100" value="50" step="1" aria-label="Globe Zoom Level">
+            </div>
+            <button type="button" class="globe-zoom-btn" id="btn-globe-zoom-out" title="Zoom Out (-)" aria-label="Zoom Out">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/></svg>
+            </button>
+            <button type="button" class="globe-zoom-reset-badge" id="btn-globe-zoom-reset" title="Click to Reset Zoom (1.0x)">
+              <span id="globe-zoom-val-text">1.0x</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 1: SCREENING WORKBENCH -->
+    <div id="tab-screening" class="tab-content active">
+      <main class="workbench-grid">
+        
+        <!-- Left Panel: Input & Controls -->
+        <section class="panel input-section">
+          <div class="panel-head">
+            <div class="panel-head-title">
+              <span class="section-num">01</span>
+              <h2>Invention Disclosure</h2>
+            </div>
+            <button type="button" id="btn-clear" class="btn-ghost btn-clear-danger" title="Reset all input fields" style="color: #f87171 !important; border-color: rgba(248, 113, 113, 0.45) !important; background: rgba(248, 113, 113, 0.14) !important;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" style="stroke: #f87171 !important;"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              <span style="color: #f87171 !important;">Clear</span>
+            </button>
+          </div>
+
+          <!-- Dynamic Live Patent Ingest Stream & Interactive Selector -->
+          <div class="preset-stream-box" id="preset-stream-box">
+            <!-- Control & Status Topbar -->
+            <div class="stream-topbar">
+              <div class="stream-live-indicator">
+                <span class="live-radar-beacon"></span>
+                <span class="stream-title-tag">LIVE PATENT RADAR STREAM</span>
+                <span class="stream-count-badge" id="stream-count-badge">12 SYNCED</span>
+              </div>
+              <div class="stream-actions">
+                <button type="button" id="btn-stream-cycle" class="stream-pill-btn active" title="Toggle continuous auto-rotation of patent feed">
+                  <span class="stream-icon-spin" id="stream-spin-icon">↻</span>
+                  <span id="stream-cycle-text">AUTO-CYCLE: ON</span>
+                </button>
+                <div class="stream-nav-pair">
+                  <button type="button" id="btn-stream-prev" class="stream-nav-arrow" title="Previous patent">‹</button>
+                  <button type="button" id="btn-stream-next" class="stream-nav-arrow" title="Next patent">›</button>
+                </div>
+                <button type="button" id="btn-stream-drawer" class="stream-pill-btn stream-library-btn" title="View all 12 patent templates">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  <span>ALL (12)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Active Featured Patent Live Card -->
+            <div class="stream-card" id="stream-featured-card" role="button" tabindex="0" title="Click to load this patent into workspace">
+              <div class="stream-card-meta">
+                <span class="stream-patent-id" id="stream-patent-id">US-2026-0048192-A1</span>
+                <span class="stream-patent-cat" id="stream-patent-cat">Aerospace & Robotics</span>
+                <span class="stream-domain-pill" id="stream-patent-domain">MECHANICAL</span>
+                <span class="stream-load-hint">CLICK TO LOAD ↵</span>
+              </div>
+              <div class="stream-card-body">
+                <div class="stream-patent-title" id="stream-patent-title">
+                  Variable-Pitch Drone Rotor with Magnetic Position Feedback
+                </div>
+                <button type="button" class="stream-load-action-btn" id="btn-stream-load" title="Load into disclosure">
+                  <span>LOAD</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+              <!-- Subtle progress bar indicating next auto-cycle tick -->
+              <div class="stream-ticker-bar-wrap">
+                <div class="stream-ticker-progress" id="stream-ticker-progress"></div>
+              </div>
+            </div>
+
+            <!-- Horizontal Quick-Select Reel (All 12 Patents as Interactive Pills) -->
+            <div class="stream-pills-reel" id="preset-buttons-container">
+              <button type="button" class="preset-pill active" data-preset="drone_rotor">Drone Rotor</button>
+              <button type="button" class="preset-pill" data-preset="acoustic_harvester">Acoustic Harvester</button>
+              <button type="button" class="preset-pill" data-preset="stepper_actuator">Micro-Stepper</button>
+              <button type="button" class="preset-pill" data-preset="quantum_annealer">Quantum Qubit</button>
+              <button type="button" class="preset-pill" data-preset="solid_state_battery">Solid-State Battery</button>
+              <button type="button" class="preset-pill" data-preset="neural_bci">Neural BCI</button>
+              <button type="button" class="preset-pill" data-preset="photonic_tpu">Photonic TPU</button>
+              <button type="button" class="preset-pill" data-preset="mhd_thruster">MHD Thruster</button>
+              <button type="button" class="preset-pill" data-preset="crispr_nanorobot">CRISPR Nano</button>
+              <button type="button" class="preset-pill" data-preset="fusion_divertor">Fusion Divertor</button>
+              <button type="button" class="preset-pill" data-preset="terahertz_6g">Sub-THz 6G</button>
+              <button type="button" class="preset-pill" data-preset="ev_swarm_mesh">EV Swarm Mesh</button>
+            </div>
+
+            <!-- Full Library Drawer (collapsible modal/drawer) -->
+            <div class="stream-library-drawer" id="stream-library-drawer" style="display: none;">
+              <div class="library-drawer-header">
+                <div class="library-drawer-title-group">
+                  <span class="live-radar-beacon"></span>
+                  <span class="library-drawer-title">PATENT ARCHIVE REPOSITORY (12 INVENTIONS)</span>
+                </div>
+                <button type="button" id="btn-close-drawer" class="library-drawer-close" title="Close Library">✕</button>
+              </div>
+              <div class="library-grid" id="library-grid">
+                <!-- Dynamically rendered 12 cards -->
+              </div>
+            </div>
+          </div>
+
+          <form id="screening-form" class="disclosure-form">
+            <div class="field-block">
+              <label for="inv-title">Invention Title</label>
+              <input type="text" id="inv-title" class="input-control" placeholder="e.g. Variable-Pitch Drone Rotor with Magnetic Feedback" required autocomplete="off">
+            </div>
+
+            <div class="control-row-grid">
+              <div class="field-block">
+                <label>Technical Domain</label>
+                <div class="segmented-control">
+                  <label class="segment-item">
+                    <input type="radio" name="domain" value="mechanical" checked>
+                    <span class="segment-label">Mechanical</span>
+                  </label>
+                  <label class="segment-item">
+                    <input type="radio" name="domain" value="electronics">
+                    <span class="segment-label">Electronics</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="field-block">
+                <label>Execution Pipeline</label>
+                <div class="segmented-control">
+                  <label class="segment-item">
+                    <input type="radio" name="exec-mode" value="auto" checked>
+                    <span class="segment-label">Full Auto (4 Agents)</span>
+                  </label>
+                  <label class="segment-item">
+                    <input type="radio" name="exec-mode" value="step">
+                    <span class="segment-label">Claim Review Mode</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="field-block">
+              <div class="field-header-row">
+                <label for="inv-text">Disclosure Description & Claim Elements</label>
+                <span class="char-count" id="char-counter">0 chars</span>
+              </div>
+              <textarea id="inv-text" class="input-control textarea-control" rows="8" placeholder="Enter plain-language disclosure breakdown. For optimum precision, describe key structural claim elements:&#10;&#10;1. Rotor Hub Assembly with pre-loaded dual angular ball bearings...&#10;2. Concentric Axial Pushrod Actuator driven through hollow motor shaft...&#10;3. Magnetic Rotary Sensor Array providing contactless closed-loop feedback..." required></textarea>
+            </div>
+
+            <div class="submit-row">
+              <button type="submit" id="btn-screen" class="btn-execute">
+                <span class="btn-label">Execute Screening Pipeline</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </button>
+            </div>
+          </form>
+
+          <!-- Claim Elements Review Stage (Step Mode) -->
+          <div id="step-review-box" class="review-box" style="display: none;">
+            <div class="review-box-header">
+              <div class="step-badge">AGENT 1 STAGE</div>
+              <h3>Review Extracted Claim Elements</h3>
+              <p>Verify or fine-tune claim decomposition before firing search connectors.</p>
+            </div>
+            <div id="elements-editor-list" class="elements-editor-list"></div>
+            <button id="btn-confirm-elements" class="btn-execute" style="width: 100%; margin-top: 14px;">
+              <span>Continue to Retrieval (Agents 2–4)</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+
+          <!-- Multi-Agent Flow Visualizer -->
+          <div class="pipeline-section">
+            <div class="pipeline-header">
+              <span class="pipeline-title">Agent Execution Pipeline</span>
+              <span class="pipeline-status-mono">[SEQUENTIAL RAG]</span>
+            </div>
+            <div class="agent-stepper">
+              <div class="step-card" id="step-1">
+                <div class="step-num">01</div>
+                <div class="step-body">
+                  <div class="step-title">Disclosure Parser</div>
+                  <div class="step-detail">Claims decomposition & IPC classification</div>
+                </div>
+                <div class="step-state-icon"></div>
+              </div>
+
+              <div class="step-card" id="step-2">
+                <div class="step-num">02</div>
+                <div class="step-body">
+                  <div class="step-title">Retrieval Agent</div>
+                  <div class="step-detail">Patent lexicon expansion & multi-index query</div>
+                </div>
+                <div class="step-state-icon"></div>
+              </div>
+
+              <div class="step-card" id="step-3">
+                <div class="step-num">03</div>
+                <div class="step-body">
+                  <div class="step-title">Novelty Clustering</div>
+                  <div class="step-detail">Element-level threat scoring & clustering</div>
+                </div>
+                <div class="step-state-icon"></div>
+              </div>
+
+              <div class="step-card" id="step-4">
+                <div class="step-num">04</div>
+                <div class="step-body">
+                  <div class="step-title">Report Synthesizer</div>
+                  <div class="step-detail">Traceable memo synthesis & citations</div>
+                </div>
+                <div class="step-state-icon"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right Panel: Results & Synthesized Findings -->
+        <section class="panel findings-section">
+          <div class="panel-head">
+            <div class="panel-head-title">
+              <span class="section-num">02</span>
+              <h2>Screening Findings & Analysis</h2>
+            </div>
+            <div class="actions-group" id="report-actions">
+              <button id="btn-copy-md" class="btn-ghost btn-action-copy" title="Run a screening first to copy markdown" disabled>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <span>Copy MD</span>
+              </button>
+              <button id="btn-download-pdf" class="btn-ghost btn-action-pdf" title="Run a screening first to download PDF" disabled>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Download PDF</span>
+              </button>
+              <button id="btn-share-link" class="btn-ghost btn-action-share" title="Run a screening first to share link" disabled>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <span>Share Link</span>
+              </button>
+              <button id="btn-print" class="btn-ghost btn-action-print" title="Run a screening first to print report" disabled>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                <span>Print</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Empty Initial State -->
+          <div id="results-empty" class="empty-state">
+            <div class="empty-terminal-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <polyline points="4 17 10 11 4 5"/>
+                <line x1="12" x2="20" y1="19" y2="19"/>
+              </svg>
+            </div>
+            <div class="empty-title">Ready for Multi-Agent Screening</div>
+            <p class="empty-desc">Supply an invention disclosure or choose a preset on the left, then click <strong>Execute Screening Pipeline</strong>.</p>
+            <div class="empty-hint">
+              <span>Pipeline: 4 Autonomous Agents</span>
+              <span>·</span>
+              <span>100% Traceable Citations</span>
+            </div>
+          </div>
+
+          <!-- Live Agent Progress State -->
+          <div id="results-loading" class="loading-state" style="display: none;">
+            <div class="spinner-ring"></div>
+            <div class="loading-content">
+              <div class="loading-tag">EXECUTING PIPELINE</div>
+              <h3 id="loading-status-text">Deconstructing invention disclosure...</h3>
+              <p>Querying patent corpora, expanding lexicons, and clustering candidate prior art.</p>
+            </div>
+          </div>
+
+          <!-- Populated Findings Report -->
+          <div id="results-content" class="report-container" style="display: none;">
+            
+            <!-- Target Patent Ingestion & Classification Meta Card -->
+            <div class="report-block target-patent-meta-block" id="report-target-meta-card" style="display: none;">
+              <div class="target-meta-top">
+                <div class="target-meta-code-group">
+                  <span class="target-meta-badge-label">TARGET PATENT RECORD</span>
+                  <span class="target-meta-patent-id" id="report-target-patent-id">US-2026-0048192-A1</span>
+                </div>
+                <div class="target-meta-badges">
+                  <span class="target-meta-cat" id="report-target-category">Aerospace & Robotics</span>
+                  <span class="target-meta-domain" id="report-target-domain">MECHANICAL</span>
+                </div>
+              </div>
+              <div class="target-meta-bottom">
+                <span class="target-meta-pulse-dot"></span>
+                <span class="target-meta-radar-text" id="report-target-radar-text">Surveillance Radar Network: 5/5 Synced Registries (USPTO, EPO, WIPO, CNIPA, JPO) · Statutory Analysis Engine</span>
+              </div>
+            </div>
+
+            <!-- Executive Summary Header Card -->
+            <div class="report-block exec-block">
+              <div class="exec-top-bar">
+                <span class="report-meta-tag">EXECUTIVE ASSESSMENT</span>
+                <div class="risk-badge" id="risk-badge">HIGH RISK</div>
+              </div>
+              <h3 id="report-title" class="report-heading">Patentability Screening Report</h3>
+              <p id="exec-summary-text" class="exec-summary-text"></p>
+            </div>
+
+            <!-- Threat Matrix Section -->
+            <div class="report-section">
+              <div class="section-heading-row">
+                <div class="section-title-wrap">
+                  <h4 class="section-title">2D Prior-Art Threat Matrix</h4>
+                  <span class="section-subtitle">Element-by-patent overlap density</span>
+                </div>
+                <span class="badge-mono">HEATMAP</span>
+              </div>
+              <div class="matrix-wrapper" id="matrix-container"></div>
+            </div>
+
+            <!-- Claim-by-Claim Section -->
+            <div class="report-section">
+              <div class="section-heading-row">
+                <div class="section-title-wrap">
+                  <h4 class="section-title">Claim-by-Claim Prior Art Breakdown</h4>
+                  <span class="section-subtitle">Specific threats per functional element</span>
+                </div>
+                <span class="badge-mono" id="elements-count-badge">3 Elements Analyzed</span>
+              </div>
+              <div id="elements-container" class="elements-grid"></div>
+            </div>
+
+            <!-- Master Citation Index -->
+            <div class="report-section">
+              <div class="section-heading-row">
+                <div class="section-title-wrap">
+                  <h4 class="section-title">Master Index of Verified Citations</h4>
+                  <span class="section-subtitle">Directly cited passages from retrieved prior art</span>
+                </div>
+                <span class="badge-mono verified-mono">100% Traceable</span>
+              </div>
+              <div id="citations-container" class="citations-grid"></div>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="report-block refinements-block">
+              <div class="refinements-header">
+                <div class="refinements-badge">STRATEGY</div>
+                <h4 class="section-title">Recommended Claim Refinements</h4>
+              </div>
+              <ul id="refinements-list" class="refinements-list"></ul>
+            </div>
+
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- TAB 2: CAPSTONE BENCHMARK SUITE -->
+    <div id="tab-benchmark" class="tab-content" style="display: none;">
+      <section class="panel benchmark-section">
+        <div class="panel-head">
+          <div class="panel-head-title">
+            <span class="section-num">EVA</span>
+            <div>
+              <h2>Capstone Benchmark Evaluation Suite</h2>
+              <p class="benchmark-sub">Automated verification against hand-curated test cases & patent examiner rejections.</p>
+            </div>
+          </div>
+          <button id="btn-run-benchmark" class="btn-execute">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span>Run Benchmark Suite</span>
+          </button>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">CLAIM ELEMENT RECALL</div>
+            <div class="kpi-value" id="bench-recall">100.0%</div>
+            <div class="kpi-target">Target: ≥ 80.0% <span class="kpi-pass">PASSED</span></div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-label">PRIOR-ART COVERAGE</div>
+            <div class="kpi-value" id="bench-coverage">100.0%</div>
+            <div class="kpi-target">Target: ≥ 75.0% <span class="kpi-pass">PASSED</span></div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-label">CITATION AUTHENTICITY</div>
+            <div class="kpi-value" id="bench-citations">100.0%</div>
+            <div class="kpi-target">Target: 100.0% (0 Hallucinations) <span class="kpi-pass">PASSED</span></div>
+          </div>
+        </div>
+
+        <!-- Test Case Results -->
+        <div class="report-section" style="margin-top: 32px;">
+          <div class="section-heading-row">
+            <div class="section-title-wrap">
+              <h4 class="section-title">Curated Benchmark Cases</h4>
+              <span class="section-subtitle">Evaluation results across mechanical, electronics, and sensor domains</span>
+            </div>
+          </div>
+          <div id="benchmark-cases-container" class="benchmark-cases-list">
+            <div class="empty-state" style="padding: 36px;">
+              <p class="empty-desc">Click <strong>Run Benchmark Suite</strong> to trigger validation across all sample cases.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Minimalist Footer -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <span>PriorArt Copilot</span>
+        <span class="footer-dot">·</span>
+        <span>Built by <strong class="author-name">Riddhi Dey</strong></span>
+      </div>
+      <div class="footer-right">
+        <a href="https://github.com/riddhidey/Priorart-copilot" target="_blank" rel="noopener noreferrer" class="footer-github-link">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+          <span>GitHub / Priorart-copilot</span>
+        </a>
+      </div>
+    </footer>
+  </div>
+
+  <!-- High-Tech About Model & System Architecture Modal Overlay ("Hover Page") -->
+  <div id="about-model-modal" class="about-modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="about-modal-title">
+    <div class="about-modal-backdrop" id="about-modal-backdrop"></div>
+    <div class="about-modal-dialog">
+      <!-- Reticle corner brackets -->
+      <span class="about-modal-bracket top-left">┌</span>
+      <span class="about-modal-bracket top-right">┐</span>
+      <span class="about-modal-bracket bottom-left">└</span>
+      <span class="about-modal-bracket bottom-right">┘</span>
+
+      <!-- Modal Header -->
+      <div class="about-modal-header">
+        <div class="about-modal-title-wrap">
+          <span class="about-modal-status-dot"></span>
+          <div>
+            <h3 class="about-modal-title" id="about-modal-title">SYS // ABOUT PRIORART COPILOT & AI ARCHITECTURE</h3>
+            <span class="about-modal-subtitle">Autonomous Multi-Agent Patentability & Prior-Art Collision Intelligence</span>
+          </div>
+        </div>
+        <button type="button" class="about-modal-close-btn" id="btn-close-about-modal" title="Close Dialog (Esc)" aria-label="Close dialog">
+          <span>✕</span>
+          <span class="about-close-key">ESC</span>
+        </button>
+      </div>
+
+      <!-- Modal Scrollable Body -->
+      <div class="about-modal-body">
+        
+        <!-- Section 1: Executive Mission & Purpose -->
+        <section class="about-modal-section">
+          <div class="about-section-header">
+            <span class="about-section-badge">01 / PURPOSE</span>
+            <h4>What This Website & Intelligence Platform Does</h4>
+          </div>
+          <p class="about-desc-text">
+            <strong>PriorArt Copilot</strong> is an enterprise-grade, autonomous multi-agent AI workstation designed to eliminate the most expensive and time-consuming bottleneck in intellectual property: <em>preliminary patentability screening, novelty clearance, and prior-art collision detection</em>.
+          </p>
+          <p class="about-desc-text">
+            Filing invalid patent applications costs inventors, enterprises, and patent attorneys thousands in official examination rejection fees, office actions, and wasted prosecution cycles. PriorArt Copilot automatically deconstructs invention disclosures into discrete claim elements, queries global patent registries across 5 major jurisdictions (USPTO, EPO, WIPO, JPO, CNIPA) alongside peer-reviewed academic literature, evaluates direct anticipation under <strong>35 U.S.C. § 102 (Novelty)</strong> and combinational obviousness under <strong>35 U.S.C. § 103 (Inventive Step)</strong>, and synthesizes audit-ready legal examination memos with 100% verified verbatim citations.
+          </p>
+        </section>
+
+        <!-- Section 2: Multi-Agent Neural Pipeline -->
+        <section class="about-modal-section">
+          <div class="about-section-header">
+            <span class="about-section-badge">02 / AGENT PIPELINE</span>
+            <h4>Autonomous 4-Agent Neural Workflow (How It Works)</h4>
+          </div>
+          <div class="about-agents-grid">
+            
+            <div class="about-agent-card">
+              <div class="about-agent-num-row">
+                <span class="about-agent-num">AGENT 01</span>
+                <span class="about-agent-role-pill">READER</span>
+              </div>
+              <div class="about-agent-title">Claim Element Deconstructor</div>
+              <p class="about-agent-desc">
+                Deconstructs raw technical prose into discrete, non-overlapping claim elements. Classifies physical structural limitations, functional operations, and measurable tolerances. Assigns candidate IPC/CPC classification codes and powers the interactive Claim Review step.
+              </p>
+              <div class="about-agent-tag">LangGraph · disclosure_parser.py · Gemini 3 Flash</div>
+            </div>
+
+            <div class="about-agent-card">
+              <div class="about-agent-num-row">
+                <span class="about-agent-num">AGENT 02</span>
+                <span class="about-agent-role-pill">SEARCHER</span>
+              </div>
+              <div class="about-agent-title">Multi-Jurisdiction Prior-Art Mesh</div>
+              <p class="about-agent-desc">
+                Performs domain-specific technical patent lexicon expansion (synonyms) and dispatches targeted parallel queries per claim element across Google Patents, EPO Open Patent Services (OPS), and Semantic Scholar academic non-patent literature (NPL).
+              </p>
+              <div class="about-agent-tag">Hybrid RAG · retrieval_agent.py · BM25 + Dense</div>
+            </div>
+
+            <div class="about-agent-card">
+              <div class="about-agent-num-row">
+                <span class="about-agent-num">AGENT 03</span>
+                <span class="about-agent-role-pill">JUDGE</span>
+              </div>
+              <div class="about-agent-title">Novelty Clustering & Threat Reasoner</div>
+              <p class="about-agent-desc">
+                Aligns discovered prior-art candidate texts against each individual claim element. Computes fine-grained semantic overlap, classifies statutory risk tiers (High § 102, Moderate § 103, Low/Safe), and isolates the inventor's defensible Novelty Gaps.
+              </p>
+              <div class="about-agent-tag">novelty_clustering.py · 35 U.S.C. § 102 / § 103</div>
+            </div>
+
+            <div class="about-agent-card">
+              <div class="about-agent-num-row">
+                <span class="about-agent-num">AGENT 04</span>
+                <span class="about-agent-role-pill">WRITER</span>
+              </div>
+              <div class="about-agent-title">Patentability Synthesizer & Memo Generator</div>
+              <p class="about-agent-desc">
+                Assembles the interactive 2D Threat Matrix Heatmap, enforces 100% citation authenticity (demanding exact verbatim quotes and publication numbers), formulates strategic claim drafting recommendations, and renders vector PDF / Markdown clearance reports.
+              </p>
+              <div class="about-agent-tag">report_writer.py · Zero-Hallucination · PDF Export</div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Section 3: 3D Telemetry Radar Hero -->
+        <section class="about-modal-section">
+          <div class="about-section-header">
+            <span class="about-section-badge">03 / 3D TELEMETRY</span>
+            <h4>Global Patent Intelligence Radar & 3D Point-Cloud Stage</h4>
+          </div>
+          <p class="about-desc-text">
+            The top radar stage is an interactive <strong>Three.js WebGL point cloud</strong> (4,200 elevated continental landmass particles with recessed ocean relief) operating on an astronomical 23.44° axial tilt:
+          </p>
+          <div class="about-specs-grid">
+            <div class="about-spec-item">
+              <span class="spec-label">WORLD COUNTRY TAGS</span>
+              <span class="spec-value">32 sovereign jurisdictions tagged with luminous white surface beacons & [ CODE · NAME ] badges (including India at 22.5° N, 78.0° E)</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">AUTOMATIC 0.9x BOOT FOCUS</span>
+              <span class="spec-value">Initializes facing India and the Asia-Pacific innovation corridor at 0.9x overview zoom with smooth camera navigation</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">CLIENT NODE TRIANGULATION</span>
+              <span class="spec-value">Real-time IP geolocation telemetry (e.g. Bhubaneswar, India) with radiant magenta beacon & dual concentric pulse rings</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">3D BALLISTIC RADAR ARCS</span>
+              <span class="spec-value">Curved Bézier trajectories with traveling photon pulses connecting client node to patent registries & global assignee hubs</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 4: Statutory Legal Framework -->
+        <section class="about-modal-section">
+          <div class="about-section-header">
+            <span class="about-section-badge">04 / STATUTORY STANDARDS</span>
+            <h4>Patent Law Evaluation Framework & 2D Threat Matrix</h4>
+          </div>
+          <p class="about-desc-text">
+            Every discovered reference is rigorously examined against standard patent examination doctrines:
+          </p>
+          <div class="about-specs-grid">
+            <div class="about-spec-item" style="border-left: 3px solid #ef4444;">
+              <span class="spec-label" style="color: #ef4444;">35 U.S.C. § 102 · ANTICIPATION (HIGH THREAT &ge;90%)</span>
+              <span class="spec-value">A single existing reference discloses all technical limitations of the claimed element. Fatal novelty bar requiring design-around.</span>
+            </div>
+            <div class="about-spec-item" style="border-left: 3px solid #facc15;">
+              <span class="spec-label" style="color: #facc15;">35 U.S.C. § 103 · OBVIOUSNESS (MODERATE THREAT 80-89%)</span>
+              <span class="spec-value">Analogous art in related domains that an examiner could combine. Requires demonstrating unexpected results or secondary considerations.</span>
+            </div>
+            <div class="about-spec-item" style="border-left: 3px solid #10b981;">
+              <span class="spec-label" style="color: #10b981;">NOVELTY GAP · PATENTABLE TERRITORY (LOW RISK &lt;80%)</span>
+              <span class="spec-value">Claim elements completely unencumbered by discovered prior art. Forms the primary defensible basis for valid, enforceable patent claims.</span>
+            </div>
+            <div class="about-spec-item" style="border-left: 3px solid #0ea5e9;">
+              <span class="spec-label" style="color: #0ea5e9;">ZERO-HALLUCINATION VERIFICATION</span>
+              <span class="spec-value">100% citation authenticity verification: citations must match verified verbatim text and link to official patent office records.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 5: Specifications Grid -->
+        <section class="about-modal-section">
+          <div class="about-section-header">
+            <span class="about-section-badge">05 / SPECIFICATIONS</span>
+            <h4>Technical Architecture & Engine Stack</h4>
+          </div>
+          <div class="about-specs-grid">
+            <div class="about-spec-item">
+              <span class="spec-label">BACKEND API</span>
+              <span class="spec-value">FastAPI + ASGI Uvicorn (Streaming & No-Cache Enforced)</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">LLM ENGINE</span>
+              <span class="spec-value">Google Gemini 3 Flash (gemini-3-flash-preview) / Gemini 2.5</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">AGENT ORCHESTRATION</span>
+              <span class="spec-value">LangGraph StateGraph + Pydantic v2 Type Contracts</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">3D WEBGL GRAPHICS</span>
+              <span class="spec-value">Three.js (r128) + GSAP 3 Motion Engine</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">PATENT DATA CONNECTORS</span>
+              <span class="spec-value">Google Patents, EPO OPS, Semantic Scholar, Local Index</span>
+            </div>
+            <div class="about-spec-item">
+              <span class="spec-label">SECURITY & PRIVACY</span>
+              <span class="spec-value">100% Ephemeral In-Memory Processing (Zero Data Retention)</span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="about-modal-footer">
+        <div class="about-footer-info">
+          <span class="about-footer-dot"></span>
+          <span>PriorArt Copilot v2.4 · Multi-Agent Patent Intelligence Workstation</span>
+        </div>
+        <div class="about-footer-actions">
+          <a href="https://github.com/riddhidey/Priorart-copilot" target="_blank" rel="noopener noreferrer" class="about-footer-link">
+            GitHub Repository
+          </a>
+          <button type="button" class="btn-primary-about" id="btn-close-about-modal-bottom">
+            Dismiss
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- User Settings & Custom API Keys Modal (Supabase Storage) -->
+  <div id="user-settings-modal" class="auth-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+    <div class="auth-modal-card settings-modal-card">
+      <div class="auth-modal-header">
+        <div class="modal-header-tag">
+          <span class="auth-beacon-dot"></span>
+          <span>OPERATOR CREDENTIALS // BYOK</span>
+        </div>
+        <button type="button" class="auth-modal-close" id="btn-close-settings-modal" title="Close settings">&times;</button>
+      </div>
+
+      <div class="auth-modal-body">
+        <h3 id="settings-modal-title" class="auth-modal-title">Custom AI & Patent API Keys</h3>
+        <p class="auth-modal-desc">
+          Store your own Google Gemini or patent registry API keys securely in Supabase. When configured, your screening runs execute using your dedicated quota.
+        </p>
+
+        <!-- Current Key Status Box -->
+        <div class="settings-status-box" id="keys-status-box">
+          <div class="status-box-header">
+            <span class="status-box-label">CURRENT CONFIGURATION</span>
+            <span class="status-badge" id="gemini-key-status-badge">SYSTEM DEFAULT</span>
+          </div>
+          <div class="status-key-preview" id="gemini-key-masked-display">
+            Using Shared System Gemini 3 Flash Quota
+          </div>
+        </div>
+
+        <form id="user-keys-form" class="settings-form">
+          <div class="form-group">
+            <label for="input-custom-gemini" class="form-label">
+              <span>Google Gemini API Key</span>
+              <span class="label-opt">(Get free key from aistudio.google.com)</span>
+            </label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-6 4l3 3m5-5l-3-3L4 17l-1 4 4-1L21 2z"/></svg>
+              <input type="password" id="input-custom-gemini" class="form-input" placeholder="AIzaSy..." autocomplete="off" />
+              <button type="button" id="btn-toggle-gemini-key" class="btn-toggle-pw" title="Show/Hide Key">👁️</button>
+            </div>
+            <span class="form-hint">Paste your Google Gemini API key to run screenings with dedicated quota.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="input-custom-epo" class="form-label">
+              <span>EPO OPS Consumer Key</span>
+              <span class="label-opt">(Optional)</span>
+            </label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+              <input type="text" id="input-custom-epo" class="form-input" placeholder="Optional EPO Consumer Key" autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="settings-form-actions">
+            <button type="submit" id="btn-save-user-keys" class="btn-primary auth-submit-btn">
+              <span class="btn-spinner hidden" id="save-keys-spinner"></span>
+              <span id="save-keys-text">Save Keys to Supabase</span>
+            </button>
+            <button type="button" id="btn-delete-user-keys" class="btn-ghost btn-delete-keys" style="display: none;">
+              <span>Remove Custom Keys</span>
+            </button>
+          </div>
+        </form>
+
+        <div id="settings-alert" class="auth-alert hidden">
+          <span id="settings-alert-icon">✓</span>
+          <span id="settings-alert-message"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Screening Reports History Modal (Supabase Storage) -->
+  <div id="user-history-modal" class="auth-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="history-modal-title">
+    <div class="auth-modal-card history-modal-card">
+      <div class="auth-modal-header">
+        <div class="modal-header-tag">
+          <span class="auth-beacon-dot"></span>
+          <span>SAVED SCREENING REPORTS // SUPABASE</span>
+        </div>
+        <button type="button" class="auth-modal-close" id="btn-close-history-modal" title="Close history">&times;</button>
+      </div>
+
+      <div class="auth-modal-body">
+        <div class="history-top-bar">
+          <div>
+            <h3 id="history-modal-title" class="auth-modal-title">Screening Archive & History</h3>
+            <p class="auth-modal-desc">All invention novelty clearance runs saved under your account.</p>
+          </div>
+          <button type="button" id="btn-refresh-history" class="btn-ghost btn-refresh-hist" title="Refresh history">
+            <span>↻ Refresh</span>
+          </button>
+        </div>
+
+        <div id="history-loading" class="history-loading-wrap hidden">
+          <div class="radar-spinner" style="width: 28px; height: 28px;"></div>
+          <span>Loading historical reports from Supabase...</span>
+        </div>
+
+        <div id="history-empty" class="empty-state history-empty hidden">
+          <div class="empty-terminal-icon">📜</div>
+          <div class="empty-title">No Saved Reports Found</div>
+          <p class="empty-desc">When you run patent screenings, your full findings and threat matrices are automatically archived here.</p>
+        </div>
+
+        <div id="history-list-container" class="history-cards-list">
+          <!-- Dynamically populated report items -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Pinned CDN Dependencies: Three.js (3D WebGL), GSAP (Industrial Motion), PDF Gen, & Compression -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+  <script src="/static/world_land_data.js?v=61.0"></script>
+  <script src="/static/app.js?v=72.0"></script>
+  <script>
+    // Enforce Supabase Authentication Route Guard for Screening & Radar Telemetry
+    if (window.PriorArtAuth) {
+      window.PriorArtAuth.requireAuth();
+    }
+  </script>
+</body>
+</html>
