@@ -266,8 +266,8 @@ FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
         }
       });
 
-      // Mode toggle
-      tabSignIn.addEventListener('click', () => {
+      // Mode toggle helpers
+      function switchToSignIn() {
         currentMode = 'signin';
         tabSignIn.classList.add('active');
         tabSignIn.setAttribute('aria-selected', 'true');
@@ -277,10 +277,9 @@ FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
         document.getElementById('auth-main-subtitle').textContent = 'Authenticate to access live patent intelligence radar and screening copilot.';
         submitText.textContent = 'Authorize Operator Session';
         pwInput.setAttribute('autocomplete', 'current-password');
-        hideAlert();
-      });
+      }
 
-      tabSignUp.addEventListener('click', () => {
+      function switchToSignUp() {
         currentMode = 'signup';
         tabSignUp.classList.add('active');
         tabSignUp.setAttribute('aria-selected', 'true');
@@ -290,6 +289,15 @@ FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
         document.getElementById('auth-main-subtitle').textContent = 'Register new operator credentials for PriorArt Copilot screening telemetry.';
         submitText.textContent = 'Create Operator Account';
         pwInput.setAttribute('autocomplete', 'new-password');
+      }
+
+      tabSignIn.addEventListener('click', () => {
+        switchToSignIn();
+        hideAlert();
+      });
+
+      tabSignUp.addEventListener('click', () => {
+        switchToSignUp();
         hideAlert();
       });
 
@@ -324,15 +332,53 @@ FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
           if (currentMode === 'signin') {
             const { data, error } = await window.PriorArtAuth.signInWithEmail(email, password);
             if (error) {
-              const msg = error.message || '';
-              if (msg.toLowerCase().includes('invalid login credentials') || msg.toLowerCase().includes('invalid_grant')) {
-                showAlert('Invalid email or password. Please verify your credentials.');
-              } else if (msg.toLowerCase().includes('email not confirmed') || msg.toLowerCase().includes('email_not_confirmed')) {
+              const code = error.code || '';
+              const msg = (error.message || '').toLowerCase();
+
+              // Auto-redirect / Auto-signup when user does not exist
+              const isNotFound = code === 'auth/user-not-found' || 
+                                 msg.includes('user not found') || 
+                                 msg.includes('user-not-found') ||
+                                 msg.includes('no user record');
+
+              if (isNotFound) {
+                showAlert('No account found for this email. Automatically creating your operator account...', 'warn');
+                try {
+                  const regRes = await window.PriorArtAuth.signUpWithEmail(email, password);
+                  if (regRes && regRes.data && regRes.data.session) {
+                    showAlert('Account created & authorized! Launching radar...', 'success');
+                    setTimeout(() => {
+                      window.location.href = redirectUrl;
+                    }, 400);
+                    return;
+                  } else if (regRes && regRes.error) {
+                    switchToSignUp();
+                    showAlert(regRes.error.message || 'Switched to Create Account. Please complete registration below.', 'warn');
+                    setLoading(false);
+                    return;
+                  }
+                } catch (autoErr) {
+                  switchToSignUp();
+                  showAlert('No existing account found. Switched to Create Account — click below to register.', 'warn');
+                  setLoading(false);
+                  return;
+                }
+              }
+
+              // Handle invalid credential (wrong password OR non-existent user with email enumeration protection)
+              if (msg.includes('invalid login credentials') || msg.includes('invalid_grant') || code === 'auth/invalid-credential') {
+                switchToSignUp();
+                showAlert('Account not found or password incorrect. Switched to Create Account — click below to register this email.', 'warn');
+                setLoading(false);
+                return;
+              }
+
+              if (msg.includes('email not confirmed') || msg.includes('email_not_confirmed')) {
                 showAlert('Email address has not been confirmed yet. Please check your inbox for the activation link.', 'warn');
-              } else if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('too many requests')) {
+              } else if (msg.includes('rate limit') || msg.includes('too many requests')) {
                 showAlert('Too many authentication requests. Please wait a few moments before retrying.', 'warn');
               } else {
-                showAlert(msg || 'Authentication failed. Please verify your credentials.');
+                showAlert(error.message || 'Authentication failed. Please verify your credentials.');
               }
               setLoading(false);
               return;
@@ -348,8 +394,9 @@ FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
             const { data, error } = await window.PriorArtAuth.signUpWithEmail(email, password);
             if (error) {
               const msg = error.message || '';
-              if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('user already exists')) {
-                showAlert('An account with this email already exists. Please switch to Sign In.', 'warn');
+              if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('user already exists') || error.code === 'auth/email-already-in-use') {
+                switchToSignIn();
+                showAlert('An account with this email already exists. Switched to Sign In — please enter your password.', 'warn');
               } else if (msg.toLowerCase().includes('password')) {
                 showAlert(msg, 'warn');
               } else {
