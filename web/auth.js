@@ -1,7 +1,7 @@
 /**
- * PriorArt Copilot - Firebase & Supabase Authentication & Route Guard Module
- * Integrates Google Sign-In via Firebase Authentication with session management,
- * email/password auth, header user profile avatar, and route protection.
+ * PriorArt Copilot - Supabase Authentication & Route Guard Module
+ * 100% Native Supabase Auth: Google OAuth (PKCE), Email/Password,
+ * Session Synchronization, and Route Protection.
  */
 
 (function(window) {
@@ -9,17 +9,17 @@
 
   class AuthManager {
     constructor() {
-      this.firebaseApp = null;
-      this.firebaseAuth = null;
-      this.firebaseConfig = null;
-      this.client = null; // Supabase client fallback
+      this.client = null;
       this.config = null;
       this.user = null;
       this.session = null;
-      this.authProvider = null; // 'firebase' | 'supabase' | 'operator'
+      this.authProvider = null; // 'google' | 'supabase-email' | 'operator'
       this.initialized = false;
       this.initPromise = null;
-      this.redirectError = null;
+      this.authListener = null;
+
+      // Immediately restore existing session from storage if present
+      this.loadStoredSession();
     }
 
     /**
@@ -29,7 +29,7 @@
       if (!session) return;
       this.session = session;
       this.user = session.user || null;
-      this.authProvider = session.provider || 'firebase';
+      this.authProvider = (session.user && session.user.app_metadata && session.user.app_metadata.provider) || session.provider || 'supabase';
       try {
         const json = JSON.stringify(session);
         sessionStorage.setItem('priorart_operator_session', json);
@@ -70,42 +70,63 @@
     }
 
     /**
-     * Translates raw Firebase Auth error codes into clear, user-friendly messages
+     * Translates raw error codes into clear, user-friendly messages
      */
-    formatFirebaseError(err) {
+    formatAuthError(err) {
       if (!err) return 'Authentication failed.';
-      const code = err.code || '';
-      const msg = err.message || '';
+      const msg = (err.message || err.error_description || String(err)).toLowerCase();
 
-      switch (code) {
-        case 'auth/popup-closed-by-user':
-          return 'The Google sign-in window was closed before completing authorization. Please try again.';
-        case 'auth/popup-blocked':
-          return 'The sign-in popup was blocked by your browser. Please allow popups for this site.';
-        case 'auth/unauthorized-domain':
-          return 'This domain is not authorized in Firebase Console. Go to Firebase Console > Authentication > Settings > Authorized domains and add this host domain.';
-        case 'auth/operation-not-allowed':
-          return 'Google Sign-In is not enabled in Firebase Console. Go to Authentication > Sign-in method > Google and toggle Enable.';
-        case 'auth/account-exists-with-different-credential':
-          return 'An account already exists with this email using a different sign-in method. Please use that method or link your accounts.';
-        case 'auth/cancelled-popup-request':
-          return 'Another sign-in window is already active. Please finish or close that window.';
-        case 'auth/network-request-failed':
-          return 'Network request failed. Please check your internet connection.';
-        case 'auth/invalid-api-key':
-          return 'Invalid Firebase API Key. Please verify your FIREBASE_API_KEY environment variable.';
-        case 'auth/app-not-authorized':
-          return 'This app is not authorized to use Firebase Authentication with the provided API key.';
-        default:
-          if (msg.includes('access_denied') || msg.includes('403') || msg.includes('Google verification')) {
-            return 'Access blocked: If your Google OAuth consent screen is in "Testing" mode, add this email under Google Cloud Console > OAuth consent screen > Test users, or set Publishing Status to "In production".';
-          }
-          return msg || 'Google Sign-In failed. Please try again.';
+      if (msg.includes('invalid login credentials') || msg.includes('invalid_grant')) {
+        return 'Invalid email or password. Please verify your credentials or create a new account.';
       }
+      if (msg.includes('user already registered') || msg.includes('already exists')) {
+        return 'An account with this email already exists. Please switch to Sign In.';
+      }
+      if (msg.includes('email not confirmed') || msg.includes('unconfirmed')) {
+        return 'Email address has not been confirmed yet. Please check your inbox for the confirmation link.';
+      }
+      if (msg.includes('password') && msg.includes('least 6')) {
+        return 'Password must contain at least 6 characters.';
+      }
+      if (msg.includes('rate limit') || msg.includes('too many requests')) {
+        return 'Too many authentication attempts. Please wait a few moments before retrying.';
+      }
+      if (msg.includes('network') || msg.includes('fetch')) {
+        return 'Network connection error. Please check your internet connection.';
+      }
+      return err.message || 'Authentication operation failed. Please try again.';
     }
 
     /**
-     * Initializes Firebase and Supabase clients by fetching configuration from backend
+     * Converts Supabase User object to consistent internal profile format
+     */
+    normalizeUser(sbUser) {
+      if (!sbUser) return null;
+      const metadata = sbUser.user_metadata || {};
+      const appMetadata = sbUser.app_metadata || {};
+      const provider = appMetadata.provider || 'supabase';
+
+      const displayName = metadata.full_name || metadata.name || metadata.user_name || (sbUser.email ? sbUser.email.split('@')[0] : 'Operator');
+      const avatarUrl = metadata.avatar_url || metadata.picture || null;
+
+      return {
+        id: sbUser.id,
+        uid: sbUser.id,
+        email: sbUser.email || '',
+        user_metadata: {
+          full_name: displayName,
+          name: displayName,
+          avatar_url: avatarUrl,
+          picture: avatarUrl
+        },
+        app_metadata: {
+          provider: provider
+        }
+      };
+    }
+
+    /**
+     * Initializes the Supabase client by fetching configuration from backend
      */
     async init() {
       if (this.initPromise) return this.initPromise;
@@ -118,74 +139,55 @@
           }
           this.config = await resp.json();
 
-          // 1. Initialize Firebase Authentication (Primary for Google Sign-In)
-          const fbConfig = this.config.firebaseConfig || {};
-          const localFb = window.FIREBASE_CONFIG || {};
-          this.firebaseConfig = {
-            apiKey: fbConfig.apiKey || localFb.apiKey || '',
-            authDomain: fbConfig.authDomain || localFb.authDomain || '',
-            projectId: fbConfig.projectId || localFb.projectId || '',
-            storageBucket: fbConfig.storageBucket || localFb.storageBucket || '',
-            messagingSenderId: fbConfig.messagingSenderId || localFb.messagingSenderId || '',
-            appId: fbConfig.appId || localFb.appId || ''
-          };
+          const supabaseUrl = this.config.supabaseUrl || window.SUPABASE_URL || '';
+          const supabaseKey = this.config.supabaseAnonKey || window.SUPABASE_ANON_KEY || '';
 
-          const hasValidFbConfig = Boolean(this.firebaseConfig.apiKey && this.firebaseConfig.projectId);
-
-          if (window.firebase && hasValidFbConfig) {
+          if (window.supabase && supabaseUrl && supabaseKey) {
             try {
-              if (!window.firebase.apps || !window.firebase.apps.length) {
-                this.firebaseApp = window.firebase.initializeApp(this.firebaseConfig);
-              } else {
-                this.firebaseApp = window.firebase.app();
-              }
-              this.firebaseAuth = window.firebase.auth();
+              this.client = window.supabase.createClient(supabaseUrl, supabaseKey, {
+                auth: {
+                  persistSession: true,
+                  autoRefreshToken: true,
+                  detectSessionInUrl: true,
+                  flowType: 'pkce'
+                }
+              });
 
-              // Listen to Firebase auth state changes
-              this.firebaseAuth.onAuthStateChanged((fbUser) => {
-                if (fbUser) {
-                  this.user = this.normalizeFirebaseUser(fbUser);
+              // Listen to auth state changes from Supabase
+              this.client.auth.onAuthStateChange((event, session) => {
+                if (session && session.user) {
+                  this.user = this.normalizeUser(session.user);
                   this.session = {
                     user: this.user,
-                    provider: 'google-firebase',
-                    token: fbUser.uid
+                    provider: (session.user.app_metadata && session.user.app_metadata.provider) || 'supabase',
+                    access_token: session.access_token
                   };
-                  this.authProvider = 'firebase';
+                  this.authProvider = this.session.provider;
                   this.saveSession(this.session);
                   this.renderHeaderAuth();
-                } else if (this.authProvider === 'firebase') {
+                } else if (event === 'SIGNED_OUT') {
                   this.clearSession();
                   this.renderHeaderAuth();
                 }
               });
 
-              // Check for redirect result in case of redirect-based Google Sign-In
-              try {
-                const redirectResult = await this.firebaseAuth.getRedirectResult();
-                if (redirectResult && redirectResult.user) {
-                  this.user = this.normalizeFirebaseUser(redirectResult.user);
-                  this.session = {
-                    user: this.user,
-                    provider: 'google-firebase',
-                    token: redirectResult.user.uid
-                  };
-                  this.authProvider = 'firebase';
-                  this.saveSession(this.session);
-                  this.renderHeaderAuth();
-                }
-              } catch (redErr) {
-                console.error('[PriorArt Auth] Firebase getRedirectResult error:', redErr);
-                this.redirectError = redErr;
+              // Check active Supabase session
+              const { data, error } = await this.client.auth.getSession();
+              if (data && data.session && data.session.user) {
+                this.user = this.normalizeUser(data.session.user);
+                this.session = {
+                  user: this.user,
+                  provider: (data.session.user.app_metadata && data.session.user.app_metadata.provider) || 'supabase',
+                  access_token: data.session.access_token
+                };
+                this.authProvider = this.session.provider;
+                this.saveSession(this.session);
               }
-            } catch (fbErr) {
-              console.warn('[PriorArt Auth] Firebase initialization warning:', fbErr);
+            } catch (sbErr) {
+              console.warn('[PriorArt Auth] Supabase client init warning:', sbErr);
             }
           }
 
-          // 2. Supabase Database integration is handled via server-side REST API
-          // (User API Keys & Screening Report History)
-
-          // 3. Check persistent storage for active operator session
           if (!this.session) {
             this.loadStoredSession();
           }
@@ -204,105 +206,148 @@
     }
 
     /**
-     * Converts Firebase User object to consistent internal profile format
+     * Google Sign-In via Supabase OAuth (PKCE flow)
      */
-    normalizeFirebaseUser(fbUser) {
-      if (!fbUser) return null;
-      const providerData = (fbUser.providerData && fbUser.providerData[0]) || {};
-      const displayName = fbUser.displayName || providerData.displayName || (fbUser.email ? fbUser.email.split('@')[0] : 'Operator');
-      const photoURL = fbUser.photoURL || providerData.photoURL || null;
-      const email = fbUser.email || providerData.email || '';
-
-      return {
-        id: fbUser.uid,
-        uid: fbUser.uid,
-        email: email,
-        user_metadata: {
-          full_name: displayName,
-          name: displayName,
-          avatar_url: photoURL,
-          picture: photoURL
-        },
-        app_metadata: {
-          provider: 'google-firebase'
-        }
-      };
-    }
-
-    /**
-     * Google Sign-In via Firebase Authentication
-     * Performs popup sign-in with automatic fallback to redirect
-     */
-    async signInWithGoogleFirebase() {
+    async signInWithGoogle() {
       await this.init();
 
-      // Check if Firebase credentials are configured
-      const hasFirebase = Boolean(
-        window.firebase &&
-        this.firebaseConfig &&
-        this.firebaseConfig.apiKey &&
-        this.firebaseConfig.projectId
-      );
-
-      if (!hasFirebase) {
+      if (!this.client) {
         return {
           needsConfig: true,
-          error: {
-            code: 'missing_firebase_config',
-            message: 'Firebase credentials not configured yet in .env.'
-          }
+          error: { message: 'Supabase credentials not configured yet in Render environment.' }
         };
       }
 
       try {
-        const provider = new window.firebase.auth.GoogleAuthProvider();
-        provider.addScope('email');
-        provider.addScope('profile');
-        provider.setCustomParameters({
-          prompt: 'select_account' // Always prompt user to pick account
+        const redirectTo = `${window.location.origin}/callback.html`;
+        const { data, error } = await this.client.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: redirectTo,
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent'
+            }
+          }
         });
 
-        const result = await this.firebaseAuth.signInWithPopup(provider);
-        if (result && result.user) {
-          const user = this.normalizeFirebaseUser(result.user);
-          this.user = user;
-          this.session = {
-            user: user,
-            provider: 'google-firebase',
-            token: result.user.uid
-          };
-          this.authProvider = 'firebase';
-          this.saveSession(this.session);
-          this.renderHeaderAuth();
-          return { data: { user, session: this.session }, error: null };
+        if (error) {
+          return { error: { code: error.code, message: this.formatAuthError(error) } };
         }
+
+        return { data, isRedirecting: true, error: null };
       } catch (err) {
-        console.warn('[PriorArt Auth] Firebase popup error:', err);
-        const friendlyMsg = this.formatFirebaseError(err);
-
-        // If popup was blocked by browser, attempt redirect fallback
-        if (err.code === 'auth/popup-blocked') {
-          try {
-            const provider = new window.firebase.auth.GoogleAuthProvider();
-            provider.addScope('email');
-            provider.addScope('profile');
-            provider.setCustomParameters({ prompt: 'select_account' });
-            await this.firebaseAuth.signInWithRedirect(provider);
-            return { isRedirecting: true, error: null };
-          } catch (redErr) {
-            return { error: { code: redErr.code, message: this.formatFirebaseError(redErr) } };
-          }
-        }
-
-        return { error: { code: err.code, message: friendlyMsg, original: err } };
+        console.error('[PriorArt Auth] Google OAuth error:', err);
+        return { error: { message: this.formatAuthError(err) } };
       }
     }
 
     /**
-     * Activate a Verified Operator Session (for immediate testing without cloud keys)
+     * Sign In with Email and Password via Supabase
+     */
+    async signInWithEmail(email, password) {
+      await this.init();
+
+      if (!this.client) {
+        throw new Error('Supabase is not configured. Please add SUPABASE_URL and SUPABASE_ANON_KEY to your Render environment variables.');
+      }
+
+      try {
+        const { data, error } = await this.client.auth.signInWithPassword({
+          email: email.trim(),
+          password: password
+        });
+
+        if (error) {
+          return { error: { code: error.code || 'invalid_credentials', message: this.formatAuthError(error) } };
+        }
+
+        if (data && data.session && data.user) {
+          const user = this.normalizeUser(data.user);
+          this.user = user;
+          this.session = { user, provider: 'supabase-email', access_token: data.session.access_token };
+          this.authProvider = 'supabase-email';
+          this.saveSession(this.session);
+          this.renderHeaderAuth();
+          return { data: { user, session: this.session }, error: null };
+        }
+
+        return { data: null, error: { message: 'No session returned from authentication server.' } };
+      } catch (err) {
+        return { error: { message: this.formatAuthError(err) } };
+      }
+    }
+
+    /**
+     * Sign Up with Email and Password via Supabase
+     */
+    async signUpWithEmail(email, password) {
+      await this.init();
+
+      if (!this.client) {
+        throw new Error('Supabase is not configured. Please add SUPABASE_URL and SUPABASE_ANON_KEY to your Render environment variables.');
+      }
+
+      try {
+        const { data, error } = await this.client.auth.signUp({
+          email: email.trim(),
+          password: password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/callback.html`
+          }
+        });
+
+        if (error) {
+          return { error: { code: error.code, message: this.formatAuthError(error) } };
+        }
+
+        if (data && data.session && data.user) {
+          const user = this.normalizeUser(data.user);
+          this.user = user;
+          this.session = { user, provider: 'supabase-email', access_token: data.session.access_token };
+          this.authProvider = 'supabase-email';
+          this.saveSession(this.session);
+          this.renderHeaderAuth();
+          return { data: { user, session: this.session }, error: null };
+        }
+
+        return { data: data, error: null, needsEmailConfirmation: !data.session };
+      } catch (err) {
+        return { error: { message: this.formatAuthError(err) } };
+      }
+    }
+
+    /**
+     * Exchanges PKCE authorization code for an authenticated session on callback
+     */
+    async exchangeCodeForSession(code) {
+      await this.init();
+      if (!this.client) throw new Error('Supabase client not initialized.');
+
+      const { data, error } = await this.client.auth.exchangeCodeForSession(code);
+      if (error) throw error;
+
+      if (data && data.session && data.user) {
+        const user = this.normalizeUser(data.user);
+        this.user = user;
+        this.session = {
+          user: user,
+          provider: (data.user.app_metadata && data.user.app_metadata.provider) || 'supabase',
+          access_token: data.session.access_token
+        };
+        this.authProvider = this.session.provider;
+        this.saveSession(this.session);
+        this.renderHeaderAuth();
+        return { data: { user, session: this.session }, error: null };
+      }
+      return { data, error: null };
+    }
+
+    /**
+     * Activate a Verified Operator Session (for immediate zero-setup evaluation)
      */
     activateOperatorSession(provider = 'google') {
-      const isGoogle = provider === 'google' || provider === 'google-firebase';
+      const isGoogle = provider === 'google' || provider === 'google-auth';
       const operatorUser = {
         id: `operator-${Date.now()}`,
         uid: `operator-${Date.now()}`,
@@ -314,7 +359,7 @@
           picture: isGoogle ? 'https://lh3.googleusercontent.com/a/default-user=s96-c' : null
         },
         app_metadata: {
-          provider: isGoogle ? 'google-firebase' : provider
+          provider: isGoogle ? 'google' : 'operator'
         }
       };
 
@@ -330,99 +375,6 @@
     }
 
     /**
-     * Sign In with Email and Password
-     * Supports Firebase Auth first, with Supabase fallback
-     */
-    async signInWithEmail(email, password) {
-      await this.init();
-
-      // 1. Try Firebase Auth if configured
-      if (this.firebaseAuth && this.firebaseConfig && this.firebaseConfig.apiKey) {
-        try {
-          const res = await this.firebaseAuth.signInWithEmailAndPassword(email, password);
-          if (res && res.user) {
-            const user = this.normalizeFirebaseUser(res.user);
-            this.user = user;
-            this.session = { user, provider: 'firebase-email', token: res.user.uid };
-            this.authProvider = 'firebase';
-            this.saveSession(this.session);
-            this.renderHeaderAuth();
-            return { data: { user, session: this.session }, error: null };
-          }
-        } catch (err) {
-          // If user not found in Firebase or password invalid, return specific error
-          return { error: err };
-        }
-      }
-
-      // 2. Try Supabase Auth
-      if (this.client) {
-        return await this.client.auth.signInWithPassword({ email, password });
-      }
-
-      throw new Error('No authentication provider configured. Please configure Firebase in .env.');
-    }
-
-    /**
-     * Sign Up with Email and Password
-     */
-    async signUpWithEmail(email, password) {
-      await this.init();
-
-      // 1. Try Firebase Auth
-      if (this.firebaseAuth && this.firebaseConfig && this.firebaseConfig.apiKey) {
-        try {
-          const res = await this.firebaseAuth.createUserWithEmailAndPassword(email, password);
-          if (res && res.user) {
-            const user = this.normalizeFirebaseUser(res.user);
-            this.user = user;
-            this.session = { user, provider: 'firebase-email', token: res.user.uid };
-            this.authProvider = 'firebase';
-            this.saveSession(this.session);
-            this.renderHeaderAuth();
-            return { data: { user, session: this.session }, error: null };
-          }
-        } catch (err) {
-          return { error: err };
-        }
-      }
-
-      // 2. Try Supabase Auth
-      if (this.client) {
-        return await this.client.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`
-          }
-        });
-      }
-
-      throw new Error('No authentication provider configured. Please configure Firebase in .env.');
-    }
-
-    /**
-     * Legacy OAuth trigger for GitHub
-     */
-    async signInWithOAuth(provider) {
-      await this.init();
-
-      if (provider === 'google') {
-        return await this.signInWithGoogleFirebase();
-      }
-
-      if (this.client) {
-        return await this.client.auth.signInWithOAuth({
-          provider,
-          options: { redirectTo: `${window.location.origin}/auth/callback` }
-        });
-      }
-
-      // Fallback operator session for testing
-      return this.activateOperatorSession(provider);
-    }
-
-    /**
      * Route protection for protected application pages
      */
     async requireAuth(options = {}) {
@@ -430,41 +382,20 @@
 
       let session = this.session || this.loadStoredSession();
 
-      // Gracefully wait for Firebase initial state resolution if not in storage
-      if ((!session || !session.user) && this.firebaseAuth) {
-        await new Promise((resolve) => {
-          let resolved = false;
-          const timer = setTimeout(() => {
-            if (!resolved) {
-              resolved = true;
-              resolve();
-            }
-          }, 800);
-
-          try {
-            const unsubscribe = this.firebaseAuth.onAuthStateChanged((fbUser) => {
-              if (!resolved) {
-                resolved = true;
-                clearTimeout(timer);
-                if (fbUser) {
-                  this.user = this.normalizeFirebaseUser(fbUser);
-                  this.session = {
-                    user: this.user,
-                    provider: 'google-firebase',
-                    token: fbUser.uid
-                  };
-                  this.authProvider = 'firebase';
-                  this.saveSession(this.session);
-                }
-                try { unsubscribe(); } catch (e) {}
-                resolve();
-              }
-            });
-          } catch (e) {
-            resolve();
+      // If still no session and Supabase client is available, verify with client
+      if ((!session || !session.user) && this.client) {
+        try {
+          const { data } = await this.client.auth.getSession();
+          if (data && data.session && data.session.user) {
+            const user = this.normalizeUser(data.session.user);
+            session = {
+              user: user,
+              provider: (data.session.user.app_metadata && data.session.user.app_metadata.provider) || 'supabase',
+              access_token: data.session.access_token
+            };
+            this.saveSession(session);
           }
-        });
-        session = this.session || this.loadStoredSession();
+        } catch (e) {}
       }
 
       if (!session || !session.user) {
@@ -483,9 +414,9 @@
      */
     async getUserApiKeys() {
       await this.init();
-      if (!this.user || !this.user.uid) return null;
+      if (!this.user || !this.user.id) return null;
       try {
-        const resp = await fetch(`/api/user/keys?user_id=${encodeURIComponent(this.user.uid)}`);
+        const resp = await fetch(`/api/user/keys?user_id=${encodeURIComponent(this.user.id)}`);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         return await resp.json();
       } catch (err) {
@@ -499,21 +430,21 @@
      */
     async saveUserApiKeys(geminiKey, epoKey = null, epoSecret = null) {
       await this.init();
-      if (!this.user || !this.user.uid) throw new Error('Authentication required.');
+      if (!this.user || !this.user.id) throw new Error('Authentication required.');
       const resp = await fetch('/api/user/keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: this.user.uid,
+          user_id: this.user.id,
           user_email: this.user.email || '',
-          gemini_api_key: geminiKey,
-          epo_consumer_key: epoKey,
-          epo_consumer_secret: epoSecret
+          gemini_api_key: geminiKey || null,
+          epo_consumer_key: epoKey || null,
+          epo_consumer_secret: epoSecret || null
         })
       });
       if (!resp.ok) {
-        const errData = await resp.json().catch(() => ({}));
-        throw new Error(errData.detail || `Failed to save keys (HTTP ${resp.status})`);
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || `Failed to save keys: HTTP ${resp.status}`);
       }
       return await resp.json();
     }
@@ -523,69 +454,48 @@
      */
     async deleteUserApiKeys() {
       await this.init();
-      if (!this.user || !this.user.uid) return false;
-      const resp = await fetch(`/api/user/keys?user_id=${encodeURIComponent(this.user.uid)}`, {
-        method: 'DELETE'
-      });
-      return resp.ok;
+      if (!this.user || !this.user.id) return false;
+      try {
+        const resp = await fetch(`/api/user/keys?user_id=${encodeURIComponent(this.user.id)}`, {
+          method: 'DELETE'
+        });
+        return resp.ok;
+      } catch (e) {
+        return false;
+      }
     }
 
     /**
-     * Fetch user's screening reports history from Supabase
+     * Fetch all screening reports for the current user from Supabase
      */
-    async getScreeningHistory() {
+    async getUserReports() {
       await this.init();
-      if (!this.user || !this.user.uid) return [];
+      if (!this.user || !this.user.id) return [];
       try {
-        const resp = await fetch(`/api/user/history?user_id=${encodeURIComponent(this.user.uid)}`);
+        const resp = await fetch(`/api/user/history?user_id=${encodeURIComponent(this.user.id)}`);
         if (!resp.ok) return [];
         const data = await resp.json();
         return data.reports || [];
       } catch (err) {
-        console.warn('[PriorArt Auth] getScreeningHistory error:', err);
+        console.warn('[PriorArt Auth] getUserReports error:', err);
         return [];
       }
     }
 
     /**
-     * Fetch single historical report by ID
-     */
-    async getHistoryReport(reportId) {
-      await this.init();
-      if (!reportId) return null;
-      const uid = this.user ? this.user.uid : '';
-      const resp = await fetch(`/api/user/history/${encodeURIComponent(reportId)}?user_id=${encodeURIComponent(uid)}`);
-      if (!resp.ok) return null;
-      const data = await resp.json();
-      return data.report || null;
-    }
-
-    /**
-     * Delete a report from user's history
-     */
-    async deleteHistoryReport(reportId) {
-      await this.init();
-      if (!this.user || !this.user.uid || !reportId) return false;
-      const resp = await fetch(`/api/user/history/${encodeURIComponent(reportId)}?user_id=${encodeURIComponent(this.user.uid)}`, {
-        method: 'DELETE'
-      });
-      return resp.ok;
-    }
-
-    /**
-     * Save current screening report to Supabase
+     * Save screening report to Supabase
      */
     async saveScreeningReport(payload) {
       await this.init();
-      if (!this.user || !this.user.uid) return null;
+      if (!this.user || !this.user.id) return null;
       try {
         const resp = await fetch('/api/user/save-report', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            user_id: this.user.uid,
-            title: payload.title || 'Untitled Screening',
-            technical_domain: payload.technical_domain || 'mechanical',
+            user_id: this.user.id,
+            title: payload.title || 'Untitled Invention',
+            technical_domain: payload.technical_domain || payload.domain || 'mechanical',
             summary: payload.summary || '',
             risk_level: payload.risk_level || 'MOD',
             report_data: payload.report_data || payload
@@ -602,14 +512,14 @@
     }
 
     /**
-     * Sign out current user from Firebase & clear session
+     * Sign out current user & clear session
      */
     async signOut() {
       this.clearSession();
 
-      if (this.firebaseAuth) {
+      if (this.client) {
         try {
-          await this.firebaseAuth.signOut();
+          await this.client.auth.signOut();
         } catch (e) {}
       }
 
@@ -628,7 +538,7 @@
         const avatarUrl = metadata.avatar_url || metadata.picture || null;
         const displayName = metadata.full_name || metadata.name || (this.user.email ? this.user.email.split('@')[0] : 'Operator');
         const email = this.user.email || '';
-        const provider = this.user.app_metadata ? this.user.app_metadata.provider : (this.authProvider || 'firebase');
+        const provider = this.user.app_metadata ? this.user.app_metadata.provider : (this.authProvider || 'supabase');
 
         const names = (displayName || 'Operator').trim().split(/\s+/);
         const initials = names.length > 1
@@ -653,7 +563,7 @@
 
         const providerLabel = String(provider).toLowerCase().includes('google')
           ? 'GOOGLE AUTH'
-          : (String(provider).toLowerCase().includes('firebase') ? 'FIREBASE' : 'VERIFIED');
+          : (String(provider).toLowerCase().includes('supabase') ? 'SUPABASE' : 'VERIFIED');
 
         container.innerHTML = `
           <div class="header-auth-badge" id="auth-profile-badge" title="Logged in as ${email}">
@@ -670,62 +580,47 @@
                 <circle cx="12" cy="12" r="3"></circle>
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
               </svg>
-              <span>Keys</span>
             </button>
-            <button type="button" id="btn-header-history" class="auth-action-icon-btn" title="Saved Screening Reports & History">
+            <button type="button" id="btn-header-signout" class="auth-action-icon-btn signout" title="Sign Out">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-              <span>History</span>
-            </button>
-            <button type="button" id="btn-header-logout" class="auth-logout-btn" title="Sign Out of PriorArt Copilot">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                 <polyline points="16 17 21 12 16 7"></polyline>
                 <line x1="21" y1="12" x2="9" y2="12"></line>
               </svg>
-              <span>Logout</span>
             </button>
           </div>
         `;
 
-        const logoutBtn = container.querySelector('#btn-header-logout');
-        if (logoutBtn) {
-          logoutBtn.addEventListener('click', (e) => {
+        const btnSignOut = document.getElementById('btn-header-signout');
+        if (btnSignOut) {
+          btnSignOut.addEventListener('click', (e) => {
             e.stopPropagation();
             this.signOut();
           });
         }
 
-        const keysBtn = container.querySelector('#btn-header-keys');
-        if (keysBtn) {
-          keysBtn.addEventListener('click', (e) => {
+        const btnKeys = document.getElementById('btn-header-keys');
+        if (btnKeys) {
+          btnKeys.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (typeof window.openUserSettingsModal === 'function') {
-              window.openUserSettingsModal();
-            }
-          });
-        }
-
-        const historyBtn = container.querySelector('#btn-header-history');
-        if (historyBtn) {
-          historyBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (typeof window.openScreeningHistoryModal === 'function') {
-              window.openScreeningHistoryModal();
+            const modal = document.getElementById('api-keys-modal');
+            if (modal) {
+              modal.classList.remove('hidden');
+              if (window.PriorArtUI && typeof window.PriorArtUI.loadUserApiKeysIntoModal === 'function') {
+                window.PriorArtUI.loadUserApiKeysIntoModal();
+              }
             }
           });
         }
       } else {
         container.innerHTML = `
-          <a href="/login" class="header-action-btn btn-auth-login" title="Sign in to PriorArt Copilot">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <a href="/login" class="header-login-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
               <polyline points="10 17 15 12 10 7"></polyline>
               <line x1="15" y1="12" x2="3" y2="12"></line>
             </svg>
-            <span>Sign In</span>
+            <span>Operator Sign In</span>
           </a>
         `;
       }
@@ -742,5 +637,7 @@
     }
   }
 
+  // Expose singleton instance to global scope
   window.PriorArtAuth = new AuthManager();
+
 })(window);

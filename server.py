@@ -629,29 +629,17 @@ async def delete_history_report(report_id: str, user_id: str):
     return {"status": "success" if success else "failed"}
 
 
-# Authentication configuration endpoint for client-side Firebase SDK
+# Authentication configuration endpoint for client-side Supabase SDK
 @app.get("/api/auth/config")
 async def get_auth_config():
     supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL") or os.environ.get("SUPABASE_URL", "")
     supabase_anon_key = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_ANON_KEY", "")
     
-    firebase_config = {
-        "apiKey": os.environ.get("FIREBASE_API_KEY") or os.environ.get("NEXT_PUBLIC_FIREBASE_API_KEY", ""),
-        "authDomain": os.environ.get("FIREBASE_AUTH_DOMAIN") or os.environ.get("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", ""),
-        "projectId": os.environ.get("FIREBASE_PROJECT_ID") or os.environ.get("NEXT_PUBLIC_FIREBASE_PROJECT_ID", ""),
-        "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET") or os.environ.get("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET", ""),
-        "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID") or os.environ.get("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", ""),
-        "appId": os.environ.get("FIREBASE_APP_ID") or os.environ.get("NEXT_PUBLIC_FIREBASE_APP_ID", "")
-    }
-    has_firebase = bool(firebase_config["apiKey"] and firebase_config["projectId"])
-
     return {
         "status": "success",
         "supabaseUrl": supabase_url,
         "supabaseAnonKey": supabase_anon_key,
-        "hasConfig": bool(supabase_url and supabase_anon_key),
-        "firebaseConfig": firebase_config,
-        "hasFirebaseConfig": has_firebase
+        "hasConfig": bool(supabase_url and supabase_anon_key)
     }
 
 

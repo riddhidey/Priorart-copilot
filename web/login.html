@@ -4,19 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PriorArt Copilot · Telemetry Authentication</title>
-  <meta name="description" content="Secure authentication for PriorArt Copilot multi-agent patent intelligence and screening radar." />
+  <meta name="description" content="Secure Supabase authentication for PriorArt Copilot multi-agent patent intelligence and screening radar." />
   
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   
   <link rel="stylesheet" href="/static/style.css" />
-  <!-- Firebase App & Auth SDK (v10.12.0 Compat) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <!-- Supabase JS CDN -->
+  <!-- Supabase JS CDN (Native Authentication & Database) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/static/auth.js?v=75.0"></script>
+  <script src="/static/auth.js?v=80.0"></script>
 </head>
 <body class="auth-page-body theme-dark">
   <!-- Multi-layer background telemetry grid -->
@@ -58,14 +55,14 @@
         <div class="auth-card-radar-bar">
           <div class="radar-tag">
             <span class="auth-beacon-dot"></span>
-            <span id="auth-node-status">FIREBASE AUTH & GOOGLE OAUTH ACTIVE</span>
+            <span id="auth-node-status">SUPABASE AUTH ACTIVE</span>
           </div>
           <div class="auth-terminal-code">[SEC-LEVEL 4]</div>
         </div>
 
         <div class="auth-card-header">
           <h1 class="auth-title" id="auth-main-title">Operator Access</h1>
-          <p class="auth-subtitle" id="auth-main-subtitle">Authenticate to access live patent intelligence radar and screening copilot.</p>
+          <p class="auth-subtitle" id="auth-main-subtitle">Authenticate with Supabase to access live patent intelligence radar and screening copilot.</p>
         </div>
 
         <!-- Inline Alert Banner -->
@@ -141,73 +138,18 @@
           </button>
         </form>
 
+        <div style="margin-top: 1rem; text-align: center;">
+          <button type="button" id="btn-demo-operator" class="btn-secondary" style="width: 100%; padding: 0.65rem; font-size: 0.82rem; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>⚡ Start 1-Click Demo Operator Session</span>
+          </button>
+        </div>
+
         <div class="auth-card-footer">
           <p class="auth-footer-notice">
             By authenticating, you access preliminary AI patentability search services governed by 35 U.S.C. §§ 102 & 103 heuristic screening.
           </p>
           <div class="auth-fallback-links">
             <a href="/" class="auth-back-link">← Return to Radar Map</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Firebase Google Auth Integration Guide Modal -->
-      <div id="firebase-setup-modal" class="auth-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="fb-modal-title">
-        <div class="auth-modal-card">
-          <div class="auth-modal-header">
-            <div class="modal-header-tag">
-              <span class="auth-beacon-dot"></span>
-              <span>FIREBASE INTEGRATION REQUIRED</span>
-            </div>
-            <button type="button" class="auth-modal-close" id="btn-close-fb-modal" title="Close modal">&times;</button>
-          </div>
-
-          <div class="auth-modal-body">
-            <h3 id="fb-modal-title" class="auth-modal-title">Connect Firebase Google Authentication</h3>
-            <p class="auth-modal-desc">
-              To enable live Google Sign-In, add your Firebase Web Project credentials to the project environment (<code>.env</code>).
-            </p>
-
-            <div class="setup-steps-list">
-              <div class="setup-step-item">
-                <span class="step-badge">1</span>
-                <div class="step-text">
-                  <strong>Open Firebase Console:</strong> Go to <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer">console.firebase.google.com</a> and create or select your project.
-                </div>
-              </div>
-              <div class="setup-step-item">
-                <span class="step-badge">2</span>
-                <div class="step-text">
-                  <strong>Enable Google Provider:</strong> In <em>Authentication &gt; Sign-in method</em>, click <strong>Google</strong> and toggle <strong>Enable</strong>.
-                </div>
-              </div>
-              <div class="setup-step-item">
-                <span class="step-badge">3</span>
-                <div class="setup-step-item-sub">
-                  <span class="step-badge">3</span>
-                  <div class="step-text">
-                    <strong>Add Authorized Domains:</strong> Under <em>Authentication &gt; Settings &gt; Authorized domains</em>, ensure <code>localhost</code> and <code>127.0.0.1</code> are listed.
-                  </div>
-                </div>
-              </div>
-              <div class="setup-step-item">
-                <span class="step-badge">4</span>
-                <div class="step-text">
-                  <strong>Copy Web Config to .env:</strong> In <em>Project Settings &gt; General &gt; Your apps (&lt;/&gt;)</em>, copy values into <code>.env</code>:
-                  <pre class="setup-code-box">FIREBASE_API_KEY=AIzaSy...
-FIREBASE_AUTH_DOMAIN=your-app.firebaseapp.com
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
-                </div>
-              </div>
-            </div>
-
-            <div class="auth-modal-actions">
-              <button type="button" class="btn-primary auth-submit-btn" id="btn-demo-operator">
-                <span>Start Verified Demo Operator Session</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -233,6 +175,7 @@ FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
       const tabSignUp = document.getElementById('tab-signup');
       const togglePwBtn = document.getElementById('btn-toggle-password');
       const btnGoogle = document.getElementById('btn-oauth-google');
+      const btnDemoOperator = document.getElementById('btn-demo-operator');
 
       function showAlert(message, type = 'error') {
         alertBox.className = `auth-alert ${type}`;
@@ -257,11 +200,9 @@ FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
         }
       }
 
-      // Check if already authenticated or if returned with a redirect error
+      // Check if already authenticated
       window.PriorArtAuth.init().then(() => {
-        if (window.PriorArtAuth.redirectError) {
-          showAlert(window.PriorArtAuth.formatFirebaseError(window.PriorArtAuth.redirectError));
-        } else if (window.PriorArtAuth.session && window.PriorArtAuth.user) {
+        if (window.PriorArtAuth.session && window.PriorArtAuth.user) {
           window.location.href = redirectUrl;
         }
       });
@@ -308,6 +249,46 @@ FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
         togglePwBtn.textContent = isPw ? '🙈' : '👁️';
       });
 
+      // 1-Click Demo Operator button
+      if (btnDemoOperator) {
+        btnDemoOperator.addEventListener('click', () => {
+          showAlert('Starting verified Operator session...', 'success');
+          window.PriorArtAuth.activateOperatorSession('operator');
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 350);
+        });
+      }
+
+      // Google Sign-In with Supabase Authentication
+      btnGoogle.addEventListener('click', async () => {
+        hideAlert();
+        try {
+          sessionStorage.setItem('priorart_auth_redirect', redirectUrl);
+          btnGoogle.disabled = true;
+          const originalContent = btnGoogle.innerHTML;
+          btnGoogle.innerHTML = `<span>Connecting to Google...</span>`;
+
+          const result = await window.PriorArtAuth.signInWithGoogle();
+
+          if (result && result.needsConfig) {
+            btnGoogle.disabled = false;
+            btnGoogle.innerHTML = originalContent;
+            showAlert('Supabase is not configured yet. Please configure SUPABASE_URL and SUPABASE_ANON_KEY on Render.', 'warn');
+            return;
+          }
+
+          if (result && result.error) {
+            btnGoogle.disabled = false;
+            btnGoogle.innerHTML = originalContent;
+            showAlert(result.error.message || 'Google Sign-In failed.');
+          }
+        } catch (err) {
+          btnGoogle.disabled = false;
+          showAlert(err.message || 'Failed to initiate Google authentication.');
+        }
+      });
+
       // Email/Password submission
       authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -332,54 +313,31 @@ FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
           if (currentMode === 'signin') {
             const { data, error } = await window.PriorArtAuth.signInWithEmail(email, password);
             if (error) {
-              const code = error.code || '';
               const msg = (error.message || '').toLowerCase();
 
-              // Auto-redirect / Auto-signup when user does not exist
-              const isNotFound = code === 'auth/user-not-found' || 
-                                 msg.includes('user not found') || 
-                                 msg.includes('user-not-found') ||
-                                 msg.includes('no user record');
-
-              if (isNotFound) {
-                showAlert('No account found for this email. Automatically creating your operator account...', 'warn');
-                try {
-                  const regRes = await window.PriorArtAuth.signUpWithEmail(email, password);
-                  if (regRes && regRes.data && regRes.data.session) {
-                    showAlert('Account created & authorized! Launching radar...', 'success');
-                    setTimeout(() => {
-                      window.location.href = redirectUrl;
-                    }, 400);
-                    return;
-                  } else if (regRes && regRes.error) {
-                    switchToSignUp();
-                    showAlert(regRes.error.message || 'Switched to Create Account. Please complete registration below.', 'warn');
-                    setLoading(false);
-                    return;
-                  }
-                } catch (autoErr) {
+              // Auto-redirect to sign up if account doesn't exist
+              if (msg.includes('invalid login credentials') || msg.includes('user not found') || msg.includes('invalid_grant')) {
+                // Attempt automatic signup first!
+                const regRes = await window.PriorArtAuth.signUpWithEmail(email, password);
+                if (regRes && regRes.data && regRes.data.session) {
+                  showAlert('Account created & verified! Launching radar...', 'success');
+                  setTimeout(() => {
+                    window.location.href = redirectUrl;
+                  }, 400);
+                  return;
+                } else if (regRes && regRes.needsEmailConfirmation) {
+                  showAlert('Account created! Please check your email to confirm registration, or use the 1-Click Demo button.', 'success');
+                  setLoading(false);
+                  return;
+                } else {
                   switchToSignUp();
-                  showAlert('No existing account found. Switched to Create Account — click below to register.', 'warn');
+                  showAlert('Switched to Create Account — click below to register this email.', 'warn');
                   setLoading(false);
                   return;
                 }
               }
 
-              // Handle invalid credential (wrong password OR non-existent user with email enumeration protection)
-              if (msg.includes('invalid login credentials') || msg.includes('invalid_grant') || code === 'auth/invalid-credential') {
-                switchToSignUp();
-                showAlert('Account not found or password incorrect. Switched to Create Account — click below to register this email.', 'warn');
-                setLoading(false);
-                return;
-              }
-
-              if (msg.includes('email not confirmed') || msg.includes('email_not_confirmed')) {
-                showAlert('Email address has not been confirmed yet. Please check your inbox for the activation link.', 'warn');
-              } else if (msg.includes('rate limit') || msg.includes('too many requests')) {
-                showAlert('Too many authentication requests. Please wait a few moments before retrying.', 'warn');
-              } else {
-                showAlert(error.message || 'Authentication failed. Please verify your credentials.');
-              }
+              showAlert(error.message || 'Authentication failed. Please verify your credentials.');
               setLoading(false);
               return;
             }
@@ -391,14 +349,12 @@ FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
               }, 400);
             }
           } else {
-            const { data, error } = await window.PriorArtAuth.signUpWithEmail(email, password);
+            const { data, error, needsEmailConfirmation } = await window.PriorArtAuth.signUpWithEmail(email, password);
             if (error) {
               const msg = error.message || '';
-              if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('user already exists') || error.code === 'auth/email-already-in-use') {
+              if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('user already exists')) {
                 switchToSignIn();
                 showAlert('An account with this email already exists. Switched to Sign In — please enter your password.', 'warn');
-              } else if (msg.toLowerCase().includes('password')) {
-                showAlert(msg, 'warn');
               } else {
                 showAlert(msg || 'Registration failed. Please check your inputs.');
               }
@@ -411,88 +367,14 @@ FIREBASE_APP_ID=1:123456789:web:abcdef</pre>
               setTimeout(() => {
                 window.location.href = redirectUrl;
               }, 400);
-            } else {
-              showAlert('Registration complete! Please check your email to confirm your account before signing in.', 'success');
+            } else if (needsEmailConfirmation) {
+              showAlert('Registration complete! Please check your email inbox to confirm your account.', 'success');
               setLoading(false);
             }
           }
         } catch (err) {
           showAlert(err.message || 'An unexpected error occurred during authentication.');
           setLoading(false);
-        }
-      });
-
-      // Firebase Google Sign-In Setup Modal controls
-      const fbModal = document.getElementById('firebase-setup-modal');
-      const btnCloseFbModal = document.getElementById('btn-close-fb-modal');
-      const btnDemoOperator = document.getElementById('btn-demo-operator');
-
-      function openFirebaseModal() {
-        if (fbModal) fbModal.classList.remove('hidden');
-      }
-
-      function closeFirebaseModal() {
-        if (fbModal) fbModal.classList.add('hidden');
-      }
-
-      if (btnCloseFbModal) {
-        btnCloseFbModal.addEventListener('click', closeFirebaseModal);
-      }
-
-      if (fbModal) {
-        fbModal.addEventListener('click', (e) => {
-          if (e.target === fbModal) closeFirebaseModal();
-        });
-      }
-
-      if (btnDemoOperator) {
-        btnDemoOperator.addEventListener('click', () => {
-          closeFirebaseModal();
-          showAlert('Starting verified Google Operator session...', 'success');
-          window.PriorArtAuth.activateOperatorSession('google-firebase');
-          setTimeout(() => {
-            window.location.href = redirectUrl;
-          }, 350);
-        });
-      }
-
-      // Google Sign-In with Firebase Authentication
-      btnGoogle.addEventListener('click', async () => {
-        hideAlert();
-        try {
-          sessionStorage.setItem('priorart_auth_redirect', redirectUrl);
-          btnGoogle.disabled = true;
-          const originalContent = btnGoogle.innerHTML;
-          btnGoogle.innerHTML = `<span>Connecting to Google...</span>`;
-
-          const result = await window.PriorArtAuth.signInWithGoogleFirebase();
-          console.log('[PriorArt Auth] Google Sign-In result:', result);
-
-          if (result && result.needsConfig) {
-            btnGoogle.disabled = false;
-            btnGoogle.innerHTML = originalContent;
-            openFirebaseModal();
-            return;
-          }
-
-          if (result && result.error) {
-            btnGoogle.disabled = false;
-            btnGoogle.innerHTML = originalContent;
-            console.error('[PriorArt Auth] Detailed Error:', result.error);
-            const errCode = result.error.code ? `[${result.error.code}] ` : '';
-            showAlert(errCode + (result.error.message || 'Google Sign-In was cancelled or failed.'));
-          } else if (result && (result.data || result.isFallback || result.isRedirecting)) {
-            if (!result.isRedirecting) {
-              showAlert('Google authorization verified. Launching radar...', 'success');
-              setTimeout(() => {
-                window.location.href = redirectUrl;
-              }, 400);
-            }
-          }
-        } catch (err) {
-          btnGoogle.disabled = false;
-          console.error('[PriorArt Auth] Catch error:', err);
-          showAlert(err.message || 'Failed to initiate Google authentication.');
         }
       });
     })();
