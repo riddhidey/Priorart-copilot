@@ -5301,6 +5301,11 @@ function initApp() {
       if (e.target === userSettingsModal) closeUserSettingsModal();
     });
   }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && userSettingsModal && !userSettingsModal.classList.contains("hidden")) {
+      closeUserSettingsModal();
+    }
+  });
 
   if (btnToggleGeminiKey && inputCustomGemini) {
     btnToggleGeminiKey.addEventListener("click", () => {

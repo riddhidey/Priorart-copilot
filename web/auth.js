@@ -624,12 +624,11 @@
         if (btnKeys) {
           btnKeys.addEventListener('click', (e) => {
             e.stopPropagation();
-            const modal = document.getElementById('api-keys-modal');
-            if (modal) {
-              modal.classList.remove('hidden');
-              if (window.PriorArtUI && typeof window.PriorArtUI.loadUserApiKeysIntoModal === 'function') {
-                window.PriorArtUI.loadUserApiKeysIntoModal();
-              }
+            if (typeof window.openUserSettingsModal === 'function') {
+              window.openUserSettingsModal();
+            } else {
+              const modal = document.getElementById('user-settings-modal');
+              if (modal) modal.classList.remove('hidden');
             }
           });
         }
