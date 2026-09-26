@@ -1386,9 +1386,10 @@ function initApp() {
 
     let visitorCoords = getZeroPermissionTimezoneSeed();
 
-    function placeVisitorBeacon(lat, lon, city, country) {
+    function placeVisitorBeacon(lat, lon, city, country, isLiveGps = false) {
       visitorCoords.lat = lat;
       visitorCoords.lon = lon;
+      visitorCoords.isLiveGps = isLiveGps;
       if (city) visitorCoords.city = city;
       if (country) visitorCoords.country = country;
 
@@ -1406,6 +1407,9 @@ function initApp() {
       const locEl = document.getElementById("visitor-location-name");
       const pinCity = document.getElementById("pin-hud-city");
       const pinCoords = document.getElementById("pin-hud-coords");
+      const accEl = document.getElementById("visitor-acc");
+      const statusTag = document.getElementById("visitor-status-tag");
+      const floatingTag = document.querySelector(".globe-floating-pin-hud .pin-hud-tag");
 
       const latStr = Math.abs(lat).toFixed(4) + "° " + (lat >= 0 ? "N" : "S");
       const lonStr = Math.abs(lon).toFixed(4) + "° " + (lon >= 0 ? "E" : "W");
@@ -1415,6 +1419,17 @@ function initApp() {
       if (locEl) locEl.innerHTML = `<span class="loc-city">${visitorCoords.city}, ${visitorCoords.country}</span>`;
       if (pinCity) pinCity.textContent = visitorCoords.city;
       if (pinCoords) pinCoords.textContent = `${latStr}, ${lonStr}`;
+
+      if (accEl) {
+        accEl.textContent = isLiveGps ? "LIVE GPS LOCK" : "IP TRIANGULATED";
+        accEl.className = isLiveGps ? "coord-val text-success" : "coord-val text-accent";
+      }
+      if (statusTag) {
+        statusTag.textContent = isLiveGps ? "LIVE GPS ORIGIN" : "MAIN ORIGIN NODE";
+      }
+      if (floatingTag) {
+        floatingTag.textContent = isLiveGps ? "★ LIVE TELEMETRY NODE" : "★ MAIN TELEMETRY NODE";
+      }
 
       // Refresh any active prior-art arcs from the new visitor coordinates
       const currentQuery = ((document.getElementById("inv-title")?.value || "") + " " + (document.getElementById("inv-text")?.value || "")).trim();
@@ -2860,6 +2875,13 @@ function initApp() {
       });
     }
 
+    const btnSyncGps = document.getElementById("btn-sync-live-gps");
+    if (btnSyncGps) {
+      btnSyncGps.addEventListener("click", () => {
+        triggerLiveGpsCalibration(true);
+      });
+    }
+
     const btnSpin = document.getElementById("btn-toggle-globe-spin");
     const btnSpinLabel = document.getElementById("btn-spin-label");
     if (btnSpin) {
@@ -2941,122 +2963,273 @@ function initApp() {
       }
     });
 
-    // Geolocation Resolution (Zero Permission, High-Accuracy Multi-Provider Waterfall)
+    // High-Accuracy Live Geolocation Resolver (Device GPS / Wi-Fi + Zero-Permission Multi-Provider Waterfall)
+    async function reverseGeocodeCoords(lat, lon) {
+      try {
+        const resp = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`, {
+          signal: AbortSignal.timeout(3500)
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          const city = data.city || data.locality || data.principalSubdivision || "Client Node";
+          const country = data.countryName || "Global";
+          return { city, country };
+        }
+      } catch (e) {}
+
+      try {
+        const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, {
+          signal: AbortSignal.timeout(3500),
+          headers: { "Accept": "application/json" }
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          const addr = data.address || {};
+          const city = addr.city || addr.town || addr.municipality || addr.state_district || addr.county || "Client Node";
+          const country = addr.country || "Global";
+          return { city, country };
+        }
+      } catch (e) {}
+
+      return { city: "Client Node", country: "Global" };
+    }
+
+    function requestDeviceLivePosition(timeoutMs = 7000) {
+      if (!navigator.geolocation || !navigator.geolocation.getCurrentPosition) {
+        return Promise.resolve(null);
+      }
+      return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            try {
+              const lat = pos.coords.latitude;
+              const lon = pos.coords.longitude;
+              const { city, country } = await reverseGeocodeCoords(lat, lon);
+              resolve({
+                lat,
+                lon,
+                city,
+                country,
+                accuracy: pos.coords.accuracy,
+                isLiveGps: true
+              });
+            } catch (err) {
+              resolve(null);
+            }
+          },
+          (err) => {
+            console.log("Device GPS prompt dismissed or unavailable, falling back to IP waterfall:", err?.message);
+            resolve(null);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: timeoutMs,
+            maximumAge: 60000
+          }
+        );
+      });
+    }
+
+    async function triggerLiveGpsCalibration(userClicked = false) {
+      const btnSync = document.getElementById("btn-sync-live-gps");
+      if (btnSync) {
+        btnSync.classList.add("syncing");
+        btnSync.innerHTML = `<span class="spin-dot">●</span> <span>ACQUIRING GPS...</span>`;
+      }
+      if (userClicked && typeof showToast === "function") {
+        showToast("Requesting live satellite / GPS coordinates from device...", "info");
+      }
+
+      const liveLoc = await requestDeviceLivePosition(9000);
+      if (btnSync) {
+        btnSync.classList.remove("syncing");
+        btnSync.innerHTML = `
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3m0 14v3M2 12h3m14 0h3"></path></svg>
+          <span>${liveLoc ? "GPS LOCKED" : "SYNC LIVE GPS"}</span>
+        `;
+        if (liveLoc) btnSync.classList.add("locked");
+      }
+
+      if (liveLoc && !isNaN(liveLoc.lat) && !isNaN(liveLoc.lon)) {
+        visitorCoords = liveLoc;
+        placeVisitorBeacon(liveLoc.lat, liveLoc.lon, liveLoc.city, liveLoc.country, true);
+        try {
+          localStorage.setItem("priorart_user_live_geo", JSON.stringify(liveLoc));
+        } catch (e) {}
+
+        const latStr = Math.abs(liveLoc.lat).toFixed(4) + "° " + (liveLoc.lat >= 0 ? "N" : "S");
+        const lonStr = Math.abs(liveLoc.lon).toFixed(4) + "° " + (liveLoc.lon >= 0 ? "E" : "W");
+        const geoSummary = `LIVE GPS SPOT: ${liveLoc.city.toUpperCase()}, ${liveLoc.country.toUpperCase()} (${latStr}, ${lonStr})`;
+        if (window.__updatePreloaderGeo) window.__updatePreloaderGeo(geoSummary);
+        const geoStatus = document.getElementById("preloader-geo-status");
+        if (geoStatus) geoStatus.textContent = geoSummary;
+
+        focusCoordinates(liveLoc.lat, liveLoc.lon, false);
+        if (userClicked && typeof showToast === "function") {
+          showToast(`Exact live location locked: ${liveLoc.city}, ${liveLoc.country}`, "success");
+        }
+        return true;
+      } else if (userClicked && typeof showToast === "function") {
+        showToast("Device location access denied or timed out. Please allow browser location access.", "warning");
+      }
+      return false;
+    }
+
     async function resolveClientLocation() {
       const geoStatus = document.getElementById("preloader-geo-status");
       const pingEl = document.getElementById("visitor-ping");
       const startPing = performance.now();
 
-      // Multi-provider zero-permission waterfall (NO browser permission dialogs)
-      const providers = [
-        {
-          name: "Server-Proxy API",
-          url: "/api/visitor-geo",
-          parse: (data) => {
-            if (data && data.status === "success" && data.latitude != null && data.longitude != null) {
-              return {
-                lat: parseFloat(data.latitude),
-                lon: parseFloat(data.longitude),
-                city: data.city || "Client Node",
-                country: data.country || "Global"
-              };
-            }
-            return null;
-          }
-        },
-        {
-          name: "ipwho.is",
-          url: "https://ipwho.is/",
-          parse: (data) => {
-            if (data && data.success !== false && data.latitude != null && data.longitude != null) {
-              return {
-                lat: parseFloat(data.latitude),
-                lon: parseFloat(data.longitude),
-                city: data.city || data.region || "Client Node",
-                country: data.country || "Global"
-              };
-            }
-            return null;
-          }
-        },
-        {
-          name: "freeipapi.com",
-          url: "https://freeipapi.com/api/json",
-          parse: (data) => {
-            if (data && data.latitude != null && data.longitude != null) {
-              return {
-                lat: parseFloat(data.latitude),
-                lon: parseFloat(data.longitude),
-                city: data.cityName || data.regionName || "Client Node",
-                country: data.countryName || "Global"
-              };
-            }
-            return null;
-          }
-        },
-        {
-          name: "geojs.io",
-          url: "https://get.geojs.io/v1/ip/geo.json",
-          parse: (data) => {
-            if (data && data.latitude != null && data.longitude != null) {
-              return {
-                lat: parseFloat(data.latitude),
-                lon: parseFloat(data.longitude),
-                city: data.city || data.region || "Client Node",
-                country: data.country || "Global"
-              };
-            }
-            return null;
-          }
-        }
-      ];
-
-      let resolved = null;
-      for (const p of providers) {
+      // 1. Instant recovery from previously authenticated live GPS session
+      let hasCachedLive = false;
+      const cached = localStorage.getItem("priorart_user_live_geo");
+      if (cached) {
         try {
-          const resp = await fetch(p.url, {
-            signal: AbortSignal.timeout(2800),
-            headers: { "Accept": "application/json" }
-          });
-          if (!resp.ok) continue;
-          const json = await resp.json();
-          const parsed = p.parse(json);
+          const parsed = JSON.parse(cached);
           if (parsed && !isNaN(parsed.lat) && !isNaN(parsed.lon)) {
-            resolved = parsed;
-            break;
+            visitorCoords = parsed;
+            placeVisitorBeacon(parsed.lat, parsed.lon, parsed.city, parsed.country, true);
+            hasCachedLive = true;
+            const btnSync = document.getElementById("btn-sync-live-gps");
+            if (btnSync) btnSync.classList.add("locked");
           }
-        } catch (e) {
-          // Continue to next provider in waterfall
-        }
+        } catch (e) {}
       }
 
-      const pingMs = Math.max(14, Math.round(performance.now() - startPing));
+      // 2. Start high-precision device live GPS acquisition immediately
+      const gpsPromise = requestDeviceLivePosition(6500);
+
+      // If we don't have a cached live position, also start the IP waterfall as a fast preview
+      const ipWaterfallPromise = (async () => {
+        const providers = [
+          {
+            name: "Server-Proxy API",
+            url: "/api/visitor-geo",
+            parse: (data) => {
+              if (data && data.status === "success" && data.latitude != null && data.longitude != null) {
+                return {
+                  lat: parseFloat(data.latitude),
+                  lon: parseFloat(data.longitude),
+                  city: data.city || "Client Node",
+                  country: data.country || "Global",
+                  isLiveGps: false
+                };
+              }
+              return null;
+            }
+          },
+          {
+            name: "ipwho.is",
+            url: "https://ipwho.is/",
+            parse: (data) => {
+              if (data && data.success !== false && data.latitude != null && data.longitude != null) {
+                return {
+                  lat: parseFloat(data.latitude),
+                  lon: parseFloat(data.longitude),
+                  city: data.city || data.region || "Client Node",
+                  country: data.country || "Global",
+                  isLiveGps: false
+                };
+              }
+              return null;
+            }
+          },
+          {
+            name: "freeipapi.com",
+            url: "https://freeipapi.com/api/json",
+            parse: (data) => {
+              if (data && data.latitude != null && data.longitude != null) {
+                return {
+                  lat: parseFloat(data.latitude),
+                  lon: parseFloat(data.longitude),
+                  city: data.cityName || data.regionName || "Client Node",
+                  country: data.countryName || "Global",
+                  isLiveGps: false
+                };
+              }
+              return null;
+            }
+          },
+          {
+            name: "geojs.io",
+            url: "https://get.geojs.io/v1/ip/geo.json",
+            parse: (data) => {
+              if (data && data.latitude != null && data.longitude != null) {
+                return {
+                  lat: parseFloat(data.latitude),
+                  lon: parseFloat(data.longitude),
+                  city: data.city || data.region || "Client Node",
+                  country: data.country || "Global",
+                  isLiveGps: false
+                };
+              }
+              return null;
+            }
+          }
+        ];
+
+        for (const p of providers) {
+          try {
+            const resp = await fetch(p.url, {
+              signal: AbortSignal.timeout(2800),
+              headers: { "Accept": "application/json" }
+            });
+            if (!resp.ok) continue;
+            const json = await resp.json();
+            const parsed = p.parse(json);
+            if (parsed && !isNaN(parsed.lat) && !isNaN(parsed.lon)) {
+              return parsed;
+            }
+          } catch (e) {}
+        }
+        return null;
+      })();
+
+      if (!hasCachedLive) {
+        ipWaterfallPromise.then((ipResult) => {
+          if (ipResult && visitorCoords.isLiveGps !== true) {
+            visitorCoords = ipResult;
+            placeVisitorBeacon(ipResult.lat, ipResult.lon, ipResult.city, ipResult.country, false);
+            focusCoordinates(ipResult.lat, ipResult.lon, false);
+          }
+        });
+      }
+
+      // Wait for device GPS
+      const liveGps = await gpsPromise;
+      const pingMs = Math.max(12, Math.round(performance.now() - startPing));
       if (pingEl) pingEl.textContent = `${pingMs} ms`;
 
-      if (resolved) {
-        visitorCoords = resolved;
-        placeVisitorBeacon(resolved.lat, resolved.lon, resolved.city, resolved.country);
+      if (liveGps && !isNaN(liveGps.lat) && !isNaN(liveGps.lon)) {
+        visitorCoords = liveGps;
+        placeVisitorBeacon(liveGps.lat, liveGps.lon, liveGps.city, liveGps.country, true);
+        try {
+          localStorage.setItem("priorart_user_live_geo", JSON.stringify(liveGps));
+        } catch (e) {}
 
-        const latStr = Math.abs(resolved.lat).toFixed(2) + "° " + (resolved.lat >= 0 ? "N" : "S");
-        const lonStr = Math.abs(resolved.lon).toFixed(2) + "° " + (resolved.lon >= 0 ? "E" : "W");
-        const geoSummary = `GEO: ${resolved.city.toUpperCase()}, ${resolved.country.toUpperCase()} (${latStr}, ${lonStr})`;
+        const latStr = Math.abs(liveGps.lat).toFixed(4) + "° " + (liveGps.lat >= 0 ? "N" : "S");
+        const lonStr = Math.abs(liveGps.lon).toFixed(4) + "° " + (liveGps.lon >= 0 ? "E" : "W");
+        const geoSummary = `LIVE GPS SPOT: ${liveGps.city.toUpperCase()}, ${liveGps.country.toUpperCase()} (${latStr}, ${lonStr})`;
         if (window.__updatePreloaderGeo) window.__updatePreloaderGeo(geoSummary);
         if (geoStatus) geoStatus.textContent = geoSummary;
 
-        setTimeout(() => focusCoordinates(resolved.lat, resolved.lon, false), 700);
-      } else {
-        // Fallback to zero-permission timezone database (covers user wherever they are in the world)
-        const seed = getZeroPermissionTimezoneSeed();
-        visitorCoords = seed;
-        placeVisitorBeacon(seed.lat, seed.lon, seed.city, seed.country);
+        const btnSync = document.getElementById("btn-sync-live-gps");
+        if (btnSync) btnSync.classList.add("locked");
 
-        const latStr = Math.abs(seed.lat).toFixed(2) + "° " + (seed.lat >= 0 ? "N" : "S");
-        const lonStr = Math.abs(seed.lon).toFixed(2) + "° " + (seed.lon >= 0 ? "E" : "W");
-        const geoSummary = `GEO: ${seed.city.toUpperCase()}, ${seed.country.toUpperCase()} (${latStr}, ${lonStr})`;
+        setTimeout(() => focusCoordinates(liveGps.lat, liveGps.lon, false), 500);
+      } else if (!hasCachedLive) {
+        const ipRes = await ipWaterfallPromise;
+        const finalFallback = ipRes || getZeroPermissionTimezoneSeed();
+        visitorCoords = finalFallback;
+        placeVisitorBeacon(finalFallback.lat, finalFallback.lon, finalFallback.city, finalFallback.country, false);
+
+        const latStr = Math.abs(finalFallback.lat).toFixed(2) + "° " + (finalFallback.lat >= 0 ? "N" : "S");
+        const lonStr = Math.abs(finalFallback.lon).toFixed(2) + "° " + (finalFallback.lon >= 0 ? "E" : "W");
+        const geoSummary = `GEO: ${finalFallback.city.toUpperCase()}, ${finalFallback.country.toUpperCase()} (${latStr}, ${lonStr})`;
         if (window.__updatePreloaderGeo) window.__updatePreloaderGeo(geoSummary);
         if (geoStatus) geoStatus.textContent = geoSummary;
 
-        setTimeout(() => focusCoordinates(seed.lat, seed.lon, false), 700);
+        setTimeout(() => focusCoordinates(finalFallback.lat, finalFallback.lon, false), 700);
       }
     }
     resolveClientLocation();
@@ -3064,6 +3237,17 @@ function initApp() {
     // Floating HUD Pin
     const floatingPinHud = document.getElementById("globe-pin-hud");
     const projVector = new THREE.Vector3();
+
+    if (floatingPinHud) {
+      floatingPinHud.style.cursor = "pointer";
+      floatingPinHud.title = "Click to focus & calibrate live GPS location";
+      floatingPinHud.addEventListener("click", () => {
+        focusCoordinates(visitorCoords.lat, visitorCoords.lon, false);
+        if (!visitorCoords.isLiveGps) {
+          triggerLiveGpsCalibration(true);
+        }
+      });
+    }
 
     function updateFloatingHud() {
       if (!floatingPinHud || !beaconGroup.visible) return;

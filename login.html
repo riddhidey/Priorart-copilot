@@ -377,6 +377,40 @@
           setLoading(false);
         }
       });
+
+      // Pre-warm high-accuracy live GPS location during authentication so radar globe opens directly on user's exact spot
+      try {
+        if (navigator.geolocation && navigator.geolocation.getCurrentPosition) {
+          navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+              try {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const resp = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+                let city = "Live Client Node";
+                let country = "Global";
+                if (resp.ok) {
+                  const data = await resp.json();
+                  city = data.city || data.locality || data.principalSubdivision || "Live Client Node";
+                  country = data.countryName || "Global";
+                }
+                const livePayload = {
+                  lat,
+                  lon,
+                  city,
+                  country,
+                  accuracy: pos.coords.accuracy,
+                  isLiveGps: true,
+                  timestamp: Date.now()
+                };
+                localStorage.setItem("priorart_user_live_geo", JSON.stringify(livePayload));
+              } catch (e) {}
+            },
+            () => {},
+            { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
+          );
+        }
+      } catch (e) {}
     })();
   </script>
 </body>

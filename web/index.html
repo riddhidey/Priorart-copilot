@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="/static/style.css?v=73.0">
+  <link rel="stylesheet" href="/static/style.css?v=74.0">
   <!-- Supabase JS Client & Auth Manager -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/static/auth.js?v=80.0"></script>
@@ -286,7 +286,13 @@
           <div class="hud-card visitor-node-card">
             <div class="hud-card-header">
               <span class="hud-tag">CLIENT TELEMETRY NODE</span>
-              <span class="hud-live-tag main-node-beacon" id="visitor-status-tag">MAIN ORIGIN NODE</span>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <button type="button" id="btn-sync-live-gps" class="hud-gps-sync-btn" title="Detect & calibrate exact live GPS position anywhere in the world">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3m0 14v3M2 12h3m14 0h3"></path></svg>
+                  <span>SYNC LIVE GPS</span>
+                </button>
+                <span class="hud-live-tag main-node-beacon" id="visitor-status-tag">MAIN ORIGIN NODE</span>
+              </div>
             </div>
             <div class="visitor-location-name" id="visitor-location-name">
               <span class="loc-city">Detecting Visitor Node...</span>
@@ -1226,7 +1232,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
   <script src="/static/world_land_data.js?v=61.0"></script>
-  <script src="/static/app.js?v=72.0"></script>
+  <script src="/static/app.js?v=74.0"></script>
   <script>
     // Enforce Supabase Authentication Route Guard for Screening & Radar Telemetry
     if (window.PriorArtAuth) {
