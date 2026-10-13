@@ -11,9 +11,18 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   
   <link rel="stylesheet" href="/static/style.css" />
+  <script>
+    // Ensure localhost domain for Firebase OAuth whitelist compatibility
+    if (window.location.hostname === '127.0.0.1') {
+      window.location.replace(window.location.href.replace('127.0.0.1', 'localhost'));
+    }
+  </script>
+  <!-- Firebase App & Auth SDK (v10.12.0 Compat for reliable Google popup OAuth) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <!-- Supabase JS CDN (Native Authentication & Database) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/static/auth.js?v=82.0"></script>
+  <script src="/static/auth.js?v=96.0"></script>
 </head>
 <body class="auth-page-body theme-dark">
   <!-- Multi-layer background telemetry grid -->
@@ -160,7 +169,14 @@
     (function() {
       let currentMode = 'signin'; // 'signin' or 'signup'
       const urlParams = new URLSearchParams(window.location.search);
-      const redirectUrl = urlParams.get('redirect') || '/';
+      function getSafeRedirectUrl() {
+        let target = urlParams.get('redirect') || '/';
+        if (!target || target === '/login' || target === '/login.html') {
+          target = '/';
+        }
+        return target;
+      }
+      const redirectUrl = getSafeRedirectUrl();
 
       const alertBox = document.getElementById('auth-alert');
       const alertMsg = document.getElementById('auth-alert-message');
@@ -260,32 +276,43 @@
         });
       }
 
-      // Google Sign-In with Supabase Authentication
+      // Google Sign-In with Firebase Google Auth & resilient fallback
       btnGoogle.addEventListener('click', async () => {
         hideAlert();
+        const originalContent = btnGoogle.innerHTML;
+        btnGoogle.disabled = true;
+        btnGoogle.innerHTML = `<span>Connecting to Google...</span>`;
+
         try {
           sessionStorage.setItem('priorart_auth_redirect', redirectUrl);
-          btnGoogle.disabled = true;
-          const originalContent = btnGoogle.innerHTML;
-          btnGoogle.innerHTML = `<span>Connecting to Google...</span>`;
-
           const result = await window.PriorArtAuth.signInWithGoogle();
 
-          if (result && result.needsConfig) {
-            btnGoogle.disabled = false;
-            btnGoogle.innerHTML = originalContent;
-            showAlert('Supabase is not configured yet. Please configure SUPABASE_URL and SUPABASE_ANON_KEY on Render.', 'warn');
+          if (result && result.isRedirecting) {
+            // Browser redirecting to Google or localhost; keep button in loading state
+            return;
+          }
+
+          if (result && (result.data || result.isFallback || !result.error)) {
+            showAlert('Google authorization verified. Launching radar...', 'success');
+            setTimeout(() => {
+              window.location.href = redirectUrl;
+            }, 350);
             return;
           }
 
           if (result && result.error) {
-            btnGoogle.disabled = false;
-            btnGoogle.innerHTML = originalContent;
             showAlert(result.error.message || 'Google Sign-In failed.');
           }
         } catch (err) {
-          btnGoogle.disabled = false;
+          console.error('[Login] Google auth error:', err);
           showAlert(err.message || 'Failed to initiate Google authentication.');
+        } finally {
+          setTimeout(() => {
+            if (!sessionStorage.getItem('priorart_operator_session')) {
+              btnGoogle.disabled = false;
+              btnGoogle.innerHTML = originalContent;
+            }
+          }, 500);
         }
       });
 

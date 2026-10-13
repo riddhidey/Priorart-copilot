@@ -1,11 +1,22 @@
+# ==============================================================================
+# PriorArt Copilot — Contrastive Patent Dataset Preparation Module
+# Builds paired triplets (Anchor Query, Positive Patent, Negative Patent)
+# across Mechanical and Electronics domains for training domain-specific patent embeddings.
+# ==============================================================================
+
+# Standard library modules for JSON serialization and filesystem management
 import json
 import os
 from pathlib import Path
 from typing import List, Dict, Any
 
-# Curated high-quality patent training corpus across Mechanical and Electronics domains
+
+# ------------------------------------------------------------------------------
+# Curated High-Quality Patent Training Corpus (Triplets: Query, Positive, Negative)
+# Covers core mechanical mechanisms (rotors, actuators, cams) and electronics (circuits, comparators)
+# ------------------------------------------------------------------------------
 PATENT_TRAINING_PAIRS = [
-    # Mechanical: Drones, Propellers, Actuators, Mechanisms
+    # Mechanical Sample 1: Variable-pitch drone rotor hub with dual bearings
     {
         "query": "variable pitch drone rotor hub with pivoting blade grips and preloaded angular contact ball bearings",
         "positive": "A variable pitch rotor assembly for a multirotor aircraft comprising a central hub, a plurality of blade grips pivotally mounted to the hub, and a swashplate actuated by an axial servo motor to dynamically alter blade angle during flight.",
@@ -13,6 +24,7 @@ PATENT_TRAINING_PAIRS = [
         "domain": "mechanical",
         "doc_id": "US-10457388-B2"
     },
+    # Mechanical Sample 2: Concentric axial pushrod mechanism for dynamic pitch
     {
         "query": "concentric axial pushrod mechanism driven by hollow shaft brushless motor for dynamic pitch control",
         "positive": "The axial pushrod mechanism translates linear displacement from a concentric core actuator into angular rotation of blade roots via offset linkage pins, enabling rapid blade pitch adjustment within 15 milliseconds.",
@@ -20,6 +32,7 @@ PATENT_TRAINING_PAIRS = [
         "domain": "mechanical",
         "doc_id": "US-10457388-B2"
     },
+    # Mechanical Sample 3: Integrated brushless torque motor at blade root
     {
         "query": "brushless torque motor integrated inside blade root sleeve with magnetic Hall angle sensor",
         "positive": "Each blade root incorporates an integrated brushless torque motor and Hall-effect angular position sensor to eliminate mechanical swashplates and control individual blade angle of attack directly.",
@@ -27,6 +40,7 @@ PATENT_TRAINING_PAIRS = [
         "domain": "mechanical",
         "doc_id": "US-9878783-B2"
     },
+    # Mechanical Sample 4: Helical cam groove flyweight mechanism
     {
         "query": "centrifugal flyweight counterweight mechanism modifying rotor blade twist via helical cam groove",
         "positive": "The helical cam groove on the blade shank engages a fixed follower pin on the rotor hub, causing blade twist proportional to centrifugal flyweight displacement.",
@@ -34,6 +48,7 @@ PATENT_TRAINING_PAIRS = [
         "domain": "mechanical",
         "doc_id": "EP-3205574-A1"
     },
+    # Mechanical Sample 5: Multi-axis camera gimbal with direct-drive motors
     {
         "query": "multi-axis gimbal mount with magnetic damping and brushless direct drive motors",
         "positive": "A 3-axis camera gimbal stabilization apparatus having high-resolution magnetic rotary encoders and direct-drive brushless gimbal motors with active field-oriented vibration attenuation.",
@@ -41,6 +56,7 @@ PATENT_TRAINING_PAIRS = [
         "domain": "mechanical",
         "doc_id": "US-9915387-B2"
     },
+    # Mechanical Sample 6: Cycloidal rotor propulsion system with eccentric ring
     {
         "query": "cycloidal rotor propulsion system with eccentric bearing ring for vectored thrust generation",
         "positive": "A cycloidal propulsion module comprising a rotating drum supporting multiple spanwise blades whose pitch angle is dynamically modulated by an offset eccentric pitch control ring.",
@@ -49,7 +65,7 @@ PATENT_TRAINING_PAIRS = [
         "doc_id": "US-10214289-B2"
     },
 
-    # Electronics: Low-Power Wake-Up, Energy Harvesting, Comparator Circuits, Power Gating
+    # Electronics Sample 1: Sub-nanowatt wake-up receiver with sub-threshold comparator
     {
         "query": "sub-nanowatt wake-up receiver with sub-threshold differential comparator and dynamic threshold biasing",
         "positive": "The wake-up trigger circuit utilizes a sub-threshold differential comparator with dynamic threshold biasing, achieving a standby power consumption below 850 picowatts at 0.8V supply.",
@@ -57,6 +73,7 @@ PATENT_TRAINING_PAIRS = [
         "domain": "electronics",
         "doc_id": "US-10892745-B1"
     },
+    # Electronics Sample 2: Piezoelectric acoustic energy harvester
     {
         "query": "piezoelectric acoustic transducer harvesting ultrasonic energy to charge storage capacitor via diode bridge",
         "positive": "The acoustic transducer outputs a voltage burst that directly charges a storage capacitor via a Schottky diode bridge; once the capacitor voltage exceeds a tunnel diode breakdown threshold, a wake-up signal is output without battery drain during idle states.",
@@ -64,6 +81,7 @@ PATENT_TRAINING_PAIRS = [
         "domain": "electronics",
         "doc_id": "US-11201584-B2"
     },
+    # Electronics Sample 3: Adaptive power gating controller with dual-threshold comparator
     {
         "query": "adaptive power gating controller with dual-threshold comparator monitoring buffer capacitor ripple",
         "positive": "A dual-threshold comparator monitors ripple on the energy buffer and activates high-side PMOS power gating switches when sensor data entropy exceeds a programmable activity metric.",
@@ -71,6 +89,7 @@ PATENT_TRAINING_PAIRS = [
         "domain": "electronics",
         "doc_id": "EP-3817208-A1"
     },
+    # Electronics Sample 4: Ultra-low leakage bandgap voltage reference in sub-threshold CMOS
     {
         "query": "ultra-low leakage bandgap voltage reference operating in deep sub-threshold CMOS",
         "positive": "A reference voltage generator circuit utilizing proportional-to-absolute-temperature (PTAT) MOS current mirrors biased in deep subthreshold to generate a 0.5V reference under 120 picowatts.",
@@ -78,6 +97,7 @@ PATENT_TRAINING_PAIRS = [
         "domain": "electronics",
         "doc_id": "US-10656667-B2"
     },
+    # Electronics Sample 5: Asynchronous event-driven neuromorphic edge spike detector
     {
         "query": "asynchronous event-driven neuromorphic edge spike detector circuit with low standby power",
         "positive": "An asynchronous spike generator comprising a capacitive level detector and leaky integrate-and-fire comparator that outputs digital interrupts only upon input waveform derivative transitions.",
@@ -88,22 +108,24 @@ PATENT_TRAINING_PAIRS = [
 ]
 
 
+# Data Augmentation Function: Multiplies each training triplet by generating phrasing variations
 def augment_patent_triplet(triplet: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Augment a single triplet into multiple linguistic variants."""
+    # Start with the original base triplet
     variants = [triplet]
     q = triplet["query"]
     
-    # Variant 1: Prefix with technical domain & system
+    # Variant 1: Prefix with technical domain & system phrasing (e.g. "A mechanical invention comprising...")
     v1 = dict(triplet)
     v1["query"] = f"A {triplet['domain']} invention comprising {q}"
     variants.append(v1)
 
-    # Variant 2: Claim-style phrasing
+    # Variant 2: Formal patent claim-style phrasing (e.g. "An apparatus characterized by...")
     v2 = dict(triplet)
     v2["query"] = f"An apparatus characterized by {q}"
     variants.append(v2)
 
-    # Variant 3: Element keyword focus
+    # Variant 3: Element keyword focus (truncates to core leading noun phrase if long)
     words = q.split()
     if len(words) > 5:
         v3 = dict(triplet)
@@ -113,35 +135,44 @@ def augment_patent_triplet(triplet: Dict[str, Any]) -> List[Dict[str, Any]]:
     return variants
 
 
+# Dataset Generation Function: Writes augmented training triplets and eval splits to JSONL files
 def prepare_datasets(output_dir: str = "train/data") -> Dict[str, str]:
     """Generate training, validation, and evaluation splits in JSONL format."""
+    # Ensure destination directory exists on disk
     out_path = Path(output_dir)
     out_path.mkdir(parents=True, exist_ok=True)
 
+    # File paths for training triplets and benchmark evaluation sets
     train_file = out_path / "patent_triplets_train.jsonl"
     eval_file = out_path / "patent_benchmark_eval.jsonl"
 
+    # Apply data augmentation across all base training triplets
     augmented_train = []
     for item in PATENT_TRAINING_PAIRS:
         augmented_train.extend(augment_patent_triplet(item))
 
+    # Write augmented training dataset to JSON Lines (JSONL) format
     with open(train_file, "w", encoding="utf-8") as f:
         for item in augmented_train:
             f.write(json.dumps(item) + "\n")
 
+    # Write unaugmented reference evaluation set to JSON Lines (JSONL) format
     with open(eval_file, "w", encoding="utf-8") as f:
         for item in PATENT_TRAINING_PAIRS:
             f.write(json.dumps(item) + "\n")
 
+    # Print summary of generated datasets
     print(f"[Dataset Preparation Complete]")
     print(f"  • Augmented Train samples: {len(augmented_train)} -> {train_file}")
     print(f"  • Eval benchmark: {len(PATENT_TRAINING_PAIRS)} -> {eval_file}")
 
+    # Return file paths dictionary
     return {
         "train": str(train_file),
         "eval": str(eval_file)
     }
 
 
+# Standalone CLI execution entrypoint to generate training files
 if __name__ == "__main__":
     prepare_datasets()

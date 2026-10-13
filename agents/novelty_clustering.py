@@ -6,10 +6,12 @@ from schemas.clustering import NoveltyClusteringOutput, ElementNoveltyCluster, S
 from agents.llm_client import LLMClient
 
 
+# Agent 3: Evaluates and clusters prior art per claim element, scoring novelty threat (§102 anticipation / §103 obviousness)
 class NoveltyClusteringAgent:
     """Agent 3: Evaluates and clusters prior art per claim element, scoring novelty threat."""
 
     def __init__(self, llm_client: Optional[LLMClient] = None):
+        # Connects to the LLM client (Gemini) or instantiates a default client
         self.llm = llm_client or LLMClient()
 
     def cluster_and_score(
@@ -18,18 +20,22 @@ class NoveltyClusteringAgent:
         retrieval_output: RetrievalOutput
     ) -> NoveltyClusteringOutput:
         """Map retrieved documents to specific claim elements and score novelty risk."""
+        # Map element IDs to their corresponding ClaimElement schema objects
         element_map = {el.element_id: el for el in parsed_disclosure.claim_elements}
         element_clusters: Dict[str, ElementNoveltyCluster] = {}
 
+        # Prepare list of valid tuples: (element_id, ClaimElement, candidate_prior_art_list)
         valid_items = [
             (el_id, element_map[el_id], el_retrieval.candidates)
             for el_id, el_retrieval in retrieval_output.element_results.items()
             if el_id in element_map
         ]
 
+        # Parallelize scoring across elements using ThreadPoolExecutor if there are multiple elements
         if len(valid_items) > 1:
             from concurrent.futures import ThreadPoolExecutor, as_completed
             with ThreadPoolExecutor(max_workers=min(len(valid_items), 4)) as executor:
+                # Submit each claim element's candidates to the scoring agent
                 futures = {
                     executor.submit(self._cluster_element, el, candidates): el_id
                     for el_id, el, candidates in valid_items
@@ -39,19 +45,25 @@ class NoveltyClusteringAgent:
                     try:
                         element_clusters[el_id] = f.result()
                     except Exception:
+                        # Fallback to deterministic heuristic clustering on failure
                         el = element_map[el_id]
-                        element_clusters[el_id] = self._heuristic_cluster(el, [])
+                        element_clusters[el_id] = self._heuristic_clustering(el, [])
         else:
+            # Single element: process sequentially
             for el_id, el, candidates in valid_items:
                 element_clusters[el_id] = self._cluster_element(el, candidates)
 
-        # Preserve original order
+        # Preserve the original sequential order of the claim elements (elem_01, elem_02, etc.)
         element_clusters = {el.element_id: element_clusters.get(el.element_id) for el in parsed_disclosure.claim_elements if el.element_id in element_clusters}
 
-        # Compute overall invention risk
+        # Compute overall invention risk across all claim elements
         high_count = sum(1 for c in element_clusters.values() if c.overall_element_risk == "high")
         mod_count = sum(1 for c in element_clusters.values() if c.overall_element_risk == "moderate")
 
+        # Risk Decision Matrix:
+        # High Risk: 2+ high-risk elements (or 1 high risk in a small 1-2 element invention)
+        # Moderate Risk: At least 1 high or moderate risk element
+        # Low Risk: All elements show low prior-art threat
         if high_count >= 2 or (high_count >= 1 and len(element_clusters) <= 2):
             overall_risk = "high"
         elif high_count >= 1 or mod_count >= 1:
@@ -59,6 +71,7 @@ class NoveltyClusteringAgent:
         else:
             overall_risk = "low"
 
+        # Return standardized NoveltyClusteringOutput schema
         return NoveltyClusteringOutput(
             element_clusters=element_clusters,
             overall_invention_risk=overall_risk
@@ -69,7 +82,8 @@ class NoveltyClusteringAgent:
         element: ClaimElement,
         candidates: List[PriorArtCandidate]
     ) -> ElementNoveltyCluster:
-        """Score each candidate against the specific claim element."""
+        """Score each candidate against the specific claim element using LLM or Heuristic."""
+        # If no prior art candidates were found by Agent 2, mark element as novel (low risk)
         if not candidates:
             return ElementNoveltyCluster(
                 element_id=element.element_id,
@@ -79,6 +93,7 @@ class NoveltyClusteringAgent:
                 novelty_gap_summary=f"No close prior art identified for '{element.title}'. Features appear novel."
             )
 
+        # System Prompt: Patent attorney persona evaluating §102 (novelty) and §103 (obviousness)
         system_instruction = (
             "You are the Novelty-Clustering Agent in a patent prior-art screening system. "
             "Evaluate candidate prior art documents specifically against the given claim element. "
@@ -86,11 +101,13 @@ class NoveltyClusteringAgent:
             "and matched passage. Do NOT make up documents or passages."
         )
 
+        # Format candidates into readable context with IDs, titles, passages, and sources
         candidates_text = "\n".join([
             f"- [{c.doc_id}] {c.title}\n  Passage: {c.relevant_passage}\n  Source: {c.source}"
             for c in candidates
         ])
 
+        # User Prompt asking LLM to score and rank candidates against the claim element
         prompt = f"""
 Claim Element [{element.element_id}]: {element.title}
 Description: {element.description}
@@ -101,9 +118,11 @@ Candidate Prior Art Documents:
 Score and rank each candidate based on how directly it reads on or anticipates this claim element.
 """
 
+        # Deterministic offline fallback if LLM is unavailable or quota is exceeded
         def _fallback() -> ElementNoveltyCluster:
             return self._heuristic_clustering(element, candidates)
 
+        # Call Gemini with structured Pydantic output validation
         try:
             return self.llm.generate_structured(
                 prompt=prompt,
@@ -119,15 +138,18 @@ Score and rank each candidate based on how directly it reads on or anticipates t
         element: ClaimElement,
         candidates: List[PriorArtCandidate]
     ) -> ElementNoveltyCluster:
-        """Deterministic heuristic scoring of candidates against claim element."""
+        """Deterministic heuristic scoring of candidates against claim element when offline."""
         scored_list: List[ScoredPriorArt] = []
+        # Combine element keywords and title tokens into a comparison set
         elem_keywords = set(element.search_keywords + [w.lower() for w in element.title.split()])
 
+        # Calculate keyword overlap ratio for each candidate document
         for cand in candidates:
             cand_text = f"{cand.title} {cand.relevant_passage} {cand.abstract}".lower()
             match_count = sum(1 for kw in elem_keywords if kw in cand_text)
             overlap_ratio = match_count / max(1, len(elem_keywords))
 
+            # Overlap >= 50%: High Threat (Anticipation / 35 U.S.C. § 102 risk)
             if overlap_ratio >= 0.5:
                 threat = "high"
                 score = round(min(0.95, 0.65 + (overlap_ratio * 0.3)), 2)
@@ -135,6 +157,7 @@ Score and rank each candidate based on how directly it reads on or anticipates t
                     f"Direct technical overlap with {element.title}. "
                     f"Prior art discloses corresponding features: '{cand.relevant_passage[:120]}...'"
                 )
+            # Overlap 25%-49%: Moderate Threat (Obviousness / 35 U.S.C. § 103 risk)
             elif overlap_ratio >= 0.25:
                 threat = "moderate"
                 score = round(min(0.65, 0.40 + (overlap_ratio * 0.25)), 2)
@@ -142,11 +165,13 @@ Score and rank each candidate based on how directly it reads on or anticipates t
                     f"Partial conceptual overlap with {element.title}. "
                     f"Discloses related mechanisms but may differ in implementation."
                 )
+            # Overlap < 25%: Low Threat (Distantly related, unlikely to anticipate)
             else:
                 threat = "low"
                 score = round(max(0.15, overlap_ratio * 0.35), 2)
                 rationale = "Distant contextual relevance; does not substantially anticipate key claim limitations."
 
+            # Construct ScoredPriorArt item with citation metadata and official URL
             scored_list.append(
                 ScoredPriorArt(
                     doc_id=cand.doc_id,
@@ -160,11 +185,13 @@ Score and rank each candidate based on how directly it reads on or anticipates t
                 )
             )
 
+        # Sort candidates highest threat score first
         scored_list.sort(key=lambda x: x.novelty_risk_score, reverse=True)
 
-        # Determine element overall risk
+        # Determine overall element risk from the highest individual threat
         highest_threat = scored_list[0].threat_level if scored_list else "low"
         
+        # Formulate actionable novelty gap summary
         if highest_threat == "high":
             gap = f"Prior art strongly addresses {element.title}; claim should be narrowed with distinctive structural constraints."
         elif highest_threat == "moderate":
@@ -172,6 +199,7 @@ Score and rank each candidate based on how directly it reads on or anticipates t
         else:
             gap = f"High novelty gap; few prior references anticipate the specific configuration of {element.title}."
 
+        # Return the completed cluster for this claim element
         return ElementNoveltyCluster(
             element_id=element.element_id,
             element_title=element.title,

@@ -18,8 +18,10 @@ from schemas.report import PriorArtReport
 from pipeline.graph import PriorArtPipeline
 from eval.metrics import run_benchmark, verify_citation_authenticity
 
+#FastAPI setup app with title and metadata.
 app = FastAPI(title="PriorArt Copilot", description="Multi-Agent Patentability & Prior-Art Screening")
 
+#CORS middleware to allow local development,deployment vercel frontends, and external API consumers.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -28,6 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+#Cache Control nocache,no store, must revalidate headers to every response to prevent browsers from serving to prevent browers from serving stale screening reports for cache credentials.
 @app.middleware("http")
 async def add_no_cache_headers(request, call_next):
     response = await call_next(request)
@@ -36,13 +39,14 @@ async def add_no_cache_headers(request, call_next):
     response.headers["Expires"] = "0"
     return response
 
+#Screen Request - raw invention text and domain for full- pipeline screening.
 class ScreenRequest(BaseModel):
     title: str
     raw_text: str
     technical_domain: str = "mechanical"
     user_id: Optional[str] = None
 
-
+#Screen Elements Request - For AI-first workflow where Agent 1 extracts claim elements first, then Agent 2 screens them.
 class ScreenElementsRequest(BaseModel):
     title: str
     technical_domain: str
@@ -50,7 +54,7 @@ class ScreenElementsRequest(BaseModel):
     claim_elements: list[dict]
     user_id: Optional[str] = None
 
-
+#User API Key Request - For saving user API keys for EPO/USPTO access.
 class UserApiKeyRequest(BaseModel):
     user_id: str
     user_email: Optional[str] = ""
@@ -58,7 +62,7 @@ class UserApiKeyRequest(BaseModel):
     epo_consumer_key: Optional[str] = None
     epo_consumer_secret: Optional[str] = None
 
-
+#Save Report Request - For saving screening reports to the database.
 class SaveReportRequest(BaseModel):
     user_id: str
     title: str
@@ -69,6 +73,7 @@ class SaveReportRequest(BaseModel):
 
 
 
+#Visitor Geo - Zero-permission server-side IP geolocation resolver.
 @app.get("/api/visitor-geo")
 async def get_visitor_geo(request: Request):
     """
@@ -161,7 +166,7 @@ async def get_visitor_geo(request: Request):
         "message": "Fallback to client-side geolocation"
     }
 
-
+#PriorArt Copilot allows patent attorneys to inspect and edit claim elements before conducting expensive searches.
 @app.post("/api/parse-elements")
 async def parse_elements_only(req: ScreenRequest):
     if not req.raw_text.strip():
@@ -629,17 +634,29 @@ async def delete_history_report(report_id: str, user_id: str):
     return {"status": "success" if success else "failed"}
 
 
-# Authentication configuration endpoint for client-side Supabase SDK
+# Authentication configuration endpoint for client-side Auth SDKs (Firebase Google Auth & Supabase)
 @app.get("/api/auth/config")
 async def get_auth_config():
     supabase_url = os.environ.get("NEXT_PUBLIC_SUPABASE_URL") or os.environ.get("SUPABASE_URL", "")
     supabase_anon_key = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_ANON_KEY", "")
     
+    firebase_config = {
+        "apiKey": os.environ.get("FIREBASE_API_KEY") or os.environ.get("NEXT_PUBLIC_FIREBASE_API_KEY", ""),
+        "authDomain": os.environ.get("FIREBASE_AUTH_DOMAIN") or os.environ.get("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", ""),
+        "projectId": os.environ.get("FIREBASE_PROJECT_ID") or os.environ.get("NEXT_PUBLIC_FIREBASE_PROJECT_ID", ""),
+        "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET") or os.environ.get("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET", ""),
+        "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID") or os.environ.get("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", ""),
+        "appId": os.environ.get("FIREBASE_APP_ID") or os.environ.get("NEXT_PUBLIC_FIREBASE_APP_ID", "")
+    }
+    has_firebase = bool(firebase_config["apiKey"] and firebase_config["projectId"])
+
     return {
         "status": "success",
         "supabaseUrl": supabase_url,
         "supabaseAnonKey": supabase_anon_key,
-        "hasConfig": bool(supabase_url and supabase_anon_key)
+        "hasConfig": bool(supabase_url and supabase_anon_key),
+        "firebaseConfig": firebase_config,
+        "hasFirebaseConfig": has_firebase
     }
 
 
@@ -694,6 +711,7 @@ if not web_dir.exists():
 app.mount("/static", StaticFiles(directory=str(web_dir)), name="static")
 
 @app.get("/")
+@app.get("/index.html")
 async def serve_index():
     index_file = web_dir / "index.html"
     if not index_file.exists():
@@ -705,6 +723,7 @@ async def serve_index():
 
 
 @app.get("/login")
+@app.get("/login.html")
 async def serve_login():
     login_file = web_dir / "login.html"
     if not login_file.exists():
@@ -716,6 +735,8 @@ async def serve_login():
 
 
 @app.get("/auth/callback")
+@app.get("/callback")
+@app.get("/callback.html")
 async def serve_auth_callback():
     cb_file = web_dir / "callback.html"
     if not cb_file.exists():

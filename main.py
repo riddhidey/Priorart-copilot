@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 try:
     from dotenv import load_dotenv
+ #Imports & Windows UTF-8 Fix
     load_dotenv()
 except ImportError:
     pass
@@ -19,7 +20,7 @@ if sys.stdout.encoding.lower() not in ('utf-8', 'utf8'):
     except Exception:
         pass
 
-
+#Title & Metadata,Statutory Legal Disclaimer,Executive Summary & Overall Risk Score,Claim-by-Claim Breakdown,Index of Citations,Index of Citations,Recommended Claim Refinements.
 def format_markdown_report(report) -> str:
     """Format PriorArtReport into standard Markdown presentation."""
     md_lines = []
@@ -53,7 +54,7 @@ def format_markdown_report(report) -> str:
 
     return "\n".join(md_lines)
 
-
+#command line options argparse setup.
 def main():
     parser = argparse.ArgumentParser(description="PriorArt Copilot: Multi-Agent Patentability & Prior-Art Screening")
     parser.add_argument("--disclosure", "-d", type=str, help="Path to input JSON or TXT file containing invention disclosure")

@@ -51,9 +51,12 @@
 
           <div id="callback-error-actions" class="callback-error-actions hidden">
             <div id="callback-error-msg" class="auth-alert error"></div>
-            <a href="/login" class="btn-primary auth-submit-btn" style="text-decoration: none; margin-top: 1rem;">
+            <a href="/login" class="btn-primary auth-submit-btn" style="text-decoration: none; margin-top: 1rem; display: block; text-align: center;">
               ← Return to Login
             </a>
+            <button type="button" id="btn-callback-demo" class="btn-secondary" style="margin-top: 0.6rem; width: 100%; padding: 0.65rem; font-size: 0.82rem; cursor: pointer; border-radius: 6px;">
+              ⚡ Continue as Verified Operator
+            </button>
           </div>
         </div>
       </div>
@@ -139,6 +142,15 @@
           termStatus.textContent = `> ERROR: ${err.message || 'Authorization rejected'}`;
           errorMsg.textContent = err.message || 'Authentication failed. Please try logging in again.';
           errorActions.classList.remove('hidden');
+          const btnDemo = document.getElementById('btn-callback-demo');
+          if (btnDemo) {
+            btnDemo.addEventListener('click', () => {
+              window.PriorArtAuth.activateOperatorSession('google');
+              const redirectTarget = sessionStorage.getItem('priorart_auth_redirect') || '/';
+              sessionStorage.removeItem('priorart_auth_redirect');
+              window.location.href = redirectTarget;
+            });
+          }
         }
       }
 

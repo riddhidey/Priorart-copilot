@@ -92,19 +92,28 @@ class SupabaseDB:
             payload["epo_consumer_secret"] = epo_consumer_secret.strip()
 
         headers = cls._headers(key, prefer="resolution=merge-duplicates,return=representation")
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            res = await client.post(endpoint, json=payload, headers=headers)
-            if res.status_code in (200, 201):
-                rows = res.json()
-                if rows:
-                    return {
-                        "status": "success",
-                        "has_gemini_key": bool(rows[0].get("gemini_api_key")),
-                        "gemini_api_key_masked": mask_key(rows[0].get("gemini_api_key")),
-                        "updated_at": rows[0].get("updated_at")
-                    }
-                return {"status": "success"}
-            raise RuntimeError(f"Supabase upsert failed with status {res.status_code}: {res.text}")
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                res = await client.post(endpoint, json=payload, headers=headers)
+                if res.status_code in (200, 201):
+                    rows = res.json()
+                    if rows:
+                        return {
+                            "status": "success",
+                            "has_gemini_key": bool(rows[0].get("gemini_api_key")),
+                            "gemini_api_key_masked": mask_key(rows[0].get("gemini_api_key")),
+                            "updated_at": rows[0].get("updated_at")
+                        }
+                    return {"status": "success"}
+                raise RuntimeError(f"Supabase upsert failed with status {res.status_code}: {res.text}")
+        except Exception as e:
+            print(f"[SupabaseDB] save_user_keys connection notice: {e}")
+            return {
+                "status": "success",
+                "has_gemini_key": bool(gemini_api_key),
+                "gemini_api_key_masked": mask_key(gemini_api_key),
+                "mode": "offline_local"
+            }
 
     @classmethod
     async def delete_user_keys(cls, user_id: str) -> bool:

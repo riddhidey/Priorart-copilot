@@ -12,9 +12,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="/static/style.css?v=75.0">
+  <script>
+    // Ensure localhost domain for Firebase OAuth whitelist compatibility
+    if (window.location.hostname === '127.0.0.1') {
+      window.location.replace(window.location.href.replace('127.0.0.1', 'localhost'));
+    }
+  </script>
+  <!-- Firebase App & Auth SDK (v10.12.0 Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <!-- Supabase JS Client & Auth Manager -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/static/auth.js?v=82.0"></script>
+  <script src="/static/auth.js?v=96.0"></script>
 </head>
 <body>
 
